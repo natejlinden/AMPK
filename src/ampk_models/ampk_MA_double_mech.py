@@ -46,11 +46,11 @@ def ampk_MA_double_mech_get_params():
         'kOnPP1': (), # Phosphatase AMPKAR binding
         'kOffPP1': (), 
         'kDephosPP1': (),
-        # total enzyme concentrations
-        'CaMKKtot': (),
-        'LKB1tot':(),
-        'PPtot':(),
-        'PP1tot':(),
+        # # total enzyme concentrations
+        # 'CaMKKtot': (),
+        # 'LKB1tot':(),
+        # 'PPtot':(),
+        # 'PP1tot':(),
         # glycolysis flux
         'kGly':(),
         # ATP hydrolysis
@@ -131,6 +131,10 @@ def ampk_MA_double_mech_get_states():
         'AMPKAR_AMP_ADP_pAMPK':(),
         # AMPKAR phosphatase complexes
         'PP1_pAMPKAR':(),
+        'CaMKK':(),
+        'LKB1':(),
+        'PP':(),
+        'PP1':(),
     }
 def ampk_MA_double_mech_RHS(t, y, p):
     """Right hand side of the AMPK_ma_double_mech regulation model.
@@ -144,15 +148,15 @@ def ampk_MA_double_mech_RHS(t, y, p):
     mul = np.vectorize(sym.Mul)
 
     # compute enzyme concentrations
-    CaMKK2 = add(p.CaMKKtot, -y.CaMKK_AMPK, -y.CaMKK_AMP_AMPK, -y.CaMKK_ADP_AMPK,
-        -y.CaMKK_ATP_AMPK, -y.CaMKK_AMP_AMP_AMPK, -y.CaMKK_AMP_ADP_AMPK,
-        -y.CaMKK_AMP_ATP_AMPK, -y.CaMKK_ADP_ADP_AMPK, -y.CaMKK_ADP_ATP_AMPK,
-        -y.CaMKK_ATP_ATP_AMPK)
-    LKB1 = add(p.LKB1tot, -y.LKB1_AMP_AMPK, -y.LKB1_ADP_AMPK, -y.LKB1_AMP_AMP_AMPK,
-        -y.LKB1_AMP_ADP_AMPK, -y.LKB1_ADP_ADP_AMPK)
-    PP = add(p.PPtot, -y.PP_pAMPK, -y.PP_ATP_pAMPK, -y.PP_AMP_ATP_pAMPK,
-        -y.PP_ADP_ATP_pAMPK, -y.PP_ATP_ATP_pAMPK)
-    PP1 = add(p.PP1tot, -y.PP1_pAMPKAR)
+    # CaMKK2 = add(p.CaMKKtot, -y.CaMKK_AMPK, -y.CaMKK_AMP_AMPK, -y.CaMKK_ADP_AMPK,
+    #     -y.CaMKK_ATP_AMPK, -y.CaMKK_AMP_AMP_AMPK, -y.CaMKK_AMP_ADP_AMPK,
+    #     -y.CaMKK_AMP_ATP_AMPK, -y.CaMKK_ADP_ADP_AMPK, -y.CaMKK_ADP_ATP_AMPK,
+    #     -y.CaMKK_ATP_ATP_AMPK)
+    # LKB1 = add(p.LKB1tot, -y.LKB1_AMP_AMPK, -y.LKB1_ADP_AMPK, -y.LKB1_AMP_AMP_AMPK,
+    #     -y.LKB1_AMP_ADP_AMPK, -y.LKB1_ADP_ADP_AMPK)
+    # PP = add(p.PPtot, -y.PP_pAMPK, -y.PP_ATP_pAMPK, -y.PP_AMP_ATP_pAMPK,
+    #     -y.PP_ADP_ATP_pAMPK, -y.PP_ATP_ATP_pAMPK)
+    # PP1 = add(p.PP1tot, -y.PP1_pAMPKAR)
     
     # FLUXES
     # TODO: check if it is okay to write fluxes first like this!
@@ -183,47 +187,47 @@ def ampk_MA_double_mech_RHS(t, y, p):
     J23 = mul(p.kOnATP, y.ATP, y.ADP_pAMPK) - mul(p.kOffATP, y.ADP_ATP_pAMPK)
     J24 = mul(p.kOnATP, y.ATP, y.ATP_pAMPK) - mul(p.kOffATP, y.ATP_ATP_pAMPK)
     # CaMKK complexing and phosphorylation    
-    J25 = mul(p.kOnCaMKK, CaMKK2, y.AMPK) - mul(p.kOffCaMKK, y.CaMKK_AMPK)
+    J25 = mul(p.kOnCaMKK, y.CaMKK, y.AMPK) - mul(p.kOffCaMKK, y.CaMKK_AMPK)
     J26 = mul(p.kPhosCaMKK, y.CaMKK_AMPK)   
-    J27 = mul(p.kOnCaMKK, CaMKK2, y.AMP_AMPK) - mul(p.kOffCaMKK, y.CaMKK_AMP_AMPK)   
+    J27 = mul(p.kOnCaMKK, y.CaMKK, y.AMP_AMPK) - mul(p.kOffCaMKK, y.CaMKK_AMP_AMPK)   
     J28 = mul(p.kPhosCaMKK, y.CaMKK_AMP_AMPK)  
-    J29 = mul(p.kOnCaMKK, CaMKK2, y.ADP_AMPK) - mul(p.kOffCaMKK, y.CaMKK_ADP_AMPK)   
+    J29 = mul(p.kOnCaMKK, y.CaMKK, y.ADP_AMPK) - mul(p.kOffCaMKK, y.CaMKK_ADP_AMPK)   
     J30 = mul(p.kPhosCaMKK, y.CaMKK_ADP_AMPK)  
-    J31 = mul(p.kOnCaMKK, CaMKK2, y.ATP_AMPK) - mul(p.kOffCaMKK, y.CaMKK_ATP_AMPK)   
+    J31 = mul(p.kOnCaMKK, y.CaMKK, y.ATP_AMPK) - mul(p.kOffCaMKK, y.CaMKK_ATP_AMPK)   
     J32 = mul(p.kPhosCaMKK, y.CaMKK_ATP_AMPK) 
-    J33 = mul(p.kOnCaMKK, CaMKK2, y.AMP_AMP_AMPK) - mul(p.kOffCaMKK, y.CaMKK_AMP_AMP_AMPK)   
+    J33 = mul(p.kOnCaMKK, y.CaMKK, y.AMP_AMP_AMPK) - mul(p.kOffCaMKK, y.CaMKK_AMP_AMP_AMPK)   
     J34 = mul(p.kPhosCaMKK, y.CaMKK_AMP_AMP_AMPK)  
-    J35 = mul(p.kOnCaMKK, CaMKK2, y.AMP_ADP_AMPK) - mul(p.kOffCaMKK, y.CaMKK_AMP_ADP_AMPK)   
+    J35 = mul(p.kOnCaMKK, y.CaMKK, y.AMP_ADP_AMPK) - mul(p.kOffCaMKK, y.CaMKK_AMP_ADP_AMPK)   
     J36 = mul(p.kPhosCaMKK, y.CaMKK_AMP_ADP_AMPK)  
-    J37 = mul(p.kOnCaMKK, CaMKK2, y.AMP_ATP_AMPK) - mul(p.kOffCaMKK, y.CaMKK_AMP_ATP_AMPK)   
+    J37 = mul(p.kOnCaMKK, y.CaMKK, y.AMP_ATP_AMPK) - mul(p.kOffCaMKK, y.CaMKK_AMP_ATP_AMPK)   
     J38 = mul(p.kPhosCaMKK, y.CaMKK_AMP_ATP_AMPK)  
-    J39 = mul(p.kOnCaMKK, CaMKK2, y.ADP_ADP_AMPK) - mul(p.kOffCaMKK, y.CaMKK_ADP_ADP_AMPK)   
+    J39 = mul(p.kOnCaMKK, y.CaMKK, y.ADP_ADP_AMPK) - mul(p.kOffCaMKK, y.CaMKK_ADP_ADP_AMPK)   
     J40 = mul(p.kPhosCaMKK, y.CaMKK_ADP_ADP_AMPK)  
-    J41 = mul(p.kOnCaMKK, CaMKK2, y.ADP_ATP_AMPK) - mul(p.kOffCaMKK, y.CaMKK_ADP_ATP_AMPK)   
+    J41 = mul(p.kOnCaMKK, y.CaMKK, y.ADP_ATP_AMPK) - mul(p.kOffCaMKK, y.CaMKK_ADP_ATP_AMPK)   
     J42 = mul(p.kPhosCaMKK, y.CaMKK_ADP_ATP_AMPK)  
-    J43 = mul(p.kOnCaMKK, CaMKK2, y.ATP_ATP_AMPK) - mul(p.kOffCaMKK, y.CaMKK_ATP_ATP_AMPK)   
+    J43 = mul(p.kOnCaMKK, y.CaMKK, y.ATP_ATP_AMPK) - mul(p.kOffCaMKK, y.CaMKK_ATP_ATP_AMPK)   
     J44 = mul(p.kPhosCaMKK, y.CaMKK_ATP_ATP_AMPK)
     # LKB1 complexing and phosphorylation
-    J45 = mul(p.kOnLKB1, LKB1, y.AMP_AMPK) - mul(p.kOffLKB1, y.LKB1_AMP_AMPK)   
+    J45 = mul(p.kOnLKB1, y.LKB1, y.AMP_AMPK) - mul(p.kOffLKB1, y.LKB1_AMP_AMPK)   
     J46 = mul(p.kPhosLKB1, y.LKB1_AMP_AMPK)  
-    J47 = mul(p.kOnLKB1, LKB1, y.ADP_AMPK) - mul(p.kOffLKB1, y.LKB1_ADP_AMPK)   
+    J47 = mul(p.kOnLKB1, y.LKB1, y.ADP_AMPK) - mul(p.kOffLKB1, y.LKB1_ADP_AMPK)   
     J48 = mul(p.kPhosLKB1, y.LKB1_ADP_AMPK)  
-    J49 = mul(p.kOnLKB1, LKB1, y.AMP_AMP_AMPK) - mul(p.kOffLKB1, y.LKB1_AMP_AMP_AMPK)   
+    J49 = mul(p.kOnLKB1, y.LKB1, y.AMP_AMP_AMPK) - mul(p.kOffLKB1, y.LKB1_AMP_AMP_AMPK)   
     J50 = mul(p.kPhosLKB1, y.LKB1_AMP_AMP_AMPK)  
-    J51 = mul(p.kOnLKB1, LKB1, y.AMP_ADP_AMPK) - mul(p.kOffLKB1, y.LKB1_AMP_ADP_AMPK)   
+    J51 = mul(p.kOnLKB1, y.LKB1, y.AMP_ADP_AMPK) - mul(p.kOffLKB1, y.LKB1_AMP_ADP_AMPK)   
     J52 = mul(p.kPhosLKB1, y.LKB1_AMP_ADP_AMPK)  
-    J53 = mul(p.kOnLKB1, LKB1, y.ADP_ADP_AMPK) - mul(p.kOffLKB1, y.LKB1_ADP_ADP_AMPK)   
+    J53 = mul(p.kOnLKB1, y.LKB1, y.ADP_ADP_AMPK) - mul(p.kOffLKB1, y.LKB1_ADP_ADP_AMPK)   
     J54 = mul(p.kPhosLKB1, y.LKB1_ADP_ADP_AMPK)  
     # phosphatase binding and dephosphorylation
-    J55 = mul(p.kOnPP, PP, y.pAMPK) - mul(p.kOffPP, y.PP_pAMPK)    
+    J55 = mul(p.kOnPP, y.PP, y.pAMPK) - mul(p.kOffPP, y.PP_pAMPK)    
     J56 = mul(p. kDephosPP, y.PP_pAMPK)
-    J57 = mul(p.kOnPP, PP, y.ATP_pAMPK) - mul(p.kOffPP, y.PP_ATP_pAMPK)    
+    J57 = mul(p.kOnPP, y.PP, y.ATP_pAMPK) - mul(p.kOffPP, y.PP_ATP_pAMPK)    
     J58 = mul(p. kDephosPP, y.PP_ATP_pAMPK)
-    J59 = mul(p.kOnPP, PP, y.AMP_ATP_pAMPK) - mul(p.kOffPP, y.PP_AMP_ATP_pAMPK)    
+    J59 = mul(p.kOnPP, y.PP, y.AMP_ATP_pAMPK) - mul(p.kOffPP, y.PP_AMP_ATP_pAMPK)    
     J60 = mul(p. kDephosPP, y.PP_AMP_ATP_pAMPK)
-    J61 = mul(p.kOnPP, PP, y.ADP_ATP_pAMPK) - mul(p.kOffPP, y.PP_ADP_ATP_pAMPK)    
+    J61 = mul(p.kOnPP, y.PP, y.ADP_ATP_pAMPK) - mul(p.kOffPP, y.PP_ADP_ATP_pAMPK)    
     J62 = mul(p. kDephosPP, y.PP_ADP_ATP_pAMPK)
-    J63 = mul(p.kOnPP, PP, y.ATP_ATP_pAMPK)  - mul(p.kOffPP, y.PP_ATP_ATP_pAMPK)
+    J63 = mul(p.kOnPP, y.PP, y.ATP_ATP_pAMPK)  - mul(p.kOffPP, y.PP_ATP_ATP_pAMPK)
     J64 = mul(p. kDephosPP, y.PP_ATP_ATP_pAMPK)
     # AMPK binding to AMPAKAR and phosphorylation
     J65 = mul(p.kOnAMPK, y.AMPKAR, y.AMP_pAMPK) - mul(p.kOffAMPK, y.AMPKAR_AMP_pAMPK)   
@@ -233,7 +237,7 @@ def ampk_MA_double_mech_RHS(t, y, p):
     J69 = mul(p.kOnAMPK, y.AMPKAR, y.AMP_ADP_pAMPK) - mul(p.kOffAMPK, y.AMPKAR_AMP_ADP_pAMPK)   
     J70 = mul(p.kPhosAMPK, y.AMPKAR_AMP_ADP_pAMPK)
     # PP1 binding to AMPKAR and dephosphorylation  
-    J71 = mul(p.kOnPP1, PP1, y.pAMPKAR) - mul(p.kOffPP1, y.PP1_pAMPKAR)
+    J71 = mul(p.kOnPP1, y.PP1, y.pAMPKAR) - mul(p.kOffPP1, y.PP1_pAMPKAR)
     J72 = mul(p.kDephosPP1, y.PP1_pAMPKAR)
     # Metabolic fluxes
     # glycolysis
@@ -243,7 +247,7 @@ def ampk_MA_double_mech_RHS(t, y, p):
     # Adenylate Kinase
     Jak = mul(p.kForAK, y.ATP, y.AMP) - mul(p.kRevAK, y.ADP, y.ADP) # MASS ACTION KINETICS!
     # Oxidative Phos
-    Joxphos = (p.VmaxOxPhos * ((y.ADP/p.Kadp)**p.n))/(1 + ((y.ADP/p.Kadp)**p.n)) #TODO add params
+    Joxphos = (p.VmaxOxPhos * ((y.ADP/p.Kadp)**p.n))/(1 + ((y.ADP/p.Kadp)**p.n))
 
     # now return the odes for each state variable
     return {
@@ -252,7 +256,7 @@ def ampk_MA_double_mech_RHS(t, y, p):
         'ATP': -J3-J6-J13-J14-J15-J22-J23-J24+Jgly-Jak-Jhydro+Joxphos,
         # free AMPK
         'AMPK': -J1-J2-J3-J25+J56,
-        'pAMPK': -J4-J5-J6-J26-J55,
+        'pAMPK': -J4-J5-J6+J26-J55,
         # single AXP-AMPK complexes
         'AMP_AMPK': J1-J7-J10-J13-J27-J45,
         'ADP_AMPK': J2-J8-J11-J14-J29-J47,
@@ -260,7 +264,7 @@ def ampk_MA_double_mech_RHS(t, y, p):
         # single AXP-pAMPK complexes
         'AMP_pAMPK': J4-J16-J19-J22+J28+J46-J65+J66,
         'ADP_pAMPK': J5-J17-J20-J23+J30+J48,
-        'ATP_pAMPK': J6-J18-J21-J24-J57+J32,
+        'ATP_pAMPK': J6-J18-J21-J24+J32-J57,
         # double AXP-AMPK complexes
         'AMP_AMP_AMPK': J7-J33-J49,
         'AMP_ADP_AMPK': J8+J10-J35-J51,
@@ -276,6 +280,7 @@ def ampk_MA_double_mech_RHS(t, y, p):
         'ADP_ATP_pAMPK': J21+J23+J42-J61,
         'ATP_ATP_pAMPK': J24+J44-J63,
         # CaMKK complexes
+        'CaMKK': -J25+J26-J27+J28-J29+J30-J31+J32-J33+J34-J35+J36-J37+J38-J39+J40-J41+J42-J43+J44,
         'CaMKK_AMPK': J25-J26,
         'CaMKK_AMP_AMPK': J27-J28,
         'CaMKK_ADP_AMPK': J29-J30,
@@ -287,12 +292,14 @@ def ampk_MA_double_mech_RHS(t, y, p):
         'CaMKK_ADP_ATP_AMPK': J41-J42,
         'CaMKK_ATP_ATP_AMPK': J43-J44,
         # LKB1 complexes
+        'LKB1': -J45+J46-J47+J48-J49+J50-J51+J52-J53+J54,
         'LKB1_AMP_AMPK': J45-J46,
         'LKB1_ADP_AMPK': J47-J48,
         'LKB1_AMP_AMP_AMPK': J49-J50,
         'LKB1_AMP_ADP_AMPK': J51-J52,
         'LKB1_ADP_ADP_AMPK': J53-J54,
         # AMPK phosphatase complexes
+        'PP': -J55+J56-J57+J58-J59+J60-J61+J62-J63+J64,
         'PP_pAMPK': J55-J56,
         'PP_ATP_pAMPK': J57-J58,
         'PP_AMP_ATP_pAMPK': J59-J60,
@@ -306,6 +313,7 @@ def ampk_MA_double_mech_RHS(t, y, p):
         'AMPKAR_AMP_AMP_pAMPK': J67-J68,
         'AMPKAR_AMP_ADP_pAMPK': J69-J70,
         # AMPKAR phosphatase complexes
+        'PP1':-J71+J72,
         'PP1_pAMPKAR': J71-J72,
     }
 
@@ -325,11 +333,14 @@ def ampk_MA_double_mech_RHS_sympyFluxVars():
     Jak = sym.symbols("Jak")
     Joxphos = sym.symbols("Joxphos")
 
+    for item in [Jgly, Jhydro, Jak, Joxphos]: # add metab fluxes to flux list
+        fluxes.append(item)
+
     
     return {
         'AMP': -fluxes[0]-fluxes[3]-fluxes[6]-fluxes[7]-fluxes[8]-fluxes[15]-fluxes[16]-fluxes[17]-Jak,
-        'ADP': -fluxes[1]-fluxes[4]-fluxes[9]-fluxes[10]-fluxes[11]-fluxes[18]-fluxes[19]-fluxes[20]-2*Jgly+2*Jak+Jhydro-Joxphos,
-        'ATP': -fluxes[2]-fluxes[5]-fluxes[12]-fluxes[13]-fluxes[14]-fluxes[21]-fluxes[22]-fluxes[23]+2*Jgly-Jak-Jhydro+Joxphos,
+        'ADP': -fluxes[1]-fluxes[4]-fluxes[9]-fluxes[10]-fluxes[11]-fluxes[18]-fluxes[19]-fluxes[20]-Jgly+2*Jak+Jhydro-Joxphos,
+        'ATP': -fluxes[2]-fluxes[5]-fluxes[12]-fluxes[13]-fluxes[14]-fluxes[21]-fluxes[22]-fluxes[23]+Jgly-Jak-Jhydro+Joxphos,
         # free AMPK
         'AMPK': -fluxes[0]-fluxes[1]-fluxes[2]-fluxes[24]+fluxes[55],
         'pAMPK': -fluxes[3]-fluxes[4]-fluxes[5]-fluxes[25]-fluxes[54],
@@ -356,6 +367,7 @@ def ampk_MA_double_mech_RHS_sympyFluxVars():
         'ADP_ATP_pAMPK': fluxes[20]+fluxes[22]+fluxes[41]-fluxes[60],
         'ATP_ATP_pAMPK': fluxes[23]+fluxes[43]-fluxes[62],
         # CaMKK complexes
+        'CaMKK': -fluxes[24]+fluxes[25]-fluxes[26]+fluxes[27]-fluxes[28]+fluxes[29]-fluxes[30]+fluxes[31]-fluxes[32]+fluxes[33]-fluxes[34]+fluxes[35]-fluxes[36]+fluxes[37]-fluxes[38]+fluxes[39]-fluxes[40]+fluxes[41]-fluxes[42]+fluxes[43],
         'CaMKK_AMPK': fluxes[24]-fluxes[25],
         'CaMKK_AMP_AMPK': fluxes[26]-fluxes[27],
         'CaMKK_ADP_AMPK': fluxes[28]-fluxes[29],
@@ -367,12 +379,14 @@ def ampk_MA_double_mech_RHS_sympyFluxVars():
         'CaMKK_ADP_ATP_AMPK': fluxes[40]-fluxes[41],
         'CaMKK_ATP_ATP_AMPK': fluxes[42]-fluxes[43],
         # LKB1 complexes
+        'LKB1': -fluxes[44]+fluxes[45]-fluxes[46]+fluxes[47]-fluxes[48]+fluxes[49]-fluxes[50]+fluxes[51]-fluxes[52]+fluxes[53],
         'LKB1_AMP_AMPK': fluxes[44]-fluxes[45],
         'LKB1_ADP_AMPK': fluxes[46]-fluxes[47],
         'LKB1_AMP_AMP_AMPK': fluxes[48]-fluxes[49],
         'LKB1_AMP_ADP_AMPK': fluxes[50]-fluxes[51],
         'LKB1_ADP_ADP_AMPK': fluxes[52]-fluxes[53],
         # AMPK phosphatase complexes
+        'PP': -fluxes[54]+fluxes[55]-fluxes[56]+fluxes[57]-fluxes[58]+fluxes[59]-fluxes[60]+fluxes[61]-fluxes[62]+fluxes[63],
         'PP_pAMPK': fluxes[54]-fluxes[55],
         'PP_ATP_pAMPK': fluxes[56]-fluxes[57],
         'PP_AMP_ATP_pAMPK': fluxes[58]-fluxes[59],
@@ -386,6 +400,7 @@ def ampk_MA_double_mech_RHS_sympyFluxVars():
         'AMPKAR_AMP_AMP_pAMPK': fluxes[66]-fluxes[67],
         'AMPKAR_AMP_ADP_pAMPK': fluxes[68]-fluxes[69],
         # AMPKAR phosphatase complexes
+        'PP1':-fluxes[70]+fluxes[71],
         'PP1_pAMPKAR': fluxes[70]-fluxes[71],
     }, fluxes
 
