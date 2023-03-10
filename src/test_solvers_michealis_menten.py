@@ -12,6 +12,9 @@ import sys
 sys.path.insert(0, './ampk_models')
 import mich_ment_MA as MM
 
+# we want 64 bit precision
+jax.config.update("jax_enable_x64", True)
+
 
 # Nathaniel Linden (UCSD MAE)
 # This script compares the runtime for three ODE solvers when solving
@@ -167,7 +170,11 @@ def main(kOn, kOff, kCat):
     return sol
 
 # run solver to store the solution and compile everything
+start = time.time()
 sol_diffrax = main(p[0], p[1], p[2])
+end = time.time()
+
+print('Compilation time: ' + str(end - start))
 
 # now solve Nsolve times and time each one, store all times
 times_diffrax = np.zeros((Nsolves,1))
