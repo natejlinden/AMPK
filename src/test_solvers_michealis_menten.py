@@ -49,23 +49,23 @@ def model_rhs_scipy(t, y, p):
 
     return dydt
 
-# define needed things
-y0 = np.array([10.0, 5.0, 0.0, 0.0])
-p = np.array([10.0, 2.0, 0.5])
-tvals = np.linspace(0, 15, 50)
+# # define needed things
+# y0 = np.array([10.0, 5.0, 0.0, 0.0])
+# p = np.array([10.0, 2.0, 0.5])
+# tvals = np.linspace(0, 15, 50)
 
-# solve once to start solution
-sol_scipy = solve_ivp(model_rhs_scipy, tspan, y0, method='BDF', args=[p])
+# # solve once to start solution
+# sol_scipy = solve_ivp(model_rhs_scipy, tspan, y0, method='BDF', args=[p])
 
-# now solve Nsolve times and time each one, store all times
-times_scipy = np.zeros((Nsolves,1))
-for i in range(Nsolves):
-    start = time.time()
-    _ = solve_ivp(model_rhs_scipy, tspan, y0, method='BDF', args=[p])
-    end = time.time()
-    times_scipy[i] = end - start
+# # now solve Nsolve times and time each one, store all times
+# times_scipy = np.zeros((Nsolves,1))
+# for i in range(Nsolves):
+#     start = time.time()
+#     _ = solve_ivp(model_rhs_scipy, tspan, y0, method='BDF', args=[p])
+#     end = time.time()
+#     times_scipy[i] = end - start
 
-print('The average time for scipy was: ' + str(np.mean(times_scipy)))
+# print('The average time for scipy was: ' + str(np.mean(times_scipy)))
 
 ####################################################
 # sunode with the 'BDF' method
@@ -106,20 +106,20 @@ solver.set_params_dict({
 yout = solver.make_output_buffers(tvals)
 solver.solve(t0=0, tvals=tvals, y0=y0, y_out=yout)
 
-# now solve Nsolve times and time each one, store all times
-times_sunode = np.zeros((Nsolves,1))
-for i in range(Nsolves):
-    solver.set_params_dict({ # want to simulate changing params before each run
-        'kOn': 10.0,
-        'kOff': 2.0,
-        'kCat': 0.5,
-    })
-    start = time.time()
-    solver.solve(t0=0, tvals=tvals, y0=y0, y_out=yout)
-    end = time.time()
-    times_sunode[i] = end - start
+# # now solve Nsolve times and time each one, store all times
+# times_sunode = np.zeros((Nsolves,1))
+# for i in range(Nsolves):
+#     solver.set_params_dict({ # want to simulate changing params before each run
+#         'kOn': 10.0,
+#         'kOff': 2.0,
+#         'kCat': 0.5,
+#     })
+#     start = time.time()
+#     solver.solve(t0=0, tvals=tvals, y0=y0, y_out=yout)
+#     end = time.time()
+#     times_sunode[i] = end - start
 
-print('The average time for sunode was: ' + str(np.mean(times_sunode)))
+# print('The average time for sunode was: ' + str(np.mean(times_sunode)))
 
 
 ####################################################
@@ -177,11 +177,21 @@ end = time.time()
 print('Compilation time: ' + str(end - start))
 
 # now solve Nsolve times and time each one, store all times
-times_diffrax = np.zeros((Nsolves,1))
-for i in range(Nsolves):
-    start = time.time()
-    main(p[0], p[1], p[2])
-    end = time.time()
-    times_diffrax[i] = end - start
+# times_diffrax = np.zeros((Nsolves,1))
+# for i in range(Nsolves):
+#     start = time.time()
+#     main(p[0], p[1], p[2])
+#     end = time.time()
+    # times_diffrax[i] = end - start
 
 print('The average time for diffrax was: ' + str(np.mean(times_diffrax)))
+
+kOns = kOn*jnp.ones(100,1)
+kOffs = kOff*jnp.ones(100,1)
+kCats = kCat*jnp.ones(100,1)
+
+start = time.time()
+out = pmap(main, in_axes=(None, None, None))(kOns, kOffs, kCats)    
+end = time.time()
+
+print('The average time for diffrax was: ' + str(end - start))
