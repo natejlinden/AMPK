@@ -61,7 +61,7 @@ def single_model_eval(params, problem_ode, solver, y0, tvals, state_names):
 def sim_to_steady_state(params, glyco_flux, problem_ode, 
                         solver, y0, tvals, state_names,
                         make_p_dict_fun,
-                        thresh=1e-6, t_int_add=100, t_cnt_add=200, max_add_iter=50):
+                        thresh=1e-6, t_int_add=100, t_cnt_add=200, max_add_iter=1e6):
     """ Function to simulate the model to steady state.
     
     Checks for steady state after simulation for time defined by tvals. Steady state 
