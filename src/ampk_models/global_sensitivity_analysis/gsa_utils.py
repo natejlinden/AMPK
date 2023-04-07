@@ -1,3 +1,5 @@
+import numpy as np
+
 def set_init_conds(problem_ode, state_names):
     """ Function to set non-zero initial conditions for the models."""
     y0 = np.zeros((), dtype=problem_ode.state_dtype)
