@@ -17,7 +17,7 @@ sys.path.insert(0, '../odes')
 
 import ampk_MA_double_mech as model1
 from gsa_utils import *
-%matplotlib inline
+#%matplotlib inline
 plt.style.use('~/.matplotlib/custom.mplstyle')
 mpl.rcParams['figure.autolayout'] = True
 
