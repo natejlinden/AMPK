@@ -144,7 +144,62 @@ for kcat_i, kon_i, km_i in zip(kcat_idxs_MA, kon_idxs_MA, km_idxs_MM):
 
 # Run simulations
 y0 = set_init_conds(problem_ode, state_names)
-num_jobs=6
+num_jobs=10
+
+
+# uncorrelated
+param_vals_sobol_MA= tqdm(param_vals_sobol_MA)
+param_vals_morris_MA= tqdm(param_vals_morris_MA)
+sols_sobol = Parallel(n_jobs=num_jobs)(delayed(single_model_eval)(param, 
+                        problem_ode, solver, y0, tvals, state_names) for 
+                        param in param_vals_sobol_MA)
+np.save('./MA_double_mech/sols_sobol_short.npy', np.array(sols_sobol))
+sols_morris = Parallel(n_jobs=num_jobs)(delayed(single_model_eval)(param, 
+                        problem_ode, solver, y0, tvals, state_names) for 
+                        param in param_vals_morris_MA)
+np.save('./MA_double_mech/sols_morris_short.npy', np.array(sols_morris))
+# correlated
+param_vals_sobol_MA_corr= tqdm(param_vals_sobol_MA_corr)
+param_vals_morris_MA_corr= tqdm(param_vals_morris_MA_corr)
+sols_sobol_corr = Parallel(n_jobs=num_jobs)(delayed(single_model_eval)(param, 
+                        problem_ode, solver, y0, tvals, state_names) for 
+                        param in param_vals_sobol_MA_corr)
+np.save('./MA_double_mech/sols_sobol_corr_short.npy', np.array(sols_sobol_corr))
+sols_morris_corr = Parallel(n_jobs=num_jobs)(delayed(single_model_eval)(param, 
+                        problem_ode, solver, y0, tvals, state_names) for 
+                        param in param_vals_morris_MA_corr)
+np.save('./MA_double_mech/sols_morris_corr_short.npy', np.array(sols_morris_corr))
+
+
+############################################
+# Full scale case with many samples #
+############################################
+# generate samples using the Saltelli and Morris sampling methods
+# START with a small number of samples
+nsamps = 2048
+param_vals_sobol_MA = sobol_samp.sample(problem_MA_90, nsamps, calc_second_order=False, seed=seed)
+param_vals_morris_MA = morris_samp.sample(problem_MA_90, nsamps, seed=seed)
+param_vals_sobol_MM = sobol_samp.sample(problem_MM_90, nsamps, calc_second_order=False, seed=seed)
+param_vals_morris_MM = morris_samp.sample(problem_MM_90, nsamps, seed=seed)
+
+# copy MA to np arrays
+param_vals_sobol_MA_corr = np.array(param_vals_sobol_MA)
+param_vals_morris_MA_corr = np.array(param_vals_morris_MA)
+param_vals_sobol_MM_np = np.array(param_vals_sobol_MM)
+param_vals_morris_MM_np = np.array(param_vals_morris_MM)
+
+# now compute all kons using samples of Km and from the MM model and Kcat from MA model
+kcat_idxs_MA = [4,6,8,10,12]
+kon_idxs_MA = [3,5,7,9,11]
+km_idxs_MM = [4,6,8,10,12]
+for kcat_i, kon_i, km_i in zip(kcat_idxs_MA, kon_idxs_MA, km_idxs_MM):
+    param_vals_sobol_MA_corr[:,kon_i] = (1+param_vals_sobol_MA_corr[:,kcat_i])/param_vals_sobol_MM_np[:,km_i]
+for kcat_i, kon_i, km_i in zip(kcat_idxs_MA, kon_idxs_MA, km_idxs_MM):  
+    param_vals_morris_MA_corr[:,kon_i] = (1+param_vals_morris_MA_corr[:,kcat_i])/param_vals_morris_MM_np[:,km_i]
+
+# Run simulations
+y0 = set_init_conds(problem_ode, state_names)
+num_jobs=10
 
 
 # uncorrelated
