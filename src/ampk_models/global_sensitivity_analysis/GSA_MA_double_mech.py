@@ -146,7 +146,7 @@ for kcat_i, kon_i, km_i in zip(kcat_idxs_MA, kon_idxs_MA, km_idxs_MM):
 y0 = set_init_conds(problem_ode, state_names)
 num_jobs=12
 
-with Parallel(n_jobs=num_jobs) as parallel:
+#with Parallel(n_jobs=num_jobs) as parallel:
     # uncorrelated
     # param_vals_sobol_MA= tqdm(param_vals_sobol_MA)
     # sols_sobol = parallel(delayed(single_model_eval)(param, 
