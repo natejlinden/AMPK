@@ -152,26 +152,26 @@ with Parallel(n_jobs=num_jobs) as parallel:
     sols_sobol = parallel(delayed(single_model_eval)(param, 
                             problem_ode, solver, y0, tvals, state_names) for 
                             param in param_vals_sobol_MA)
-    np.save('./MA_double_mech/sols_sobol_short.npy', np.array(sols_sobol), dtype=object)
+    np.save('./MA_double_mech/sols_sobol_short.npy', np.array(sols_sobol, dtype=object))
     del sols_sobol
     param_vals_morris_MA= tqdm(param_vals_morris_MA)
     sols_morris = parallel(delayed(single_model_eval)(param, 
                             problem_ode, solver, y0, tvals, state_names) for 
                             param in param_vals_morris_MA)
-    np.save('./MA_double_mech/sols_morris_short.npy', np.array(sols_morris), dtype=object)
+    np.save('./MA_double_mech/sols_morris_short.npy', np.array(sols_morris, dtype=object))
     del sols_morris
     # correlated
     param_vals_sobol_MA_corr= tqdm(param_vals_sobol_MA_corr)
     sols_sobol_corr = parallel(delayed(single_model_eval)(param, 
                             problem_ode, solver, y0, tvals, state_names) for 
                             param in param_vals_sobol_MA_corr)
-    np.save('./MA_double_mech/sols_sobol_corr_short.npy', np.array(sols_sobol_corr), dtype=object)
+    np.save('./MA_double_mech/sols_sobol_corr_short.npy', np.array(sols_sobol_corr, dtype=object))
     del sol_sobol_corr
     param_vals_morris_MA_corr= tqdm(param_vals_morris_MA_corr)
     sols_morris_corr = parallel(delayed(single_model_eval)(param, 
                             problem_ode, solver, y0, tvals, state_names) for 
                             param in param_vals_morris_MA_corr)
-    np.save('./MA_double_mech/sols_morris_corr_short.npy', np.array(sols_morris_corr), dtype=object)
+    np.save('./MA_double_mech/sols_morris_corr_short.npy', np.array(sols_morris_corr, dtype=object))
     del sols_morris_corr
 
 # ############################################
