@@ -24,7 +24,7 @@ def set_init_conds(problem_ode, state_names):
         
     return y0
 
-def single_model_eval(params, problem_ode, solver, y0, tvals, state_names):
+def single_model_eval(params, problem_ode, solver, y0, tvals, state_names, full_output=True):
     """ Function to evaluate the model at a single set of parameters. 
     Runs system to steady state, then applies 2-DG stimulus and runs to steady state again.
 
@@ -56,7 +56,10 @@ def single_model_eval(params, problem_ode, solver, y0, tvals, state_names):
     pAMPKAR_AMPKAR_final_ss = sol_stim.view(problem_ode.state_dtype)['pAMPKAR'][-1] / sol_stim.view(problem_ode.state_dtype)['AMPKAR'][-1]
     pAMPKAR_AMPKAR_delta = (pAMPKAR_AMPKAR_final_ss - pAMPKAR_AMPKAR_ss)/pAMPKAR_AMPKAR_ss
 
-    return np.array([pAMPKAR_AMPKAR_ss, pAMPKAR_AMPKAR_delta]), sol_init, sol_stim, times_init, times_stim
+    if full_output:
+        return np.array([pAMPKAR_AMPKAR_ss, pAMPKAR_AMPKAR_delta]), sol_init, sol_stim, times_init, times_stim
+    else:
+        return np.array([pAMPKAR_AMPKAR_ss, pAMPKAR_AMPKAR_delta])
 
 def sim_to_steady_state(params, glyco_flux, problem_ode, 
                         solver, y0, tvals, state_names,

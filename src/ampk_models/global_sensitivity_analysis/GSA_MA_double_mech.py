@@ -215,26 +215,26 @@ with Parallel(n_jobs=num_jobs) as parallel:
     # uncorrelated
     param_vals_sobol_MA= tqdm(param_vals_sobol_MA)
     sols_sobol = parallel(delayed(single_model_eval)(param, 
-                            problem_ode, solver, y0, tvals, state_names)[0] for 
-                            param in param_vals_sobol_MA)
+                            problem_ode, solver, y0, tvals, state_names) for 
+                            param in param_vals_sobol_MA, full_output=False)
     np.save('./MA_double_mech/sols_sobol.npy', np.array(sols_sobol))
     # correlated
     param_vals_sobol_MA_corr= tqdm(param_vals_sobol_MA_corr)
     sols_sobol_corr = parallel(delayed(single_model_eval)(param, 
-                            problem_ode, solver, y0, tvals, state_names)[0] for 
-                            param in param_vals_sobol_MA_corr)
+                            problem_ode, solver, y0, tvals, state_names) for 
+                            param in param_vals_sobol_MA_corr, full_output=False)
     np.save('./MA_double_mech/sols_sobol_corr.npy', np.array(sols_sobol_corr))
 
     # Morris
     #uncorrelated
     param_vals_morris_MA= tqdm(param_vals_morris_MA)
     sols_morris = parallel(delayed(single_model_eval)(param, 
-                            problem_ode, solver, y0, tvals, state_names)[0] for 
-                            param in param_vals_morris_MA)
+                            problem_ode, solver, y0, tvals, state_names) for 
+                            param in param_vals_morris_MA, full_output=False)
     np.save('./MA_double_mech/sols_morris.npy', np.array(sols_morris))
     #correlated
     param_vals_morris_MA_corr= tqdm(param_vals_morris_MA_corr)
     sols_morris_corr = parallel(delayed(single_model_eval)(param, 
-                            problem_ode, solver, y0, tvals, state_names)[0] for 
-                            param in param_vals_morris_MA_corr)
+                            problem_ode, solver, y0, tvals, state_names) for 
+                            param in param_vals_morris_MA_corr, full_output=False)
     np.save('./MA_double_mech/sols_morris_corr.npy', np.array(sols_morris_corr))
