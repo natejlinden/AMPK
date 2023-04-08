@@ -230,3 +230,14 @@ def set_init_conds(problem_ode, state_names):
         y0[state] = 0.0
         
     return y0
+
+def set_init_conds_MM(problem_ode, state_names):
+    # Initial conditions
+    y0 = np.zeros((), dtype=problem_ode.state_dtype)
+    y0['AMP'] = 2e-5   # 'AMP' mM
+    y0['ADP'] = 1.3e-1 # 'ADP mM
+    y0['ATP'] = 8.2   # 'ATP mM
+    y0['AMPK'] = 0.6   # 'AMPK mM
+    y0['AMPKAR'] = 1e-3   # 'AMPKAR mM
+
+    return y0
