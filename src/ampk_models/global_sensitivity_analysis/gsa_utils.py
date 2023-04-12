@@ -64,7 +64,7 @@ def single_model_eval(params, problem_ode, solver, y0, tvals, state_names, full_
 def sim_to_steady_state(params, glyco_flux, problem_ode, 
                         solver, y0, tvals, state_names,
                         make_p_dict_fun,
-                        thresh=1e-6, t_int_add=100, t_cnt_add=200, max_add_iter=1e6):
+                        thresh=1e-6, t_int_add=100, t_cnt_add=200, max_add_iter=5e5):
     """ Function to simulate the model to steady state.
     
     Checks for steady state after simulation for time defined by tvals. Steady state 
@@ -136,6 +136,10 @@ def sim_to_steady_state(params, glyco_flux, problem_ode,
         # check for steady state
         pAMPKAR_AMPKAR = yout.view(problem_ode.state_dtype)['pAMPKAR'] / yout.view(problem_ode.state_dtype)['AMPKAR']
         ss_check = check_steady_state(pAMPKAR_AMPKAR, thresh)
+
+        # print params if n_additional sims>5e4
+        if n_additional_sims==5e4:
+            print(params)
     
     if n_additional_sims == max_add_iter:
         print('WARNING: max number of additional simulations reached. Steady state not reached.')
