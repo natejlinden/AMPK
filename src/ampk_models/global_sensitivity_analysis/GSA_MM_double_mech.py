@@ -9,17 +9,27 @@ from SALib.analyze import sobol as sobol_analyze
 from SALib.analyze import morris as morris_analyze
 from SALib.analyze.hdmr import analyze as hdmr_analyze
 import sys
+import os
 import time
-import multiprocessing
+import multiprocessing as mp
 from tqdm import tqdm
 from joblib import Parallel, delayed
 sys.path.insert(0, '../odes')
 
 import ampk_MM_double_mech as model1
 from gsa_utils import *
-#%matplotlib inline
-plt.style.use('~/.matplotlib/custom.mplstyle')
-mpl.rcParams['figure.autolayout'] = True
+
+############################################
+# Setup output directory #
+############################################
+dir = sys.argv[1]
+print('Saving to: ', dir)
+
+fname = 'MM_double_mech'
+savedir = dir+fname
+if not os.path.exists(savedir):
+    os.makedirs(savedir)
+    print('Created directory: ', savedir)
 
 ############################################
 # Bounds and info for params #
@@ -87,13 +97,13 @@ tvals = np.linspace(0, 1000, 2000)
 ############################################
 # generate samples using the Saltelli and Morris sampling methods
 # START with a small number of samples
-nsamps = 8
+nsamps = mp.cpu_count()
 param_vals_sobol_MM = sobol_samp.sample(problem_MM_90, nsamps, calc_second_order=False, seed=seed)
 param_vals_morris_MM = morris_samp.sample(problem_MM_90, nsamps, seed=seed)
 
 # Run simulations
 y0 = set_init_conds_MM(problem_ode, state_names)
-num_jobs=12
+num_jobs=mp.cpu_count()
 
 with Parallel(n_jobs=num_jobs) as parallel:
     # sobol
@@ -101,14 +111,14 @@ with Parallel(n_jobs=num_jobs) as parallel:
     sols_sobol = parallel(delayed(single_model_eval)(param, 
                             problem_ode, solver, y0, tvals, state_names) for 
                             param in param_vals_sobol_MM)
-    np.save('./MM_double_mech/sols_sobol_short.npy', np.array(sols_sobol, dtype=object))
+    np.save(savedir + 'sols_sobol_short.npy', np.array(sols_sobol, dtype=object))
     del sols_sobol
     # morris
     param_vals_morris_MM = tqdm(param_vals_morris_MM)
     sols_morris = parallel(delayed(single_model_eval)(param, 
                             problem_ode, solver, y0, tvals, state_names) for 
                             param in param_vals_morris_MM)
-    np.save('./MM_double_mech/sols_morris_corr_short.npy', np.array(sols_morris, dtype=object))
+    np.save(savedir + 'sols_morris_corr_short.npy', np.array(sols_morris, dtype=object))
     del sols_morris
 
 ############################################
@@ -120,12 +130,12 @@ nsamps = 2048
 param_vals_sobol_MM = sobol_samp.sample(problem_MM_90, nsamps, calc_second_order=True, seed=seed)
 param_vals_morris_MM = morris_samp.sample(problem_MM_90, nsamps, seed=seed)
 
-np.save('./MM_double_mech/param_vals_sobol.npy', np.array(param_vals_sobol_MM))
-np.save('./MM_double_mech/param_vals_morris.npy', np.array(param_vals_morris_MM))
+np.save(savedir + 'param_vals_sobol.npy', np.array(param_vals_sobol_MM))
+np.save(savedir + 'param_vals_morris.npy', np.array(param_vals_morris_MM))
 
 # Run simulations
 y0 = set_init_conds_MM(problem_ode, state_names)
-num_jobs=12
+num_jobs=mp.cpu_count()
 
 with Parallel(n_jobs=num_jobs) as parallel:
     # Sobol
@@ -133,12 +143,12 @@ with Parallel(n_jobs=num_jobs) as parallel:
     sols_sobol = parallel(delayed(single_model_eval)(param, 
                             problem_ode, solver, y0, tvals, state_names, full_output=False) for 
                             param in param_vals_sobol_MM)
-    np.save('./MM_double_mech/sols_sobol.npy', np.array(sols_sobol))
+    np.save(savedir + 'sols_sobol.npy', np.array(sols_sobol))
     del sols_sobol
     # Morris
     param_vals_morris_MM = tqdm(param_vals_morris_MM)
     sols_morris = parallel(delayed(single_model_eval)(param, 
                             problem_ode, solver, y0, tvals, state_names, full_output=False) for 
                             param in param_vals_morris_MM)
-    np.save('./MM_double_mech/sols_morris.npy', np.array(sols_morris))
+    np.save(savedir + 'sols_morris.npy', np.array(sols_morris))
   
