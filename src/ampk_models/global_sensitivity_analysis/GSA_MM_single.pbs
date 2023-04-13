@@ -9,7 +9,6 @@
 #PBS -M nlinden@ucsd.edu
 #PBS -m abe
 #PBS -A rangamani-hopper
-conda activate pymc4_env
 cd /home/nlinden/AMPK/src/ampk_models/global_sensitivity_analysis
-python GSA_MM_single_mech.py /oasis/tscc/scratch/nlinden/AMPK/
+/home/nlinden/miniconda3/envs/pymc4_env/bin/python GSA_MM_single_mech.py /oasis/tscc/scratch/nlinden/AMPK/
 exit 0
