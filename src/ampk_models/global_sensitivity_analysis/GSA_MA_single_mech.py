@@ -119,7 +119,7 @@ problem_ode = sunode.SympyProblem(
 # solver
 solver = sunode.solver.Solver(problem_ode, solver='BDF')
 lib = sunode._cvodes.lib
-lib.CVodeSetMaxNumSteps(solver._ode, 5000) # increase max steps
+lib.CVodeSetMaxNumSteps(solver._ode, 2500) # increase max steps
 
 y0 = set_init_conds(problem_ode, state_names)
 
