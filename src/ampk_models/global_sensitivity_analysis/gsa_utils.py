@@ -139,6 +139,9 @@ def sim_to_steady_state(params, glyco_flux, problem_ode,
         pAMPKAR_AMPKAR = yout.view(problem_ode.state_dtype)['pAMPKAR'] / yout.view(problem_ode.state_dtype)['AMPKAR']
         ss_check = check_steady_state(pAMPKAR_AMPKAR, thresh)
 
+        # print params if n_additional sims>5e4
+        if n_additional_sims==5e4:
+            print(params)
         # if we reach steady state, and we are not storing the full output, store the final sim
         if ss_check and not full_output:
             sol_list.append(yout)
