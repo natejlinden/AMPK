@@ -40,13 +40,13 @@ def single_model_eval(params, problem_ode, solver, y0, tvals, state_names, full_
     """
 
     sol_init, times_init = sim_to_steady_state(params, 1300.0, problem_ode, 
-                        solver, y0, tvals, state_names, make_p_dict_fun_MA, thresh=1e-6,)
+                        solver, y0, tvals, state_names, make_p_dict_fun_MA, full_output, thresh=1e-6,)
     y0_new = np.zeros((), dtype=problem_ode.state_dtype)
     for state in state_names:
         y0_new[state] = sol_init[state][-1]
 
     sol_stim, times_stim = sim_to_steady_state(params, 4.5, problem_ode, 
-                        solver, y0_new, tvals, state_names, make_p_dict_fun_MA, thresh=1e-6,)
+                        solver, y0_new, tvals, state_names, make_p_dict_fun_MA, full_output, thresh=1e-6,)
 
     # now compute the output QoIs
     # pAMPKAR/AMPKAR steady-state before perturb
@@ -63,8 +63,8 @@ def single_model_eval(params, problem_ode, solver, y0, tvals, state_names, full_
 
 def sim_to_steady_state(params, glyco_flux, problem_ode, 
                         solver, y0, tvals, state_names,
-                        make_p_dict_fun,
-                        thresh=1e-6, t_int_add=100, t_cnt_add=200, max_add_iter=5e5):
+                        make_p_dict_fun, full_output=True,
+                        thresh=1e-6, t_int_add=100, t_cnt_add=200, max_add_iter=1e6):
     """ Function to simulate the model to steady state.
     
     Checks for steady state after simulation for time defined by tvals. Steady state 
@@ -112,7 +112,8 @@ def sim_to_steady_state(params, glyco_flux, problem_ode,
     # initial simulation for tvals
     yout = solver.make_output_buffers(tvals)
     solver.solve(t0=0, tvals=tvals, y0=y0, y_out=yout)
-    sol_list.append(yout)
+    if full_output: # only store if full output 
+        sol_list.append(yout)
 
     # check for steady state
     pAMPKAR_AMPKAR = yout.view(problem_ode.state_dtype)['pAMPKAR'] / yout.view(problem_ode.state_dtype)['AMPKAR']
@@ -131,7 +132,8 @@ def sim_to_steady_state(params, glyco_flux, problem_ode,
         tvals_inter = np.linspace(0, t_int_add, t_cnt_add)
         yout = solver.make_output_buffers(tvals_inter)
         solver.solve(t0=0, tvals=tvals_inter, y0=y0_new, y_out=yout)
-        sol_list.append(yout)
+        if full_output: # only store if full output
+            sol_list.append(yout)
 
         # check for steady state
         pAMPKAR_AMPKAR = yout.view(problem_ode.state_dtype)['pAMPKAR'] / yout.view(problem_ode.state_dtype)['AMPKAR']
@@ -140,6 +142,9 @@ def sim_to_steady_state(params, glyco_flux, problem_ode,
         # print params if n_additional sims>5e4
         if n_additional_sims==5e4:
             print(params)
+        # if we reach steady state, and we are not storing the full output, store the final sim
+        if ss_check and not full_output:
+            sol_list.append(yout)
     
     if n_additional_sims == max_add_iter:
         print('WARNING: max number of additional simulations reached. Steady state not reached.')
@@ -151,9 +156,15 @@ def sim_to_steady_state(params, glyco_flux, problem_ode,
     for state in state_names: # iterate over sols
         temp = [sol.view(problem_ode.state_dtype)[state] for sol in sol_list]
         solution[state] = np.vstack(temp)
-    times = np.hstack([tvals, 
+    # store the simulation times
+    # WARNING: times is meaningless if full_output is False so set to None
+    if full_output:
+        times = np.hstack([tvals, 
                        np.linspace(tvals[-1], tvals[-1] + n_additional_sims*t_int_add, 
                                    n_additional_sims*t_cnt_add)])
+    else:
+        times = None
+    
     return solution, times
 
 def check_steady_state(traj, thresh, n=4):
