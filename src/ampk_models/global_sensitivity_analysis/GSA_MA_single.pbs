@@ -1,0 +1,15 @@
+#!/bin/csh
+#PBS -q home-hopper
+#PBS -N GSA_MA_single
+#PBS -l nodes=1:ppn=32:rack13
+#PBS -l walltime=02:00:00
+#PBS -o out.txt
+#PBS -e err.txt
+#PBS -V
+#PBS -M nlinden@ucsd.edu
+#PBS -m abe
+#PBS -A rangamani-hopper
+conda activate pymc4_env
+cd /home/nlinden/AMPK/src/ampk_models/global_sensitivity_analysis
+python GSA_MA_single_mech.py /oasis/tscc/scratch/nlinden/AMPK/
+exit 0
