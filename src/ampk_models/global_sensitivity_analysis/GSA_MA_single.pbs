@@ -10,5 +10,5 @@
 #PBS -m abe
 #PBS -A rangamani-hopper
 cd /home/nlinden/AMPK/src/ampk_models/global_sensitivity_analysis
-/home/nlinden/miniconda3/envs/pymc4_env/bin/python  GSA_MA_single_mech.py /oasis/tscc/scratch/nlinden/AMPK/
+/home/nlinden/miniconda3/envs/pymc4_env/bin/python GSA_MA_single_mech.py /oasis/tscc/scratch/nlinden/AMPK/
 exit 0
