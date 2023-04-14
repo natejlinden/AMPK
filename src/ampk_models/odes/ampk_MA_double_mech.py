@@ -401,3 +401,154 @@ def ampk_MA_double_mech_RHS_sympyFluxVars():
 #     fin.write(data)
 #     #close the file
 #     fin.close()
+
+def ampk_MA_double_mech_RHS_scipy(t, y, p):
+    """Right hand side of the AMPK_ma_double_mech regulation model.
+    """
+    # FLUXES
+    # single AXP complexing
+    J1 = p['kOnAMP']*y[0]*y[3] - p['kOffAMP']*y[5] # AMPK
+    J2 = p['kOnADP']*y[1]*y[3] - p['kOffADP']*y[6]
+    J3 = p['kOnATP']*y[2]*y[3] - p['kOffATP']*y[7]
+    J4 = p['kOnAMP']*y[0]*y[4] - p['kOffAMP']*y[8] # pAMPK
+    J5 = p['kOnADP']*y[1]*y[4] - p['kOffADP']*y[9]
+    J6 = p['kOnATP']*y[2]*y[4] - p['kOffATP']*y[10]
+    # double AXP complexing
+    J7 = p['kOnAMP']*y[0]*y[5] - p['kOffAMP']*y[11] # AMPK
+    J8 = p['kOnAMP']*y[0]*y[6] - p['kOffAMP']*y[12]
+    J9 = p['kOnAMP']*y[0]*y[7] - p['kOffAMP']*y[13]
+    J10 = p['kOnADP']*y[1]*y[5] - p['kOffADP']*y[12]
+    J11 = p['kOnADP']*y[1]*y[6] - p['kOffADP']*y[14]
+    J12 = p['kOnADP']*y[1]*y[7] - p['kOffADP']*y[15]
+    J13 = p['kOnATP']*y[2]*y[5] -  p['kOffATP']*y[13]
+    J14 = p['kOnATP']*y[2]*y[6] - p['kOffATP']*y[15]
+    J15 = p['kOnATP']*y[2]*y[7] - p['kOffATP']*y[16]
+    J16 = p['kOnAMP']*y[0]*y[8] - p['kOffAMP']*y[17] # pAMPK
+    J17 = p['kOnAMP']*y[0]*y[9] - p['kOffAMP']*y[18]
+    J18 = p['kOnAMP']*y[0]*y[10] - p['kOffAMP']*y[19]
+    J19 = p['kOnADP']*y[1]*y[8] - p['kOffADP']*y[18]
+    J20 = p['kOnADP']*y[1]*y[9] - p['kOffADP']*y[20]
+    J21 = p['kOnADP']*y[1]*y[10] - p['kOffADP']*y[21]
+    J22 = p['kOnATP']*y[2]*y[8] - p['kOffATP']*y[19]
+    J23 = p['kOnATP']*y[2]*y[9] - p['kOffATP']*y[21]
+    J24 = p['kOnATP']*y[2]*y[10] - p['kOffATP']*y[22]
+    # CaMKK'] complexing and phosphorylation    
+    J25 = p['kOnCaMKK']*y[23]*y[3] - p['kOffCaMKK']*y[24]
+    J26 = p['kPhosCaMKK']*y[24]
+    J27 = p['kOnCaMKK']*y[23]*y[5] - p['kOffCaMKK']*y[25]   
+    J28 = p['kPhosCaMKK']*y[25] 
+    J29 = p['kOnCaMKK']*y[23]*y[6] - p['kOffCaMKK']*y[26]   
+    J30 = p['kPhosCaMKK']*y[26]  
+    J31 = p['kOnCaMKK']*y[23]*y[7] - p['kOffCaMKK']*y[27]   
+    J32 = p['kPhosCaMKK']*y[27] 
+    J33 = p['kOnCaMKK']*y[23]*y[11] - p['kOffCaMKK']*y[28]   
+    J34 = p['kPhosCaMKK']*y[28]  
+    J35 = p['kOnCaMKK']*y[23]*y[12] - p['kOffCaMKK']*y[29]   
+    J36 = p['kPhosCaMKK']*y[29]  
+    J37 = p['kOnCaMKK']*y[23]*y[13] - p['kOffCaMKK']*y[30]   
+    J38 = p['kPhosCaMKK']*y[30]  
+    J39 = p['kOnCaMKK']*y[23]*y[14] - p['kOffCaMKK']*y[31]   
+    J40 = p['kPhosCaMKK']*y[31]  
+    J41 = p['kOnCaMKK']*y[23]*y[15] - p['kOffCaMKK']*y[32]   
+    J42 = p['kPhosCaMKK']*y[32]  
+    J43 = p['kOnCaMKK']*y[23]*y[16] - p['kOffCaMKK']*y[33]   
+    J44 = p['kPhosCaMKK']*y[33]
+    # LKB1 complexing and phosphorylation
+    J45 = p['kOnLKB1']*y[34]*y[5] - p['kOffLKB1']*y[35]   
+    J46 = p['kPhosLKB1']*y[35]  
+    J47 = p['kOnLKB1']*y[34]*y[6] - p['kOffLKB1']*y[36]   
+    J48 = p['kPhosLKB1']*y[36]  
+    J49 = p['kOnLKB1']*y[34]*y[11] - p['kOffLKB1']*y[37]   
+    J50 = p['kPhosLKB1']*y[37]  
+    J51 = p['kOnLKB1']*y[34]*y[12] - p['kOffLKB1']*y[38]   
+    J52 = p['kPhosLKB1']*y[38]  
+    J53 = p['kOnLKB1']*y[34]*y[14] - p['kOffLKB1']*y[39]   
+    J54 = p['kPhosLKB1']*y[39]  
+    # phosphatase binding and dephosphorylation
+    J55 = p['kOnPP']*y[40]*y[4] - p['kOffPP']*y[41]    
+    J56 = p['kDephosPP']*y[41]
+    J57 = p['kOnPP']*y[40]*y[10] - p['kOffPP']*y[42]    
+    J58 = p['kDephosPP']*y[42]
+    J59 = p['kOnPP']*y[40]*y[19] - p['kOffPP']*y[43]    
+    J60 = p['kDephosPP']*y[43]
+    J61 = p['kOnPP']*y[40]*y[21] - p['kOffPP']*y[44]    
+    J62 = p['kDephosPP']*y[44]
+    J63 = p['kOnPP']*y[40]*y[22]  - p['kOffPP']*y[45]
+    J64 = p['kDephosPP']*y[45]
+    # AMPK'] binding to AMPAKAR and phosphorylation
+    J65 = p['kOnAMPK']*y[46]*y[8] - p['kOffAMPK']*y[48]   
+    J66 = p['kPhosAMPK']*y[48]  
+    J67 = p['kOnAMPK']*y[46]*y[17] - p['kOffAMPK']*y[49]   
+    J68 = p['kPhosAMPK']*y[49]  
+    J69 = p['kOnAMPK']*y[46]*y[18] - p['kOffAMPK']*y[50]   
+    J70 = p['kPhosAMPK']*y[50]
+    # PP1 binding to AMPKAR and dephosphorylation  
+    J71 = p['kOnPP1']*y[51]*y[47] - p['kOffPP1']*y[52]
+    J72 = p['kDephosPP1']*y[52]
+    # Metabolic fluxes
+    # glycolysis
+    Jgly = 2*p['kGly']*y[1]*y[1]
+    # ATP hydrolysis
+    Jhydro = p['kHydro']*y[2]
+    # Adenylate Kinase
+    Jak = p['kForAK']*y[2]*y[0] - p['kRevAK']*y[1]*y[1] # MASS ACTION KINETICS!
+    # Oxidative Phos
+    Joxphos = (p['VmaxOxPhos'] *((y[1]/p['Kadp'])**p['n']))/(1 + ((y[1]/p['Kadp'])**p['n']))
+
+    # now return the odes for each state variable
+    dydt = np.zeros((53,))
+    dydt[0] = -J1-J4-J7-J8-J9-J16-J17-J18-Jak
+    dydt[1] = -J2-J5-J10-J11-J12-J19-J20-J21-Jgly+2*Jak+Jhydro-Joxphos
+    dydt[2] = -J3-J6-J13-J14-J15-J22-J23-J24+Jgly-Jak-Jhydro+Joxphos
+    dydt[3] = -J1-J2-J3-J25+J56
+    dydt[4] = -J4-J5-J6+J26-J55
+    dydt[5] = J1-J7-J10-J13-J27-J45
+    dydt[6] = J2-J8-J11-J14-J29-J47
+    dydt[7] = J3-J9-J12-J15-J31+J58
+    dydt[8] = J4-J16-J19-J22+J28+J46-J65+J66
+    dydt[9] = J5-J17-J20-J23+J30+J48
+    dydt[10] = J6-J18-J21-J24+J32-J57
+    dydt[11] = J7-J33-J49
+    dydt[12] = J8+J10-J35-J51
+    dydt[13] = J9+J13-J37+J60
+    dydt[14] = J11-J39-J53
+    dydt[15] = J12+J14-J41+J62
+    dydt[16] = J15-J43+J64
+    dydt[17] = J16+J34+J50-J67+J68
+    dydt[18] = J17+J19+J36+J52-J69+J70
+    dydt[19] = J18+J22+J38-J59
+    dydt[20] = J20+J40+J54
+    dydt[21] = J21+J23+J42-J61
+    dydt[22] = J24+J44-J63
+    dydt[23] = -J25+J26-J27+J28-J29+J30-J31+J32-J33+J34-J35+J36-J37+J38-J39+J40-J41+J42-J43+J44
+    dydt[24] = J25-J26
+    dydt[25] = J27-J28
+    dydt[26] = J29-J30
+    dydt[27] = J31-J32
+    dydt[28] = J33-J34
+    dydt[29] = J35-J36
+    dydt[30] = J37-J38
+    dydt[31] = J39-J40
+    dydt[32] = J41-J42
+    dydt[33] = J43-J44
+    dydt[34] = -J45+J46-J47+J48-J49+J50-J51+J52-J53+J54
+    dydt[35] = J45-J46
+    dydt[36] = J47-J48
+    dydt[37] = J49-J50
+    dydt[38] = J51-J52
+    dydt[39] = J53-J54
+    dydt[40] = -J55+J56-J57+J58-J59+J60-J61+J62-J63+J64
+    dydt[41] = J55-J56
+    dydt[42] = J57-J58
+    dydt[43] = J59-J60
+    dydt[44] = J61-J62
+    dydt[45] = J63-J64
+    dydt[46] = -J65-J67-J69+J72
+    dydt[47] = J66+J68+J70-J71
+    dydt[48] = J65-J66
+    dydt[49] = J67-J68
+    dydt[50] = J69-J70
+    dydt[51] =-J71+J72
+    dydt[52] = J71-J72
+
+    return dydt
