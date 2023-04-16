@@ -251,4 +251,4 @@ new_params = jnp.array(param_vals_sobol_MA_corr).reshape((n_cores,params_shape[0
 
 sols_sobol_MA = qoi_fn_pmap(new_params, rhs, rhs_stress, y0)
 
-np.save(savedir + 'sols_sobol_corr.npy', np.array(sols_sobol_corr))
+np.save(savedir + 'sols_sobol_corr.npy', np.array(sols_sobol_MA))
