@@ -210,7 +210,7 @@ def single_model_eval(params, rhs_basal, rhs_stress, y0, ampkar_idx=46, pampkar_
     stress_ratio = sol_stress[0].ys[-1,pampkar_idx]/sol_stress[0].ys[-1,ampkar_idx]
     norm_change = (stress_ratio - basal_ratio) / basal_ratio
     
-    return jnp.array([norm_change, basal_ratio, stress_ratio])
+    return jnp.array([norm_change, basal_ratio, stress_ratio, sol_basal[1], sol_stress[1]])
 
 ################################################
 #                   Model RHS                  #
