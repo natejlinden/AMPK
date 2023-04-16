@@ -10,8 +10,9 @@ import multiprocessing as mp
 
 # use all available cores (do before loading jax)
 # required for parallel cpu runs
-print('Using {} cores'.format(mp.cpu_count()))
-xla_flag = '--xla_force_host_platform_device_count=' + str(mp.cpu_count())
+n_cores = mp.cpu_count()
+print('Using {} cores'.format(n_cores))
+xla_flag = '--xla_force_host_platform_device_count=' + str(n_cores)
 os.environ['XLA_FLAGS']=xla_flag
 
 import jax
@@ -223,7 +224,7 @@ rhs_stress = dfrx.ODETerm(rhs_stress)
 # Full scale case with large number of samples #
 ################################################
 # generate samples using the Sobol sampling method
-nsamps = 4 #2048
+nsamps = 2048
 param_vals_sobol_MA = sobol_samp.sample(bounds_MA, nsamps, calc_second_order=True, seed=seed)
 param_vals_sobol_MM = sobol_samp.sample(bounds_MM, nsamps, calc_second_order=True, seed=seed)
 
@@ -241,9 +242,13 @@ for kcat_i, kon_i, km_i in zip(kcat_idxs_MA, kon_idxs_MA, km_idxs_MM):
 np.save(savedir + 'param_vals_sobol_MA_corr.npy', np.array(param_vals_sobol_MA_corr))
 
 # Run simulations
-qoi_fn = lambda params: single_model_eval(params, rhs, rhs_stress, y0)
-qoi_fn_pmap = jax.pmap(single_model_eval, in_axes=(0, None, None, None))
+# qoi_fn = lambda params: single_model_eval(params, rhs, rhs_stress, y0)
+qoi_fn_vmap = jax.vmap(single_model_eval, in_axes=(0,None,None,None))
+qoi_fn_pmap = jax.pmap(qoi_fn_vmap, in_axes=(0,None,None,None))
 print('Running simulations...')
-sols_sobol_MA = qoi_fn_pmap(param_vals_sobol_MA, rhs, rhs_stress, y0)
+params_shape = param_vals_sobol_MA_corr.shape
+new_params = jnp.array(param_vals_sobol_MA_corr).reshape((n_cores,params_shape[0]//n_cores,params_shape[1]))
+
+sols_sobol_MA = qoi_fn_pmap(new_params, rhs, rhs_stress, y0)
 
 np.save(savedir + 'sols_sobol_corr.npy', np.array(sols_sobol_corr))
