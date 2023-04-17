@@ -43,7 +43,7 @@ if not os.path.exists(savedir):
 
 try:
 	with open(savedir+'temp.text', 'w') as f:
-		f.write(str(jax.devices())
+		f.write(str(jax.devices()))
 except:
 	print('err')
 
