@@ -28,18 +28,24 @@ from gsa_utils import *
 
 jax.config.update('jax_enable_x64', True)
 jax.config.update('jax_platform_name', 'cpu')
-print(jax.device_count())
+print(jax.devices())
 ############################################
 # Setup output directory #
 ############################################
 dir = sys.argv[1]
 print('Saving to: ', dir)
 
-fname = 'MA_double_mech'
+fname = 'MA_double_mech/'
 savedir = dir+fname
 if not os.path.exists(savedir):
     os.makedirs(savedir)
     print('Created directory: ', savedir)
+
+try:
+	with open(savedir+'temp.text', 'w') as f:
+		f.write(str(jax.devices())
+except:
+	print('err')
 
 ############################################
 # Bounds and info for params #
