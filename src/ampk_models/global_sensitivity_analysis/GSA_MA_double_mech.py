@@ -26,18 +26,26 @@ sys.path.insert(0, '../odes')
 import ampk_MA_double_mech_diffrax as model
 from gsa_utils import *
 
-print(jax.device_count())
+jax.config.update('jax_enable_x64', True)
+jax.config.update('jax_platform_name', 'cpu')
+print(jax.devices())
 ############################################
 # Setup output directory #
 ############################################
 dir = sys.argv[1]
 print('Saving to: ', dir)
 
-fname = 'MA_double_mech'
+fname = 'MA_double_mech/'
 savedir = dir+fname
 if not os.path.exists(savedir):
     os.makedirs(savedir)
     print('Created directory: ', savedir)
+
+try:
+	with open(savedir+'temp.text', 'w') as f:
+		f.write(str(jax.devices()))
+except:
+	print('err')
 
 ############################################
 # Bounds and info for params #
@@ -138,6 +146,7 @@ nominal_vals_MM = [
    6.7e-2, # KmPP
    6.33, # kPhosAMPK
    4.67e-3, # KmAMPK
+
    1.1e-1, # kDephosPP1
    6.7e-2, # KmPP1
    1e-3, # AMPKAR
@@ -224,7 +233,7 @@ rhs_stress = dfrx.ODETerm(rhs_stress)
 # Full scale case with large number of samples #
 ################################################
 # generate samples using the Sobol sampling method
-nsamps = 2048
+nsamps = 1024
 param_vals_sobol_MA = sobol_samp.sample(bounds_MA, nsamps, calc_second_order=True, seed=seed)
 param_vals_sobol_MM = sobol_samp.sample(bounds_MM, nsamps, calc_second_order=True, seed=seed)
 

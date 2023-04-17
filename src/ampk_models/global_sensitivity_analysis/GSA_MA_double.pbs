@@ -1,8 +1,8 @@
 #!/bin/csh
 #PBS -q home-hopper
 #PBS -N GSA_MA_single
-#PBS -l nodes=1:ppn=64:rack13
-#PBS -l walltime=02:00:00
+#PBS -l nodes=1:ppn=32:rack13
+#PBS -l walltime=08:00:00
 #PBS -e /oasis/tscc/scratch/nlinden/AMPK/err_GSA_MA_double.txt
 #PBS -o /oasis/tscc/scratch/nlinden/AMPK/out_GSA_MA_double.txt
 #PBS -V
