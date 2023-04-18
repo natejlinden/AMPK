@@ -7,12 +7,21 @@ from SALib.analyze.hdmr import analyze as hdmr_analyze
 import os
 import sys
 import multiprocessing as mp
+import time
+import math
+
+# get user inputs
+dir = sys.argv[1]
+cpu_mult = int(sys.argv[2])
 
 # use all available cores (do before loading jax)
 # required for parallel cpu runs
 n_cores = mp.cpu_count()
 print('Using {} cores'.format(n_cores))
-xla_flag = '--xla_force_host_platform_device_count=' + str(n_cores)
+n_devices = int(2**np.ceil(math.log(cpu_mult*n_cores, 2))) # sets n_devices to the next largest power of 2
+print('Set {} XLA devices'.format(n_devices))
+
+xla_flag = '--xla_force_host_platform_device_count={}'.format(n_devices)
 os.environ['XLA_FLAGS']=xla_flag
 
 import jax
@@ -28,11 +37,10 @@ from gsa_utils import *
 
 jax.config.update('jax_enable_x64', True)
 jax.config.update('jax_platform_name', 'cpu')
-print(jax.devices())
+print(len(jax.devices()))
 ############################################
 # Setup output directory #
 ############################################
-dir = sys.argv[1]
 print('Saving to: ', dir)
 
 fname = 'MA_double_mech/'
@@ -40,12 +48,6 @@ savedir = dir+fname
 if not os.path.exists(savedir):
     os.makedirs(savedir)
     print('Created directory: ', savedir)
-
-try:
-	with open(savedir+'temp.text', 'w') as f:
-		f.write(str(jax.devices()))
-except:
-	print('err')
 
 ############################################
 # Bounds and info for params #
@@ -221,6 +223,13 @@ def single_model_eval(params, rhs_basal, rhs_stress, y0, ampkar_idx=46, pampkar_
     
     return jnp.array([norm_change, basal_ratio, stress_ratio, sol_basal[1], sol_stress[1]])
 
+@jax.jit
+def single_model_eval_nansafe(params, rhs_basal, rhs_stress, y0):
+    pred = jnp.sum(jnp.isnan(params))
+    false_fun = lambda params: single_model_eval(params, rhs_basal, rhs_stress, y0)
+    true_fun = lambda params: jnp.array([jnp.nan, jnp.nan, jnp.nan, jnp.nan, jnp.nan])
+    return lax.cond(pred, true_fun, false_fun, params)
+
 ################################################
 #                   Model RHS                  #
 ################################################
@@ -251,13 +260,38 @@ for kcat_i, kon_i, km_i in zip(kcat_idxs_MA, kon_idxs_MA, km_idxs_MM):
 np.save(savedir + 'param_vals_sobol_MA_corr.npy', np.array(param_vals_sobol_MA_corr))
 
 # Run simulations
+print('Reshaping input parameters...')
 # qoi_fn = lambda params: single_model_eval(params, rhs, rhs_stress, y0)
-qoi_fn_vmap = jax.vmap(single_model_eval, in_axes=(0,None,None,None))
-qoi_fn_pmap = jax.pmap(qoi_fn_vmap, in_axes=(0,None,None,None))
+# qoi_fn_vmap = jax.vmap(single_model_eval, in_axes=(0,None,None,None))
+qoi_fn_pmap = jax.pmap(single_model_eval_nansafe, in_axes=(0,None,None,None))
+
+params_shape = param_vals_sobol_MA_corr.shape # get shape of parameter vectors (n_sampls, n_params)
+# the parameter vector needs to be shape (n_loops, n_devices, n_params)
+# n_loops needs to be the integer which is larger than n_sampls//n_devices
+# thus we need to pad any extra entries added with nans
+# for example if we have 120 parameter set, then we need to add 8 row of nans
+pad = int((np.ceil(params_shape[0]/n_devices)*n_devices)-params_shape[0]) #params_shape[0] % n_devices
+if pad:
+    pad_mat = np.empty((pad, params_shape[1]))
+    pad_mat[:] = np.nan
+    param_vals_sobol_MA_corr = np.vstack((param_vals_sobol_MA_corr, pad_mat))
+
+# now we can reshape the parameter vector accordingly
+n_loops = int(np.ceil(params_shape[0]/n_devices))
+new_params = jnp.array(param_vals_sobol_MA_corr).reshape((n_loops,n_devices,params_shape[1]))
+
+# we are now ready to run simulations
 print('Running simulations...')
-params_shape = param_vals_sobol_MA_corr.shape
-new_params = jnp.array(param_vals_sobol_MA_corr).reshape((n_cores,params_shape[0]//n_cores,params_shape[1]))
+sols_sobol_MA =[]
+tnow = time.time()
+for i in range(n_loops):
+    sol = qoi_fn_pmap(new_params[i,:,:], rhs, rhs_stress, y0)
+    sols_sobol_MA.append(sol)
+tend = time.time()
 
-sols_sobol_MA = qoi_fn_pmap(new_params, rhs, rhs_stress, y0)
+print('Simulations took {} seconds'.format(tend-tnow))
+print('Saving results...')
+np.save(savedir + 'sols_sobol_corr.npy', jnp.array(sols_sobol_MA))
 
-np.save(savedir + 'sols_sobol_corr.npy', np.array(sols_sobol_MA))
+print('Complete!')
+quit()
