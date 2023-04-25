@@ -96,7 +96,7 @@ idxs = [state_names.index(item) for item in to_set]
 
 print(idxs)
 
-y0 = np.zeros((53,))
+y0 = np.zeros((27,))
 y0[idxs[0]] = 2e-5   # 'AMP' mM
 y0[idxs[1]] = 1.3e-1 # 'ADP mM
 y0[idxs[2]] = 8.2   # 'ATP mM
