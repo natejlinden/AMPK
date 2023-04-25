@@ -206,7 +206,7 @@ def solve_to_steady_state(params, rhs, y0, thresh=1e-10):
 
 # jitable function to compute the qois
 @jax.jit
-def single_model_eval(params, rhs_basal, rhs_stress, y0, ampkar_idx=46, pampkar_idx=47):
+def single_model_eval(params, rhs_basal, rhs_stress, y0, ampkar_idx=22, pampkar_idx=23):
     # update y0 for AMPKAR
     y0 = y0.at[ampkar_idx].set(params[-1])
 
