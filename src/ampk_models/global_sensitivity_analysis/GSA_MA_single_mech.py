@@ -1,10 +1,11 @@
+import os
+#os.environ['OPENBLAS_NUM_THREADS'] = '1'
 import numpy as np
 from SALib.sample import sobol as sobol_samp
 from SALib.sample import morris as morris_samp
 from SALib.analyze import sobol as sobol_analyze
 from SALib.analyze import morris as morris_analyze
 from SALib.analyze.hdmr import analyze as hdmr_analyze
-import os
 import sys
 import multiprocessing as mp
 import time
