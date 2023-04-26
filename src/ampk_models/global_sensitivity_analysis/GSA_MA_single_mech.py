@@ -282,11 +282,12 @@ new_params = jnp.array(param_vals_sobol_MA_corr).reshape((n_loops,n_devices,para
 
 # we are now ready to run simulations
 print('Running simulations...')
-sols_sobol_MA =[]
+sols_sobol_MA = []
 tnow = time.time()
 for i in range(n_loops):
     sol = qoi_fn_pmap(new_params[i,:,:], rhs, rhs_stress, y0)
     sols_sobol_MA.append(sol)
+    print('Completed loop', i, 'of', n_loops)
 tend = time.time()
 
 print('Simulations took {} seconds'.format(tend-tnow))

@@ -248,6 +248,7 @@ tnow = time.time()
 for i in range(n_loops):
     sol = qoi_fn_pmap(new_params[i,:,:], rhs, rhs_stress, y0)
     sols_sobol_MM.append(sol)
+    print('Completed loop', i, 'of', n_loops)
 tend = time.time()
 
 print('Simulations took {} seconds'.format(tend-tnow))
