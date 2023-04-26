@@ -97,7 +97,7 @@ idxs = [state_names.index(item) for item in to_set]
 
 print(idxs)
 
-y0 = np.zeros((27,))
+y0 = np.zeros((len(state_names),))
 y0[idxs[0]] = 2e-5   # 'AMP' mM
 y0[idxs[1]] = 1.3e-1 # 'ADP mM
 y0[idxs[2]] = 8.2   # 'ATP mM
@@ -109,6 +109,8 @@ y0[idxs[7]] = 0.1   # 'AMPKAR mM
 y0[idxs[8]] = 1.0   # 'CaMKK_AMPK mM
 
 y0 = np.array(y0)
+
+print(y0)
 
 # function to compute all MA params from sampled params
 def compute_MA_params(params):
@@ -243,7 +245,7 @@ rhs_stress = dfrx.ODETerm(rhs_stress)
 # Full scale case with large number of samples #
 ################################################
 # generate samples using the Sobol sampling method
-nsamps = 1024
+nsamps = 2 #1024
 param_vals_sobol_MA = sobol_samp.sample(bounds_MA, nsamps, calc_second_order=True, seed=seed)
 param_vals_sobol_MM = sobol_samp.sample(bounds_MM, nsamps, calc_second_order=True, seed=seed)
 
@@ -293,7 +295,7 @@ tend = time.time()
 
 print('Simulations took {} seconds'.format(tend-tnow))
 print('Saving results...')
-np.save(savedir + 'sols_sobol_corr.npy', jnp.array(sols_sobol_MA))
+jnp.save(savedir + 'sols_sobol_corr.npy', jnp.array(sols_sobol_MA))
 
 print('Complete!')
 quit()
