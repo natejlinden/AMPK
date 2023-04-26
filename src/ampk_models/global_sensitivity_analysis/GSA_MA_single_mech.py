@@ -1,5 +1,5 @@
 import os
-os.environ['OPENBLAS_NUM_THREADS'] = '1'
+#os.environ['OPENBLAS_NUM_THREADS'] = '1'
 import numpy as np
 from SALib.sample import sobol as sobol_samp
 from SALib.sample import morris as morris_samp
@@ -295,7 +295,7 @@ tend = time.time()
 
 print('Simulations took {} seconds'.format(tend-tnow))
 print('Saving results...')
-jnp.save(savedir + 'sols_sobol_corr.npy', jnp.array(sols_sobol_MA))
+np.save(savedir + 'sols_sobol_corr.npy', jnp.array(sols_sobol_MA))
 
 print('Complete!')
 quit()
