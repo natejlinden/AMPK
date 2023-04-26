@@ -223,7 +223,7 @@ def single_model_eval(params, rhs_basal, rhs_stress, y0, ampkar_idx=22, pampkar_
     stress_ratio = sol_stress[0].ys[-1,pampkar_idx]/sol_stress[0].ys[-1,ampkar_idx]
     norm_change = (stress_ratio - basal_ratio) / basal_ratio
     
-    return jnp.array([norm_change, basal_ratio, stress_ratio, sol_basal[1], sol_stress[1]])
+    return norm_change #, basal_ratio, stress_ratio, sol_basal[1], sol_stress[1]])
 
 @jax.jit
 def single_model_eval_nansafe(params, rhs_basal, rhs_stress, y0):
@@ -244,7 +244,7 @@ rhs_stress = dfrx.ODETerm(rhs_stress)
 # Full scale case with large number of samples #
 ################################################
 # generate samples using the Sobol sampling method
-nsamps = 2 #1024
+nsamps = 1024
 param_vals_sobol_MA = sobol_samp.sample(bounds_MA, nsamps, calc_second_order=True, seed=seed)
 param_vals_sobol_MM = sobol_samp.sample(bounds_MM, nsamps, calc_second_order=True, seed=seed)
 
@@ -294,7 +294,7 @@ tend = time.time()
 
 print('Simulations took {} seconds'.format(tend-tnow))
 print('Saving results...')
-jnp.save(savedir + 'sols_sobol_corr.npy', jnp.array(sols_sobol_MA))
+np.save(savedir + 'sols_sobol_corr.npy', jnp.array(sols_sobol_MA))
 
 print('Complete!')
 quit()
