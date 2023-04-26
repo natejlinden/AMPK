@@ -242,7 +242,7 @@ rhs_stress = dfrx.ODETerm(rhs_stress)
 # Full scale case with large number of samples #
 ################################################
 # generate samples using the Sobol sampling method
-nsamps = 1024
+nsamps = 2 #1024
 param_vals_sobol_MA = sobol_samp.sample(bounds_MA, nsamps, calc_second_order=True, seed=seed)
 param_vals_sobol_MM = sobol_samp.sample(bounds_MM, nsamps, calc_second_order=True, seed=seed)
 
@@ -287,6 +287,7 @@ tnow = time.time()
 for i in range(n_loops):
     sol = qoi_fn_pmap(new_params[i,:,:], rhs, rhs_stress, y0)
     sols_sobol_MA.append(sol)
+    print('loop', i, 'of', n_loops, 'complete')
 tend = time.time()
 
 print('Simulations took {} seconds'.format(tend-tnow))
