@@ -223,6 +223,7 @@ def single_model_eval(params, rhs_basal, rhs_stress, y0, ampkar_idx=46, pampkar_
     
     return jnp.array([norm_change, basal_ratio, stress_ratio, sol_basal[1], sol_stress[1]])
 
+
 @jax.jit
 def single_model_eval_nansafe(params, rhs_basal, rhs_stress, y0):
     pred = jnp.sum(jnp.isnan(params))

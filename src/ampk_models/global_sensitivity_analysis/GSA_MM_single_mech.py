@@ -248,12 +248,13 @@ tnow = time.time()
 for i in range(n_loops):
     sol = qoi_fn_pmap(new_params[i,:,:], rhs, rhs_stress, y0)
     sols_sobol_MM.append(sol)
+    #jnp.save(savedir + 'sols_sobol_corr_' + str(i) + '.npy', sol)
     print('Completed loop', i, 'of', n_loops)
 tend = time.time()
 
 print('Simulations took {} seconds'.format(tend-tnow))
 print('Saving results...')
-jnp.save(savedir + 'sols_sobol_corr.npy', jnp.array(sols_sobol_MM))
+np.save(savedir + 'sols_sobol_corr.npy', np.array(sols_sobol_MM))
 
 print('Complete!')
 quit()
