@@ -44,4 +44,4 @@ def get_left_nullspace_vecs_invariants(rhs, sym_fluxes):
     # compute list of invariants
     invariants = [ns_vec.transpose()*states for ns_vec in left_nulls]
 
-    return stoichiometry, left_nulls, invariants 
+    return stoichiometry, left_nulls, invariants
