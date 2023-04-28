@@ -141,16 +141,28 @@ seed = np.random.seed(seed=2048)
 #####################################################################
 ## Now test a solve to steady-state function
 # jitable function to run the system to steady-state
+@ jax.jit
+def deriv(sol, params, ampkar_idx=23, pampkar_idx=24):
+    """Uses quotient rule to compute derivative of pAMPKAR/AMPKAR"""
+    d_dt = rhs.vector_field(0.0, sol.ys[-1,:], params)
+    ampkar = sol.ys[-1,ampkar_idx]
+    pAmpkar = sol.ys[-1,pampkar_idx]
+
+    return (ampkar*d_dt[pampkar_idx] - pAmpkar*d_dt[ampkar_idx])/(ampkar**2)
+
+## Now test a solve to steady-state function
+# jitable function to run the system to steady-state
 @jax.jit
-def solve_to_steady_state(params, rhs, y0, thresh=1e-10):
+def solve_to_steady_state(params, rhs, y0, thresh=1e-15):
     solver=dfrx.Kvaerno5()
-    stepsize_controller = dfrx.PIDController(rtol=1e-8, atol=1e-8)
+    stepsize_controller = dfrx.PIDController(rtol=1e-10, atol=1e-10)
     t0 = 0.0
-    t1 = 1000.0 # 1000 seconds
-    times = np.arange(t0, t1, t1/100)
+    t1 = 3000.0 # 1000 seconds
+    times = jnp.arange(t0, t1, t1/100)
     dt0 = 1e-6 # initial time step
     saveat=dfrx.SaveAt(ts=times)
-    times_repeat = np.arange(t0, 100, 100/100)
+    repeat_step = 1000.0
+    times_repeat = jnp.arange(t0, repeat_step, repeat_step/100)
     saveat_repeat=dfrx.SaveAt(ts=times_repeat)
 
     # initial solve
@@ -163,15 +175,16 @@ def solve_to_steady_state(params, rhs, y0, thresh=1e-10):
         args=params)
 
     # solve to steady-state
-    # cond_fun checks for steady-state by checking the norm of the RHS
-    cond_fun = lambda sol: jnp.linalg.norm(rhs.vector_field(0.0, sol[0].ys[-1,:], params)) > thresh
+    # cond_fun checks for steady-state by checking that d/dt pAMPKAR/AMPKAR < thresh
+    max_time = 2e6
+    cond_fun = lambda sol: (jnp.abs(deriv(sol[0], params)) > thresh) & (sol[1] < max_time)
     # body_fun solves the ODEs for 100 more seconds
-    body_fun = lambda sol: (dfrx.diffeqsolve(rhs, solver, t0, 100, dt0, sol[0].ys[-1,:], 
+    body_fun = lambda sol: (dfrx.diffeqsolve(rhs, solver, t0, repeat_step, dt0, sol[0].ys[-1,:], 
         saveat=saveat_repeat, stepsize_controller=stepsize_controller, args=params),
-        sol[1]+100)
+        sol[1]+repeat_step)
     
     # while loop until steady state condition is reached
-    sol_final = lax.while_loop(cond_fun, body_fun, (sol, 1000))
+    sol_final = lax.while_loop(cond_fun, body_fun, (sol, t1))
     
     return sol_final # returns the final state
 
@@ -180,27 +193,26 @@ def solve_to_steady_state(params, rhs, y0, thresh=1e-10):
 def single_model_eval(params, rhs_basal, rhs_stress, y0, ampkar_idx=23, pampkar_idx=24):
     # update y0 for AMPKAR
     y0 = y0.at[ampkar_idx].set(params[-1])
-
+    params = compute_MM_params(params)
     # find basal steady-state
-    sol_basal = solve_to_steady_state(params, rhs_basal, y0, 1e-12)
+    sol_basal = solve_to_steady_state(params, rhs_basal, y0, 1e-14)
 
     # apply stimulus and run again
-    sol_stress = solve_to_steady_state(params, rhs_stress, sol_basal[0].ys[-1,:], 1e-10)
+    sol_stress = solve_to_steady_state(params, rhs_stress, sol_basal[0].ys[-1,:], 1e-14)
 
     # compute the ratio of pAMPKAR/AMPKAR at the end of the stress simulation
     basal_ratio = sol_basal[0].ys[-1,pampkar_idx]/sol_basal[0].ys[-1,ampkar_idx]
     stress_ratio = sol_stress[0].ys[-1,pampkar_idx]/sol_stress[0].ys[-1,ampkar_idx]
     norm_change = (stress_ratio - basal_ratio) / basal_ratio
     
-    return jnp.array([norm_change, basal_ratio, stress_ratio, sol_basal[1], sol_stress[1]])
+    return jnp.array([norm_change, basal_ratio, stress_ratio])
 
 @jax.jit
 def single_model_eval_nansafe(params, rhs_basal, rhs_stress, y0):
     pred = jnp.sum(jnp.isnan(params))
     false_fun = lambda params: single_model_eval(params, rhs_basal, rhs_stress, y0)
-    true_fun = lambda params: jnp.array([jnp.nan, jnp.nan, jnp.nan, jnp.nan, jnp.nan])
+    true_fun = lambda params: jnp.array([jnp.nan, jnp.nan, jnp.nan])
     return lax.cond(pred, true_fun, false_fun, params)
-
 ################################################
 #                   Model RHS                  #
 ################################################
