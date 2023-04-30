@@ -139,78 +139,54 @@ seed = np.random.seed(seed=2048)
 #####################################################################
 # SET UP Jitable functions to solve to steady-state and compute qoi #
 #####################################################################
-## Now test a solve to steady-state function
-# jitable function to run the system to steady-state
-@ jax.jit
-def deriv(sol, params, ampkar_idx=23, pampkar_idx=24):
-    """Uses quotient rule to compute derivative of pAMPKAR/AMPKAR"""
-    d_dt = rhs.vector_field(0.0, sol.ys[-1,:], params)
-    ampkar = sol.ys[-1,ampkar_idx]
-    pAmpkar = sol.ys[-1,pampkar_idx]
-
-    return (ampkar*d_dt[pampkar_idx] - pAmpkar*d_dt[ampkar_idx])/(ampkar**2)
-
-## Now test a solve to steady-state function
-# jitable function to run the system to steady-state
 @jax.jit
-def solve_to_steady_state(params, rhs, y0, thresh=1e-15):
+def solve_to_steady_state(params, rhs, y0): #, thresh=1e-16):
     solver=dfrx.Kvaerno5()
+    event = dfrx.SteadyStateEvent(rtol=1e-12, atol=1e-12)
     stepsize_controller = dfrx.PIDController(rtol=1e-10, atol=1e-10)
     t0 = 0.0
-    t1 = 3000.0 # 1000 seconds
-    times = jnp.arange(t0, t1, t1/100)
-    dt0 = 1e-6 # initial time step
-    saveat=dfrx.SaveAt(ts=times)
-    repeat_step = 1000.0
-    times_repeat = jnp.arange(t0, repeat_step, repeat_step/100)
-    saveat_repeat=dfrx.SaveAt(ts=times_repeat)
+    t1 = 5e6 # 3000.0 # 1000 seconds
+    dt0 = 1e-8 # initial time step
 
     # initial solve
     sol = dfrx.diffeqsolve(
         rhs, 
         solver, 
-        t0, t1, dt0, 
+        t0, 
+        t1, # max time if ss check is not met
+        dt0, 
         y0, 
-        saveat=saveat, stepsize_controller=stepsize_controller,
+        # saveat=saveat, 
+        discrete_terminating_event=event,
+        stepsize_controller=stepsize_controller,
         args=params)
-
-    # solve to steady-state
-    # cond_fun checks for steady-state by checking that d/dt pAMPKAR/AMPKAR < thresh
-    max_time = 2e6
-    cond_fun = lambda sol: (jnp.abs(deriv(sol[0], params)) > thresh) & (sol[1] < max_time)
-    # body_fun solves the ODEs for 100 more seconds
-    body_fun = lambda sol: (dfrx.diffeqsolve(rhs, solver, t0, repeat_step, dt0, sol[0].ys[-1,:], 
-        saveat=saveat_repeat, stepsize_controller=stepsize_controller, args=params),
-        sol[1]+repeat_step)
     
-    # while loop until steady state condition is reached
-    sol_final = lax.while_loop(cond_fun, body_fun, (sol, t1))
-    
-    return sol_final # returns the final state
-
+    return sol # returns the final state
 # jitable function to compute the qois
 @jax.jit
 def single_model_eval(params, rhs_basal, rhs_stress, y0, ampkar_idx=23, pampkar_idx=24):
     # update y0 for AMPKAR
     y0 = y0.at[ampkar_idx].set(params[-1])
     params = compute_MM_params(params)
+
     # find basal steady-state
-    sol_basal = solve_to_steady_state(params, rhs_basal, y0, 1e-14)
+    sol_basal = solve_to_steady_state(params, rhs_basal, y0) #, 1e-16)
 
     # apply stimulus and run again
-    sol_stress = solve_to_steady_state(params, rhs_stress, sol_basal[0].ys[-1,:], 1e-14)
+    sol_stress = solve_to_steady_state(params, rhs_stress, sol_basal.ys[-1,:]) #, 1e-16)
 
     # compute the ratio of pAMPKAR/AMPKAR at the end of the stress simulation
-    basal_ratio = sol_basal[0].ys[-1,pampkar_idx]/sol_basal[0].ys[-1,ampkar_idx]
-    stress_ratio = sol_stress[0].ys[-1,pampkar_idx]/sol_stress[0].ys[-1,ampkar_idx]
+    basal_ratio = sol_basal.ys[0,pampkar_idx]/sol_basal.ys[0,ampkar_idx]
+    stress_ratio = sol_stress.ys[0,pampkar_idx]/sol_stress.ys[0,ampkar_idx]
     norm_change = (stress_ratio - basal_ratio) / basal_ratio
     
-    return jnp.array([norm_change, basal_ratio, stress_ratio])
+    return jnp.array([norm_change, sol_basal.ts[0], sol_stress.ts[0]])
 
 @jax.jit
-def single_model_eval_nansafe(params, rhs_basal, rhs_stress, y0):
+def single_model_eval_nansafe(params, rhs_basal, rhs_stress, y0, ampkar_idx=23, pampkar_idx=24):
     pred = jnp.sum(jnp.isnan(params))
-    false_fun = lambda params: single_model_eval(params, rhs_basal, rhs_stress, y0)
+    false_fun = lambda params: single_model_eval(params, rhs_basal, 
+                                                 rhs_stress, y0, ampkar_idx, pampkar_idx)
     true_fun = lambda params: jnp.array([jnp.nan, jnp.nan, jnp.nan])
     return lax.cond(pred, true_fun, false_fun, params)
 ################################################
@@ -236,7 +212,7 @@ np.save(savedir + 'param_vals_sobol_MM_corr.npy', param_vals_sobol_MM_np)
 print('Reshaping input parameters...')
 # qoi_fn = lambda params: double_model_eval(params, rhs, rhs_stress, y0)
 # qoi_fn_vmap = jax.vmap(double_model_eval, in_axes=(0,None,None,None))
-qoi_fn_pmap = jax.pmap(single_model_eval_nansafe, in_axes=(0,None,None,None))
+qoi_fn_pmap = jax.pmap(single_model_eval_nansafe, in_axes=(0,None,None,None,None,None))
 
 params_shape = param_vals_sobol_MM_np.shape # get shape of parameter vectors (n_sampls, n_params)
 # the parameter vector needs to be shape (n_loops, n_devices, n_params)
@@ -253,12 +229,14 @@ if pad:
 n_loops = int(np.ceil(params_shape[0]/n_devices))
 new_params = jnp.array(param_vals_sobol_MM_np).reshape((n_loops,n_devices,params_shape[1]))
 
+ampkar_idx = state_names.index('AMPKAR')
+pampkar_idx = state_names.index('pAMPKAR')
 # we are now ready to run simulations
 print('Running simulations...')
 sols_sobol_MM =[]
 tnow = time.time()
 for i in range(n_loops):
-    sol = qoi_fn_pmap(new_params[i,:,:], rhs, rhs_stress, y0)
+    sol = qoi_fn_pmap(new_params[i,:,:], rhs, rhs_stress, y0, ampkar_idx, pampkar_idx)
     sols_sobol_MM.append(sol)
     print('Completed loop', i, 'of', n_loops)
 tend = time.time()
