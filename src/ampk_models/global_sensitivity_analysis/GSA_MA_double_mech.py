@@ -232,7 +232,7 @@ rhs_stress = dfrx.ODETerm(rhs_stress)
 # Full scale case with large number of samples #
 ################################################
 # generate samples using the Sobol sampling method
-nsamps = 1024
+nsamps = 4096 # 1024
 param_vals_sobol_MA = sobol_samp.sample(bounds_MA, nsamps, calc_second_order=True, seed=seed)
 param_vals_sobol_MM = sobol_samp.sample(bounds_MM, nsamps, calc_second_order=True, seed=seed)
 
@@ -247,7 +247,7 @@ km_idxs_MM = [4,6,8,10,12]
 for kcat_i, kon_i, km_i in zip(kcat_idxs_MA, kon_idxs_MA, km_idxs_MM):
     param_vals_sobol_MA_corr[:,kon_i] = (1+param_vals_sobol_MA_corr[:,kcat_i])/param_vals_sobol_MM_np[:,km_i]
 
-np.save(savedir + 'param_vals_sobol_MA_corr.npy', np.array(param_vals_sobol_MA_corr))
+np.save(savedir + 'param_vals_sobol_MA_corr_larger.npy', np.array(param_vals_sobol_MA_corr))
 
 # Run simulations
 print('Reshaping input parameters...')
@@ -284,7 +284,7 @@ tend = time.time()
 
 print('Simulations took {} seconds'.format(tend-tnow))
 print('Saving results...')
-np.save(savedir + 'sols_sobol_corr.npy', jnp.array(sols_sobol_MA))
+np.save(savedir + 'sols_sobol_corr_larger.npy', jnp.array(sols_sobol_MA))
 
 print('Complete!')
 quit()
