@@ -43,7 +43,8 @@ print(len(jax.devices()))
 ############################################
 print('Saving to: ', dir)
 
-fname = 'MA_double_mech/'
+# fname = 'MA_double_mech/'
+fname = 'MA_double_mech_newQoI/'
 savedir = dir+fname
 if not os.path.exists(savedir):
     os.makedirs(savedir)
