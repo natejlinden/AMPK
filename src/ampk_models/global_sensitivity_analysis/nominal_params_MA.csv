@@ -1,0 +1,15 @@
+parameter,value
+KdAMP,2.5e-3
+KdADP,1.5e-3
+KdATP,1.7e-3
+kOnCaMKK,90.467
+kPhosCaMKK,0.357
+kOnLKB1,0.742
+kPhosLKB1,3.92e-2
+kOnPP,16.56
+kDephosPP,1.1e-1
+kOnAMPK,1569.59
+kPhosAMPK,6.33
+kOnPP1,16.56
+kDephosPP1,1.1e-1
+AMPKAR_0,1e-3 
