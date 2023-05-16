@@ -189,11 +189,11 @@ def ampk_MM_double_mech_RHS(t, y, p):
         'ADP_ATP_AMPK': J12+J14-J33+J44,
         'ATP_ATP_AMPK': J15-J34+J42,
         # double AXP-pAMPK complexes
-        'AMP_AMP_pAMPK': J16+J29-J37,
-        'AMP_ADP_pAMPK': J17+J19-J30+J38,
+        'AMP_AMP_pAMPK': J16+J29+J37, 
+        'AMP_ADP_pAMPK': J17+J19+J30+J38, 
         'AMP_ATP_pAMPK': J18+J22+J31-J43,
         'ADP_ADP_pAMPK': J20+J32+J39,
-        'ADP_ATP_pAMPK': J21+J33-J44,
+        'ADP_ATP_pAMPK': J21+J23+J33-J44,
         'ATP_ATP_pAMPK': J24+J34-J42,
         # AMPKAR
         'AMPKAR': -J45-J46-J47+J48,

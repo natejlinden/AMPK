@@ -62,13 +62,17 @@ class ampk_MM_double_mech(eqx.Module):
         KmPP        = args[11]
         kAMPK       = args[12] # AMPK kinase
         KmAMPK      = args[13]
-        kPP1        = args[14] # pAMPKAR Phosphatase
+        kPP1        = args[14] # pAMPKAR Phosp  hatase
         KmPP1       = args[15] 
         # external enzyme concentrations
         CaMKKtot    = args[16]
         LKB1tot     = args[17]
         PPtot       = args[18]
         PP1tot      = args[19]
+
+        # AMPK and AMPKAR algebraic relations
+        AMPK = 
+        AMPKAR = 
 
         # FLUXES
         # single AXP complexing
@@ -132,38 +136,38 @@ class ampk_MM_double_mech(eqx.Module):
         Joxphos = (self.VmaxOxPhos * ((y[1]/self.Kadp)**self.n))/(1 + ((y[1]/self.Kadp)**self.n))
 
         # now return the odes for each state variable
-        dydt = jnp.zeros((25,)) # 53 state variables jax array
-        dydt = dydt.at[0].set(-J1-J4-J7-J8-J9-J16-J17-J18-Jak)
-        dydt = dydt.at[1].set(-J2-J5-J10-J11-J12-J19-J20-J21-Jgly+2*Jak+Jhydro-Joxphos)
-        dydt = dydt.at[2].set(-J3-J6-J13-J14-J15-J22-J23-J24+Jgly-Jak-Jhydro+Joxphos)
+        dydt = jnp.zeros((25,)) # 25 state variables jax array
+        dydt = dydt.at[0].set(-J1-J4-J7-J8-J9-J16-J17-J18-Jak) # AMP
+        dydt = dydt.at[1].set(-J2-J5-J10-J11-J12-J19-J20-J21-Jgly+(2*Jak)+Jhydro-Joxphos) # ADP
+        dydt = dydt.at[2].set(-J3-J6-J13-J14-J15-J22-J23-J24+Jgly-Jak-Jhydro+Joxphos) # ATP
         # free AMPK
-        dydt = dydt.at[3].set(-J1-J2-J3-J25+J40)
-        dydt = dydt.at[4].set(-J4-J5-J6+J25-J40)
+        dydt = dydt.at[3].set(-J1-J2-J3-J25+J40) # AMPK
+        dydt = dydt.at[4].set(-J4-J5-J6+J25-J40) # pAMPK
         # single AXP-AMPK complexes
-        dydt = dydt.at[5].set(J1-J7-J10-J13-J26-J35)
-        dydt = dydt.at[6].set(J2-J8-J11-J14-J27-J36)
-        dydt = dydt.at[7].set(J3-J9-J12-J15-J28+J41)
+        dydt = dydt.at[5].set(J1-J7-J10-J13-J26-J35) # AMP_AMPK
+        dydt = dydt.at[6].set(J2-J8-J11-J14-J27-J36) # ADP_AMPK
+        dydt = dydt.at[7].set(J3-J9-J12-J15-J28+J41) # ATP_AMPK
         # single AXP-pAMPK complexes
-        dydt = dydt.at[8].set(J4-J16-J19-J22+J26+J35)
-        dydt = dydt.at[9].set(J5-J17-J20-J23+J27+J36)
-        dydt = dydt.at[10].set(J6-J18-J21-J24+J28-J41)
+        dydt = dydt.at[8].set(J4-J16-J19-J22+J26+J35) # AMP_pAMPK
+        dydt = dydt.at[9].set(J5-J17-J20-J23+J27+J36) # ADP_pAMPK
+        dydt = dydt.at[10].set(J6-J18-J21-J24+J28-J41) # ATP_pAMPK
         # double AXP-AMPK complexes
-        dydt = dydt.at[11].set(J7-J29-J37)
-        dydt = dydt.at[12].set(J8+J10-J30-J38)
-        dydt = dydt.at[13].set(J9+J13-J31+J43)
-        dydt = dydt.at[14].set(J11-J32-J39)
-        dydt = dydt.at[15].set(J12+J14-J33+J44)
-        dydt = dydt.at[16].set(J15-J34+J42)
+        dydt = dydt.at[11].set(J7-J29-J37) # AMP_AMP_AMPK
+        dydt = dydt.at[12].set(J8+J10-J30-J38) # AMP_ADP_AMPK
+        dydt = dydt.at[13].set(J9+J13-J31+J43) # AMP_ATP_AMPK
+        dydt = dydt.at[14].set(J11-J32-J39) # ADP_ADP_AMPK
+        dydt = dydt.at[15].set(J12+J14-J33+J44) # ADP_ATP_AMPK
+        dydt = dydt.at[16].set(J15-J34+J42) # ATP_ATP_AMPK
         # double AXP-pAMPK complexes
-        dydt = dydt.at[17].set(J16+J29-J37)
-        dydt = dydt.at[18].set(J17+J19-J30+J38)
-        dydt = dydt.at[19].set(J18+J22+J31-J43)
-        dydt = dydt.at[20].set(J20+J32+J39)
-        dydt = dydt.at[21].set(J21+J33-J44)
-        dydt = dydt.at[22].set(J24+J34-J42)
+        dydt = dydt.at[17].set(J16+J29+J37) # AMP_AMP_pAMPK
+        dydt = dydt.at[18].set(J17+J19+J30+J38) # AMP_ADP_pAMPK
+        dydt = dydt.at[19].set(J18+J22+J31-J43) # AMP_ATP_pAMPK
+        dydt = dydt.at[20].set(J20+J32+J39) # ADP_ADP_pAMPK
+        dydt = dydt.at[21].set(J21+J23+J33-J44) # ADP_ATP_pAMPK
+        dydt = dydt.at[22].set(J24+J34-J42) # ATP_ATP_pAMPK
         # AMPKAR
-        dydt = dydt.at[23].set(-J45-J46-J47+J48)
-        dydt = dydt.at[24].set(J45+J46+J47-J48)
+        dydt = dydt.at[23].set(-J45-J46-J47+J48) # AMPKAR
+        dydt = dydt.at[24].set(J45+J46+J47-J48) # pAMPKAR
 
         return dydt
     
