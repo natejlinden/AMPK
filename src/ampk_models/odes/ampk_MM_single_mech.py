@@ -121,11 +121,11 @@ def ampk_MM_single_mech_RHS(t, y, p):
 
     # now return the odes for each state variable
     return {
-        'AMP': -J1-Jak,
-        'ADP': -J2-Jgly+2*Jak+Jhydro-Joxphos,
-        'ATP': -J3+Jgly-Jak-Jhydro+Joxphos,
+        'AMP': -J1-J4-Jak,
+        'ADP': -J2-J5-Jgly+2*Jak+Jhydro-Joxphos,
+        'ATP': -J3-J6+Jgly-Jak-Jhydro+Joxphos,
         # free AMPK
-        'AMPK': -J1-J2-J3-J7,
+        'AMPK': -J1-J2-J3-J7+J13,
         'pAMPK': -J4-J5-J6+J7-J13,
         # single AXP-AMPK complexes
         'AMP_AMPK': J1-J8-J11,
@@ -160,11 +160,11 @@ def ampk_MM_single_mech_RHS_sympyFluxVars():
         fluxes.append(item)
 
     return {
-        'AMP': -fluxes[0]-Jak,
-        'ADP': -fluxes[1]-Jgly+2*Jak+Jhydro-Joxphos,
-        'ATP': -fluxes[2]+Jgly-Jak-Jhydro+Joxphos,
+        'AMP': -fluxes[0]-fluxes[3]-Jak,
+        'ADP': -fluxes[1]-fluxes[4]-Jgly+2*Jak+Jhydro-Joxphos,
+        'ATP': -fluxes[2]-fluxes[5]+Jgly-Jak-Jhydro+Joxphos,
         # free AMPK
-        'AMPK': -fluxes[0]-fluxes[1]-fluxes[2]-fluxes[6],
+        'AMPK': -fluxes[0]-fluxes[1]-fluxes[2]-fluxes[6]+fluxes[12],
         'pAMPK': -fluxes[3]-fluxes[4]-fluxes[5]+fluxes[6]-fluxes[12],
         # single AXP-AMPK complexes
         'AMP_AMPK': fluxes[0]-fluxes[7]-fluxes[10],
@@ -182,9 +182,9 @@ def ampk_MM_single_mech_RHS_sympyFluxVars():
 
 
 # # Code for replacing flux terms with iterable indexes
-# for i in range(26):
+# for i in reversed(range(17)):
 #     #read input file
-#     fin = open("temp.txt", "rt")
+#     fin = open("../odes/tmp.txt", "rt")
 #     #read file contents to string
 #     data = fin.read()
 #     #replace all occurrences of the required string
@@ -192,7 +192,7 @@ def ampk_MM_single_mech_RHS_sympyFluxVars():
 #     #close the input file
 #     fin.close()
 #     #open the input file in write mode
-#     fin = open("temp.txt", "wt")
+#     fin = open("../odes/tmp.txt", "wt")
 #     #overrite the input file with the resulting data
 #     fin.write(data)
 #     #close the file

@@ -101,23 +101,23 @@ class ampk_MM_single_mech(eqx.Module):
 
         # now return the odes for each state variable
         dydt = jnp.zeros((13,)) # 53 state variables jax array
-        dydt = dydt.at[0].set(-J1-Jak)
-        dydt = dydt.at[1].set(-J2-Jgly+2*Jak+Jhydro-Joxphos)
-        dydt = dydt.at[2].set(-J3+Jgly-Jak-Jhydro+Joxphos)
+        dydt = dydt.at[0].set(-J1-J4-Jak) # AMP
+        dydt = dydt.at[1].set(-J2-J5-Jgly+2*Jak+Jhydro-Joxphos) # ADP
+        dydt = dydt.at[2].set(-J3-J6+Jgly-Jak-Jhydro+Joxphos) # ATP
         # free AMPK
-        dydt = dydt.at[3].set(-J1-J2-J3-J7)
-        dydt = dydt.at[4].set(-J4-J5-J6+J7-J13)
+        dydt = dydt.at[3].set(-J1-J2-J3-J7+J13) # AMPK
+        dydt = dydt.at[4].set(-J4-J5-J6+J7-J13) # pAMPK
         # single AXP-AMPK complexes
-        dydt = dydt.at[5].set(J1-J8-J11)
-        dydt = dydt.at[6].set(J2-J9-J12)
-        dydt = dydt.at[7].set(J3-J10+J14)
+        dydt = dydt.at[5].set(J1-J8-J11) # AMP_AMPK
+        dydt = dydt.at[6].set(J2-J9-J12) # ADP_AMPK
+        dydt = dydt.at[7].set(J3-J10+J14) # ATP_AMPK
         # single AXP-pAMPK complexes
-        dydt = dydt.at[8].set(J4+J8+J11)
-        dydt = dydt.at[9].set(J5+J9+J12)
-        dydt = dydt.at[10].set(J6+J10-J14)
+        dydt = dydt.at[8].set(J4+J8+J11) # AMP_pAMPK
+        dydt = dydt.at[9].set(J5+J9+J12) # ADP_pAMPK
+        dydt = dydt.at[10].set(J6+J10-J14) # ATP_pAMPK
         # AMPKAR
-        dydt = dydt.at[11].set(-J15+J16)
-        dydt = dydt.at[12].set(J15-J16)
+        dydt = dydt.at[11].set(-J15+J16) # AMPKAR
+        dydt = dydt.at[12].set(J15-J16) # pAMPKAR
 
         return dydt
     

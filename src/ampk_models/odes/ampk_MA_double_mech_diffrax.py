@@ -77,7 +77,7 @@ class ampk_MA_double_mech(eqx.Module):
         kOnPP1      = args[18] # Phosphatase AMPKAR binding
         kOffPP1     = args[19] 
         kDephosPP1  = args[20]
-
+        
         # FLUXES
         # single AXP complexing
         J1  = kOnAMP*y[0]*y[3]      - kOffAMP*y[5] # AMPK

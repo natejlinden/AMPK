@@ -126,42 +126,42 @@ class ampk_MA_single_mech(eqx.Module):
 
         # now return the odes for each state variable
         dydt = jnp.zeros((27,)) # 53 state variables jax array
-        dydt = dydt.at[0].set(-J1-J4-Jak)
-        dydt = dydt.at[1].set(-J2-J5-Jgly+2*Jak+Jhydro-Joxphos)
-        dydt = dydt.at[2].set(-J3-J6+Jgly-Jak-Jhydro+Joxphos)
+        dydt = dydt.at[0].set(-J1-J4-Jak) # AMP
+        dydt = dydt.at[1].set(-J2-J5-Jgly+2*Jak+Jhydro-Joxphos) # ADP
+        dydt = dydt.at[2].set(-J3-J6+Jgly-Jak-Jhydro+Joxphos) # ATP
         # free AMPK
-        dydt = dydt.at[3].set(-J1-J2-J7+J20)
-        dydt = dydt.at[4].set(-J4-J5-J6+J8-J19)
+        dydt = dydt.at[3].set(-J1-J2-J3-J7+J20) # AMPK
+        dydt = dydt.at[4].set(-J4-J5-J6+J8-J19) # pAMPK
         # single AXP-AMPK complexes
-        dydt = dydt.at[5].set(J1-J9-J15)
-        dydt = dydt.at[6].set(J2-J11-J17)
-        dydt = dydt.at[7].set(J3-J13+J22)
+        dydt = dydt.at[5].set(J1-J9-J15) # AMP_AMPK
+        dydt = dydt.at[6].set(J2-J11-J17) # ADP_AMPK
+        dydt = dydt.at[7].set(J3-J13+J22) # ATP_AMPK
         # single AXP-pAMPK complexes
-        dydt = dydt.at[8].set(J4+J10+J16-J23+J24)
-        dydt = dydt.at[9].set(J5+J12+J18)
-        dydt = dydt.at[10].set(J6+J14-J21)
+        dydt = dydt.at[8].set(J4+J10+J16-J23+J24) # AMP_pAMPK
+        dydt = dydt.at[9].set(J5+J12+J18) # ADP_pAMPK
+        dydt = dydt.at[10].set(J6+J14-J21) #  ATP_pAMPK
         # CaMKK complexes
-        dydt = dydt.at[11].set(-J7+J8-J9+J10-J11+J12-J13+J14)
-        dydt = dydt.at[12].set(J7-J8)
-        dydt = dydt.at[13].set(J9-J10)
-        dydt = dydt.at[14].set(J11-J12)
-        dydt = dydt.at[15].set(J13-J14)
+        dydt = dydt.at[11].set(-J7+J8-J9+J10-J11+J12-J13+J14) # CaMKK
+        dydt = dydt.at[12].set(J7-J8) # CaMKK_AMPK
+        dydt = dydt.at[13].set(J9-J10) # CaMKK_AMP_AMPK
+        dydt = dydt.at[14].set(J11-J12) # CaMKK_ADP_AMPK
+        dydt = dydt.at[15].set(J13-J14) # CaMKK_ATP_AMPK
         # LKB1 complexes
-        dydt = dydt.at[16].set(-J15+J16-J17+J18)
-        dydt = dydt.at[17].set(J15-J16)
-        dydt = dydt.at[18].set(J17-J18)
+        dydt = dydt.at[16].set(-J15+J16-J17+J18) # LKB1
+        dydt = dydt.at[17].set(J15-J16) # LKB1_AMP_AMPK
+        dydt = dydt.at[18].set(J17-J18) # LKB1_ADP_AMPK
         # AMPK phosphatase complexes
-        dydt = dydt.at[19].set(-J19+J20-J21+J22)
-        dydt = dydt.at[20].set(J19-J20)
-        dydt = dydt.at[21].set(J21-J22)
+        dydt = dydt.at[19].set(-J19+J20-J21+J22) # PP
+        dydt = dydt.at[20].set(J19-J20) # PP_pAMPK
+        dydt = dydt.at[21].set(J21-J22) # PP_ATP_pAMPK
         # free AMPKAR
-        dydt = dydt.at[22].set(-J23+J26)
-        dydt = dydt.at[23].set(J24-J25)
+        dydt = dydt.at[22].set(-J23+J26) # AMPKAR
+        dydt = dydt.at[23].set(J24-J25) # pAMPKAR
         # AMPKAR-pAMPK complexes
-        dydt = dydt.at[24].set(J23-J24)
+        dydt = dydt.at[24].set(J23-J24) # pAMPKAR_AMP_pAMPK
         # AMPKAR phosphatase complexes
-        dydt = dydt.at[25].set(-J25+J26)
-        dydt = dydt.at[26].set(J25-J26)
+        dydt = dydt.at[25].set(-J25+J26) # PP1
+        dydt = dydt.at[26].set(J25-J26) # PP1_pAMPKAR
 
         return dydt
 

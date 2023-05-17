@@ -70,10 +70,6 @@ class ampk_MM_double_mech(eqx.Module):
         PPtot       = args[18]
         PP1tot      = args[19]
 
-        # AMPK and AMPKAR algebraic relations
-        AMPK = 
-        AMPKAR = 
-
         # FLUXES
         # single AXP complexing
         J1 = kOnAMP*y[0]*y[3] - kOffAMP*y[5] # AMPK

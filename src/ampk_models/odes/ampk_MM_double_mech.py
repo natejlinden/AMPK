@@ -243,11 +243,11 @@ def ampk_MM_double_mech_RHS_sympyFluxVars():
         'ADP_ATP_AMPK': fluxes[11]+fluxes[13]-fluxes[32]+fluxes[43],
         'ATP_ATP_AMPK': fluxes[14]-fluxes[33]+fluxes[41],
         # double AXP-pAMPK complexes
-        'AMP_AMP_pAMPK': fluxes[15]+fluxes[28]-fluxes[36],
-        'AMP_ADP_pAMPK': fluxes[16]+fluxes[18]-fluxes[29]+fluxes[37],
+        'AMP_AMP_pAMPK': fluxes[15]+fluxes[28]+fluxes[36], 
+        'AMP_ADP_pAMPK': fluxes[16]+fluxes[18]+fluxes[29]+fluxes[37], 
         'AMP_ATP_pAMPK': fluxes[17]+fluxes[21]+fluxes[30]-fluxes[42],
         'ADP_ADP_pAMPK': fluxes[19]+fluxes[31]+fluxes[38],
-        'ADP_ATP_pAMPK': fluxes[20]+fluxes[32]-fluxes[43],
+        'ADP_ATP_pAMPK': fluxes[20]+fluxes[22]+fluxes[32]-fluxes[43],
         'ATP_ATP_pAMPK': fluxes[23]+fluxes[33]-fluxes[41],
         # AMPKAR
         'AMPKAR': -fluxes[44]-fluxes[45]-fluxes[46]+fluxes[47],
@@ -258,9 +258,9 @@ def ampk_MM_double_mech_RHS_sympyFluxVars():
 
 
 # # Code for replacing flux terms with iterable indexes
-# for i in range(26):
+# for i in reversed(range(49)):
 #     #read input file
-#     fin = open("temp.txt", "rt")
+#     fin = open("../odes/tmp.txt", "rt")
 #     #read file contents to string
 #     data = fin.read()
 #     #replace all occurrences of the required string
@@ -268,9 +268,8 @@ def ampk_MM_double_mech_RHS_sympyFluxVars():
 #     #close the input file
 #     fin.close()
 #     #open the input file in write mode
-#     fin = open("temp.txt", "wt")
+#     fin = open("../odes/tmp.txt", "wt")
 #     #overrite the input file with the resulting data
 #     fin.write(data)
 #     #close the file
 #     fin.close()
-
