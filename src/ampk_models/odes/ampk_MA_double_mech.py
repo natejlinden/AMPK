@@ -294,7 +294,7 @@ def ampk_MA_double_mech_RHS(t, y, p):
         'AMPKAR_AMP_AMP_pAMPK': J67-J68,
         'AMPKAR_AMP_ADP_pAMPK': J69-J70,
         # AMPKAR phosphatase complexes
-        'PP1':-J71+J72,
+        'PP1': -J71+J72,
         'PP1_pAMPKAR': J71-J72,
     }
 
