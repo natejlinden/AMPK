@@ -12,14 +12,14 @@ for (file, model) in zip(file_list, model_list)
     # save to file for this model
     # create file to save results
     file = open("../identifiability/local_ID_$model.txt", "w")
-    println(file, "Locally Identifiable parameters are")
+    println(file, "Locally Identifiable parameters:")
     for (key, value) in local_id
         if value == 1
             print(file, "$key, ")
         end
     end
     println(file, "")
-    println(file, "Locally Nonidentifiable parameters are")
+    println(file, "Nonidentifiable parameters:")
     for (key, value) in local_id
         if value == 0
             print(file, "$key, ")
