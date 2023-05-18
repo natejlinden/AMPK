@@ -1,276 +1,34 @@
-"""
-    Nathaniel Linden (UCSD MAE)
-    Created: February 17, 2023
-
-    This file contains the functions for a model of MAPK activation. That model makes the 
-    following high-level assumptions:
-        - allow double adenine nucleotide AMPK binding
-        - assume Michaelis-Menten kinetics for enzyme catalyzed reactions
-        - the reaction mechanism reflects specific activation and inhibition of
-            AMPK and phos/dephos by AXPs
-
-    The get_params functions returns a dictionary of the parameters in the correct
-    format.
-
-    The get_states function returns a dictionary od the parameters in the correct
-    format.
-
-    The RHS function is written following the syntax specified for the pymc/sunode
-    package. See docs here https://sunode.readthedocs.io/en/latest/without_pymc.html
-"""
-import sympy as sym
-
-# Function to create dictionary for the parameters
-#   all parameters are scalars, so use key/data pairs of 'state_name': ()
-def ampk_MM_double_mech_get_params():
-     return {
-        'kOnAMP': (), # AMP binding
-        'kOffAMP': (),
-        'kOnADP': (), # ADP binding
-        'kOffADP': (),
-        'kOnATP': (), # ATP binding
-        'kOffATP': (),
-        'kCaMKK': (), # CaMKK
-        'KmCaMKK': (),
-        'kLKB1': (), # LKB1 binding
-        'KmLKB1': (),
-        'kPP': (), # AMPK Phosphatase
-        'KmPP': (),
-        'kAMPK': (), # AMPK kinase
-        'KmAMPK': (),
-        'kPP1': (), # pAMPKAR Phosphatase
-        'KmPP1': (), 
-        # external enzyme concentrations
-        'CaMKKtot': (),
-        'LKB1tot':(),
-        'PPtot':(),
-        'PP1tot':(),
-        # glycolysis flux
-        'kGly':(),
-        # ATP hydrolysis
-        'kHydro':(),
-        # Adenylate kinase
-        'kForAK':(),
-        'kRevAK':(),
-        # Oxidative phos
-        'VmaxOxPhos':(),
-        'Kadp':(),
-        'n':(),
-    }
-
-# Function to create dictionary for the states
-#   all states, so use key/data pairs of 'state_name': ()
-def ampk_MM_double_mech_get_states():
-    return {
-        # free adenine nucleotides
-        'AMP':(), 
-        'ADP':(),
-        'ATP':(),
-        # free AMPK
-        'AMPK':(),
-        'pAMPK':(),
-        # single AXP-AMPK complexes
-        'AMP_AMPK':(),
-        'ADP_AMPK':(),
-        'ATP_AMPK':(),
-        # single AXP-pAMPK complexes
-        'AMP_pAMPK':(),
-        'ADP_pAMPK':(),
-        'ATP_pAMPK':(),
-        # double AXP-AMPK complexes
-        'AMP_AMP_AMPK':(),
-        'AMP_ADP_AMPK':(),
-        'AMP_ATP_AMPK':(),
-        'ADP_ADP_AMPK':(),
-        'ADP_ATP_AMPK':(),
-        'ATP_ATP_AMPK':(),
-        # double AXP-pAMPK complexes
-        'AMP_AMP_pAMPK':(),
-        'AMP_ADP_pAMPK':(),
-        'AMP_ATP_pAMPK':(),
-        'ADP_ADP_pAMPK':(),
-        'ADP_ATP_pAMPK':(),
-        'ATP_ATP_pAMPK':(),
-        # free AMPKAR
-        'AMPKAR':(),
-        'pAMPKAR':(),
-    }
-
-def ampk_MM_double_mech_RHS(t, y, p):
-    """Right hand side of the AMPK_ma_double_mech regulation model.
-
-    WARNING! This is different than the syntax for scipy.integrate!!
-    Note from sunode syntax: "All inputs are dataclasses of sympy vars, or numpy
-        arrays of sympy vars"
-    """
-    
-    # FLUXES
-    # single AXP complexing
-    J1 = p.kOnAMP*y.AMP*y.AMPK - p.kOffAMP*y.AMP_AMPK # AMPK
-    J2 = p.kOnADP*y.ADP*y.AMPK - p.kOffADP*y.ADP_AMPK
-    J3 = p.kOnATP*y.ATP*y.AMPK - p.kOffATP*y.ATP_AMPK
-    J4 = p.kOnAMP*y.AMP*y.pAMPK  - p.kOffAMP*y.AMP_pAMPK# pAMPK
-    J5 = p.kOnADP*y.ADP*y.pAMPK - p.kOffADP*y.ADP_pAMPK
-    J6 = p.kOnATP*y.ATP*y.pAMPK - p.kOffATP*y.ATP_pAMPK
-    # double AXP complexing
-    J7 = p.kOnAMP*y.AMP*y.AMP_AMPK - p.kOffAMP*y.AMP_AMP_AMPK# AMPK
-    J8 = p.kOnAMP*y.AMP*y.ADP_AMPK - p.kOffAMP*y.AMP_ADP_AMPK
-    J9 = p.kOnAMP*y.AMP*y.ATP_AMPK - p.kOffAMP*y.AMP_ATP_AMPK
-    J10 = p.kOnADP*y.ADP*y.AMP_AMPK - p.kOffADP*y.AMP_ADP_AMPK
-    J11 = p.kOnADP*y.ADP*y.ADP_AMPK - p.kOffADP*y.ADP_ADP_AMPK
-    J12 = p.kOnADP*y.ADP*y.ATP_AMPK - p.kOffADP*y.ADP_ATP_AMPK
-    J13 = p.kOnATP*y.ATP*y.AMP_AMPK - p.kOffATP*y.AMP_ATP_AMPK
-    J14 = p.kOnATP*y.ATP*y.ADP_AMPK -  p.kOffATP*y.ADP_ATP_AMPK
-    J15 = p.kOnATP*y.ATP*y.ATP_AMPK - p.kOffATP*y.ATP_ATP_AMPK
-    J16 = p.kOnAMP*y.AMP*y.AMP_pAMPK -  p.kOffAMP*y.AMP_AMP_pAMPK # pAMPK
-    J17 = p.kOnAMP*y.AMP*y.ADP_pAMPK -  p.kOffAMP*y.AMP_ADP_pAMPK
-    J18 = p.kOnAMP*y.AMP*y.ATP_pAMPK - p.kOffAMP*y.AMP_ATP_pAMPK
-    J19 = p.kOnADP*y.ADP*y.AMP_pAMPK - p.kOffADP*y.AMP_ADP_pAMPK
-    J20 = p.kOnADP*y.ADP*y.ADP_pAMPK -  p.kOffADP*y.ADP_ADP_pAMPK
-    J21 = p.kOnADP*y.ADP*y.ATP_pAMPK -  p.kOffADP*y.ADP_ATP_pAMPK
-    J22 = p.kOnATP*y.ATP*y.AMP_pAMPK - p.kOffATP*y.AMP_ATP_pAMPK
-    J23 = p.kOnATP*y.ATP*y.ADP_pAMPK - p.kOffATP*y.ADP_ATP_pAMPK
-    J24 = p.kOnATP*y.ATP*y.ATP_pAMPK - p.kOffATP*y.ATP_ATP_pAMPK
-    J25 = (p.kCaMKK*p.CaMKKtot*y.AMPK)/(p.KmCaMKK + y.AMPK) # CaMKK phosphorylation
-    J26 = (p.kCaMKK*p.CaMKKtot*y.AMP_AMPK)/(p.KmCaMKK + y.AMP_AMPK)
-    J27 = (p.kCaMKK*p.CaMKKtot*y.ADP_AMPK)/(p.KmCaMKK + y.ADP_AMPK)
-    J28 = (p.kCaMKK*p.CaMKKtot*y.ATP_AMPK)/(p.KmCaMKK + y.ATP_AMPK)
-    J29 = (p.kCaMKK*p.CaMKKtot*y.AMP_AMP_AMPK)/(p.KmCaMKK + y.AMP_AMP_AMPK)
-    J30 = (p.kCaMKK*p.CaMKKtot*y.AMP_ADP_AMPK)/(p.KmCaMKK + y.AMP_ADP_AMPK)
-    J31 = (p.kCaMKK*p.CaMKKtot*y.AMP_ATP_AMPK)/(p.KmCaMKK + y.AMP_ATP_AMPK)
-    J32 = (p.kCaMKK*p.CaMKKtot*y.ADP_ADP_AMPK)/(p.KmCaMKK + y.ADP_ADP_AMPK)
-    J33 = (p.kCaMKK*p.CaMKKtot*y.ADP_ATP_AMPK)/(p.KmCaMKK + y.ADP_ATP_AMPK)
-    J34 = (p.kCaMKK*p.CaMKKtot*y.ATP_ATP_AMPK)/(p.KmCaMKK + y.ATP_ATP_AMPK)
-    J35 = (p.kLKB1*p.LKB1tot*y.AMP_AMPK)/(p.KmLKB1 + y.AMP_AMPK)
-    J36 = (p.kLKB1*p.LKB1tot*y.ADP_AMPK)/(p.KmLKB1 + y.ADP_AMPK)
-    J37 = (p.kLKB1*p.LKB1tot*y.AMP_AMP_AMPK)/(p.KmLKB1 + y.AMP_AMP_AMPK)
-    J38 = (p.kLKB1*p.LKB1tot*y.AMP_ADP_AMPK)/(p.KmLKB1 + y.AMP_ADP_AMPK)
-    J39 = (p.kLKB1*p.LKB1tot*y.ADP_ADP_AMPK)/(p.KmLKB1 + y.ADP_ADP_AMPK)
-    J40 = (p.kPP*p.PPtot*y.pAMPK)/(p.KmPP + y.pAMPK)
-    J41 = (p.kPP*p.PPtot*y.ATP_pAMPK)/(p.KmPP + y.ATP_pAMPK)
-    J42 = (p.kPP*p.PPtot*y.ATP_ATP_pAMPK)/(p.KmPP + y.ATP_ATP_pAMPK)
-    J43 = (p.kPP*p.PPtot*y.AMP_ATP_pAMPK)/(p.KmPP + y.AMP_ATP_pAMPK)
-    J44 = (p.kPP*p.PPtot*y.ADP_ATP_pAMPK)/(p.KmPP + y.ADP_ATP_pAMPK)
-    J45 = (p.kAMPK*y.AMP_pAMPK*y.AMPKAR)/(p.KmAMPK + y.AMPKAR)
-    J46 = (p.kAMPK*y.AMP_AMP_pAMPK*y.AMPKAR)/(p.KmAMPK + y.AMPKAR)
-    J47 = (p.kAMPK*y.AMP_ADP_pAMPK*y.AMPKAR)/(p.KmAMPK + y.AMPKAR)
-    J48 = (p.kPP1*p.PP1tot*y.pAMPKAR)/(p.KmPP1 + y.pAMPKAR)
-    # Metabolic fluxes
-    # glycolysis
-    Jgly = 2*p.kGly*y.ADP*y.ADP
-    # ATP hydrolysis
-    Jhydro = p.kHydro*y.ATP
-    # Adenylate Kinase
-    Jak = (p.kForAK*y.ATP*y.AMP) - (p.kRevAK*y.ADP*y.ADP) # MASS ACTION KINETICS!
-    # Oxidative Phos
-    Joxphos = (p.VmaxOxPhos * ((y.ADP/p.Kadp)**p.n))/(1 + ((y.ADP/p.Kadp)**p.n))
-
-    # now return the odes for each state variable
-    return {
-        'AMP': -J1-J4-J7-J8-J9-J16-J17-J18-Jak,
-        'ADP': -J2-J5-J10-J11-J12-J19-J20-J21-Jgly+2*Jak+Jhydro-Joxphos,
-        'ATP': -J3-J6-J13-J14-J15-J22-J23-J24+Jgly-Jak-Jhydro+Joxphos,
-        # free AMPK
-        'AMPK': -J1-J2-J3-J25+J40,
-        'pAMPK': -J4-J5-J6+J25-J40,
-        # single AXP-AMPK complexes
-        'AMP_AMPK': J1-J7-J10-J13-J26-J35,
-        'ADP_AMPK': J2-J8-J11-J14-J27-J36,
-        'ATP_AMPK': J3-J9-J12-J15-J28+J41,
-        # single AXP-pAMPK complexes
-        'AMP_pAMPK': J4-J16-J19-J22+J26+J35,
-        'ADP_pAMPK': J5-J17-J20-J23+J27+J36,
-        'ATP_pAMPK': J6-J18-J21-J24+J28-J41,
-        # double AXP-AMPK complexes
-        'AMP_AMP_AMPK': J7-J29-J37,
-        'AMP_ADP_AMPK': J8+J10-J30-J38,
-        'AMP_ATP_AMPK': J9+J13-J31+J43,
-        'ADP_ADP_AMPK': J11-J32-J39,
-        'ADP_ATP_AMPK': J12+J14-J33+J44,
-        'ATP_ATP_AMPK': J15-J34+J42,
-        # double AXP-pAMPK complexes
-        'AMP_AMP_pAMPK': J16+J29-J37,
-        'AMP_ADP_pAMPK': J17+J19-J30+J38,
-        'AMP_ATP_pAMPK': J18+J22+J31-J43,
-        'ADP_ADP_pAMPK': J20+J32+J39,
-        'ADP_ATP_pAMPK': J21+J33-J44,
-        'ATP_ATP_pAMPK': J24+J34-J42,
-        # AMPKAR
-        'AMPKAR': -J45-J46-J47+J48,
-        'pAMPKAR': J45+J46+J47-J48,
-    }
-
-def ampk_MM_double_mech_RHS_sympyFluxVars():
-    """Right hand side of the AMPK_MM_double_mech regulation model.
-
-    WARNING! This is different than the syntax for scipy.integrate!!
-    Note from sunode syntax: "All inputs are dataclasses of sympy vars, or numpy
-        arrays of sympy vars"
-    """
-
-    # create sympy vars for FLUXES
-    num_fluxes = 48
-    fluxes = sym.symbols(['J'+str(i) for i in range(1,num_fluxes+1)])
-    Jgly = sym.symbols("Jgly")
-    Jhydro= sym.symbols("Jhydro")
-    Jak = sym.symbols("Jak")
-    Joxphos = sym.symbols("Joxphos")
-
-    for item in [Jgly, Jhydro, Jak, Joxphos]: # add metab fluxes to flux list
-        fluxes.append(item)
-
-    
-    return {
-        'AMP': -fluxes[0]-fluxes[3]-fluxes[6]-fluxes[7]-fluxes[8]-fluxes[15]-fluxes[16]-fluxes[17]-Jak,
-        'ADP': -fluxes[1]-fluxes[4]-fluxes[9]-fluxes[10]-fluxes[11]-fluxes[18]-fluxes[19]-fluxes[20]-Jgly+2*Jak+Jhydro-Joxphos,
-        'ATP': -fluxes[2]-fluxes[5]-fluxes[12]-fluxes[13]-fluxes[14]-fluxes[21]-fluxes[22]-fluxes[23]+Jgly-Jak-Jhydro+Joxphos,
-        # free AMPK
-        'AMPK': -fluxes[0]-fluxes[1]-fluxes[2]-fluxes[24]+fluxes[39],
-        'pAMPK': -fluxes[3]-fluxes[4]-fluxes[5]+fluxes[24]-fluxes[39],
-        # single AXP-AMPK complexes
-        'AMP_AMPK': fluxes[0]-fluxes[6]-fluxes[9]-fluxes[12]-fluxes[25]-fluxes[34],
-        'ADP_AMPK': fluxes[1]-fluxes[7]-fluxes[10]-fluxes[13]-fluxes[26]-fluxes[35],
-        'ATP_AMPK': fluxes[2]-fluxes[8]-fluxes[11]-fluxes[14]-fluxes[27]+fluxes[40],
-        # single AXP-pAMPK complexes
-        'AMP_pAMPK': fluxes[3]-fluxes[15]-fluxes[18]-fluxes[21]+fluxes[25]+fluxes[34],
-        'ADP_pAMPK': fluxes[4]-fluxes[16]-fluxes[19]-fluxes[22]+fluxes[26]+fluxes[35],
-        'ATP_pAMPK': fluxes[5]-fluxes[17]-fluxes[20]-fluxes[23]+fluxes[27]-fluxes[40],
-        # double AXP-AMPK complexes
-        'AMP_AMP_AMPK': fluxes[6]-fluxes[28]-fluxes[36],
-        'AMP_ADP_AMPK': fluxes[7]+fluxes[9]-fluxes[29]-fluxes[37],
-        'AMP_ATP_AMPK': fluxes[8]+fluxes[12]-fluxes[30]+fluxes[42],
-        'ADP_ADP_AMPK': fluxes[10]-fluxes[31]-fluxes[38],
-        'ADP_ATP_AMPK': fluxes[11]+fluxes[13]-fluxes[32]+fluxes[43],
-        'ATP_ATP_AMPK': fluxes[14]-fluxes[33]+fluxes[41],
-        # double AXP-pAMPK complexes
-        'AMP_AMP_pAMPK': fluxes[15]+fluxes[28]-fluxes[36],
-        'AMP_ADP_pAMPK': fluxes[16]+fluxes[18]-fluxes[29]+fluxes[37],
-        'AMP_ATP_pAMPK': fluxes[17]+fluxes[21]+fluxes[30]-fluxes[42],
-        'ADP_ADP_pAMPK': fluxes[19]+fluxes[31]+fluxes[38],
-        'ADP_ATP_pAMPK': fluxes[20]+fluxes[32]-fluxes[43],
-        'ATP_ATP_pAMPK': fluxes[23]+fluxes[33]-fluxes[41],
-        # AMPKAR
-        'AMPKAR': -fluxes[44]-fluxes[45]-fluxes[46]+fluxes[47],
-        'pAMPKAR': fluxes[44]+fluxes[45]+fluxes[46]-fluxes[47],
-    }, fluxes
-
-
-
-
-# # Code for replacing flux terms with iterable indexes
-# for i in range(26):
-#     #read input file
-#     fin = open("temp.txt", "rt")
-#     #read file contents to string
-#     data = fin.read()
-#     #replace all occurrences of the required string
-#     data = data.replace('J'+str(i), 'fluxes[{i}]'.format(i=i-1))
-#     #close the input file
-#     fin.close()
-#     #open the input file in write mode
-#     fin = open("temp.txt", "wt")
-#     #overrite the input file with the resulting data
-#     fin.write(data)
-#     #close the file
-#     fin.close()
-
+ode = @ODEmodel(
+    x0'(t) =  -(kOnAMP*x0(t)*x3(t)-kOffAMP*x5(t))-(kOnAMP*x0(t)*x4(t)-kOffAMP*x8(t))-(kOnAMP*x0(t)*x5(t)-kOffAMP*x11(t))-(kOnAMP*x0(t)*x6(t)-kOffAMP*x12(t))-(kOnAMP*x0(t)*x7(t)-kOffAMP*x13(t))-(kOnAMP*x0(t)*x8(t)-kOffAMP*x17(t))-(kOnAMP*x0(t)*x9(t)-kOffAMP*x18(t))-(kOnAMP*x0(t)*x10(t)-kOffAMP*x19(t))-Jak,
+    x1'(t) =  -(kOnADP*x1(t)*x3(t)-kOffADP*x6(t))-(kOnADP*x1(t)*x4(t)-kOffADP*x9(t))-(kOnADP*x1(t)*x5(t)-kOffADP*x12(t))-(kOnADP*x1(t)*x6(t)-kOffADP*x14(t))-(kOnADP*x1(t)*x7(t)-kOffADP*x15(t))-(kOnADP*x1(t)*x8(t)-kOffADP*x18(t))-(kOnADP*x1(t)*x9(t)-kOffADP*x20(t))-(kOnADP*x1(t)*x10(t)-kOffADP*x21(t))-Jgly+2*Jak+Jhydro-Joxphos,
+    x2'(t) =  -(kOnATP*x2(t)*x3(t)-kOffATP*x7(t))-(kOnATP*x2(t)*x4(t)-kOffATP*x10(t))-(kOnATP*x2(t)*x5(t)-kOffATP*x13(t))-(kOnATP*x2(t)*x6(t)-kOffATP*x15(t))-(kOnATP*x2(t)*x7(t)-kOffATP*x16(t))-(kOnATP*x2(t)*x8(t)-kOffATP*x19(t))-(kOnATP*x2(t)*x9(t)-kOffATP*x21(t))-(kOnATP*x2(t)*x10(t)-kOffATP*x22(t))+Jgly-Jak-Jhydro+Joxphos,
+    # free AMPK
+    x3'(t) =  -(kOnAMP*x0(t)*x3(t)-kOffAMP*x5(t))-(kOnADP*x1(t)*x3(t)-kOffADP*x6(t))-(kOnATP*x2(t)*x3(t)-kOffATP*x7(t))-((kCaMKK*CaMKKtot*x3(t))/(KmCaMKK+x3(t)))+((kPP*PPtot*x4(t))/(KmPP+x4(t))),
+    x4'(t) =  -(kOnAMP*x0(t)*x4(t)-kOffAMP*x8(t))-(kOnADP*x1(t)*x4(t)-kOffADP*x9(t))-(kOnATP*x2(t)*x4(t)-kOffATP*x10(t))+((kCaMKK*CaMKKtot*x3(t))/(KmCaMKK+x3(t)))-((kPP*PPtot*x4(t))/(KmPP+x4(t))),
+    # single AXP-AMPK complexes
+    x5'(t) =  (kOnAMP*x0(t)*x3(t)-kOffAMP*x5(t))-(kOnAMP*x0(t)*x5(t)-kOffAMP*x11(t))-(kOnADP*x1(t)*x5(t)-kOffADP*x12(t))-(kOnATP*x2(t)*x5(t)-kOffATP*x13(t))-((kCaMKK*CaMKKtot*x5(t))/(KmCaMKK+x5(t)))-((kLKB1*LKB1tot*x5(t))/(KmLKB1+x5(t))),
+    x6'(t) =  (kOnADP*x1(t)*x3(t)-kOffADP*x6(t))-(kOnAMP*x0(t)*x6(t)-kOffAMP*x12(t))-(kOnADP*x1(t)*x6(t)-kOffADP*x14(t))-(kOnATP*x2(t)*x6(t)-kOffATP*x15(t))-((kCaMKK*CaMKKtot*x6(t))/(KmCaMKK+x6(t)))-((kLKB1*LKB1tot*x6(t))/(KmLKB1+x6(t))),
+    x7'(t) =  (kOnATP*x2(t)*x3(t)-kOffATP*x7(t))-(kOnAMP*x0(t)*x7(t)-kOffAMP*x13(t))-(kOnADP*x1(t)*x7(t)-kOffADP*x15(t))-(kOnATP*x2(t)*x7(t)-kOffATP*x16(t))-((kCaMKK*CaMKKtot*x7(t))/(KmCaMKK+x7(t)))+((kPP*PPtot*x10(t))/(KmPP+x10(t))),
+    # single AXP-pAMPK complexes
+    x8'(t) =  (kOnAMP*x0(t)*x4(t)-kOffAMP*x8(t))-(kOnAMP*x0(t)*x8(t)-kOffAMP*x17(t))-(kOnADP*x1(t)*x8(t)-kOffADP*x18(t))-(kOnATP*x2(t)*x8(t)-kOffATP*x19(t))+((kCaMKK*CaMKKtot*x5(t))/(KmCaMKK+x5(t)))+((kLKB1*LKB1tot*x5(t))/(KmLKB1+x5(t))),
+    x9'(t) =  (kOnADP*x1(t)*x4(t)-kOffADP*x9(t))-(kOnAMP*x0(t)*x9(t)-kOffAMP*x18(t))-(kOnADP*x1(t)*x9(t)-kOffADP*x20(t))-(kOnATP*x2(t)*x9(t)-kOffATP*x21(t))+((kCaMKK*CaMKKtot*x6(t))/(KmCaMKK+x6(t)))+((kLKB1*LKB1tot*x6(t))/(KmLKB1+x6(t))),
+    x10'(t) =  (kOnATP*x2(t)*x4(t)-kOffATP*x10(t))-(kOnAMP*x0(t)*x10(t)-kOffAMP*x19(t))-(kOnADP*x1(t)*x10(t)-kOffADP*x21(t))-(kOnATP*x2(t)*x10(t)-kOffATP*x22(t))+((kCaMKK*CaMKKtot*x7(t))/(KmCaMKK+x7(t)))-((kPP*PPtot*x10(t))/(KmPP+x10(t))),
+    # double AXP-AMPK complexes
+    x11'(t) =  (kOnAMP*x0(t)*x5(t)-kOffAMP*x11(t))-((kCaMKK*CaMKKtot*x11(t))/(KmCaMKK+x11(t)))-((kLKB1*LKB1tot*x11(t))/(KmLKB1+x11(t))),
+    x12'(t) =  (kOnAMP*x0(t)*x6(t)-kOffAMP*x12(t))+(kOnADP*x1(t)*x5(t)-kOffADP*x12(t))-((kCaMKK*CaMKKtot*x12(t))/(KmCaMKK+x12(t)))-((kLKB1*LKB1tot*x12(t))/(KmLKB1+x12(t))),
+    x13'(t) =  (kOnAMP*x0(t)*x7(t)-kOffAMP*x13(t))+(kOnATP*x2(t)*x5(t)-kOffATP*x13(t))-((kCaMKK*CaMKKtot*x13(t))/(KmCaMKK+x13(t)))+((kPP*PPtot*x19(t))/(KmPP+x19(t))),
+    x14'(t) =  (kOnADP*x1(t)*x6(t)-kOffADP*x14(t))-((kCaMKK*CaMKKtot*x14(t))/(KmCaMKK+x14(t)))-((kLKB1*LKB1tot*x14(t))/(KmLKB1+x14(t))),
+    x15'(t) =  (kOnADP*x1(t)*x7(t)-kOffADP*x15(t))+(kOnATP*x2(t)*x6(t)-kOffATP*x15(t))-((kCaMKK*CaMKKtot*x15(t))/(KmCaMKK+x15(t)))+((kPP*PPtot*x21(t))/(KmPP+x21(t))),
+    x16'(t) =  (kOnATP*x2(t)*x7(t)-kOffATP*x16(t))-((kCaMKK*CaMKKtot*x16(t))/(KmCaMKK+x16(t)))+((kPP*PPtot*x22(t))/(KmPP+x22(t))),
+    # double AXP-pAMPK complexes
+    x17'(t) =  (kOnAMP*x0(t)*x8(t)-kOffAMP*x17(t))+((kCaMKK*CaMKKtot*x11(t))/(KmCaMKK+x11(t)))+((kLKB1*LKB1tot*x11(t))/(KmLKB1+x11(t))), 
+    x18'(t) =  (kOnAMP*x0(t)*x9(t)-kOffAMP*x18(t))+(kOnADP*x1(t)*x8(t)-kOffADP*x18(t))+((kCaMKK*CaMKKtot*x12(t))/(KmCaMKK+x12(t)))+((kLKB1*LKB1tot*x12(t))/(KmLKB1+x12(t))), 
+    x19'(t) =  (kOnAMP*x0(t)*x10(t)-kOffAMP*x19(t))+(kOnATP*x2(t)*x8(t)-kOffATP*x19(t))+((kCaMKK*CaMKKtot*x13(t))/(KmCaMKK+x13(t)))-((kPP*PPtot*x19(t))/(KmPP+x19(t))),
+    x20'(t) =  (kOnADP*x1(t)*x9(t)-kOffADP*x20(t))+((kCaMKK*CaMKKtot*x14(t))/(KmCaMKK+x14(t)))+((kLKB1*LKB1tot*x14(t))/(KmLKB1+x14(t))),
+    x21'(t) =  (kOnADP*x1(t)*x10(t)-kOffADP*x21(t))+(kOnATP*x2(t)*x9(t)-kOffATP*x21(t))+((kCaMKK*CaMKKtot*x15(t))/(KmCaMKK+x15(t)))-((kPP*PPtot*x21(t))/(KmPP+x21(t))),
+    x22'(t) =  (kOnATP*x2(t)*x10(t)-kOffATP*x22(t))+((kCaMKK*CaMKKtot*x16(t))/(KmCaMKK+x16(t)))-((kPP*PPtot*x22(t))/(KmPP+x22(t))),
+    # AMPKAR
+    x23'(t) =  -((kAMPK*x8(t)*x23(t))/(KmAMPK+x23(t)))-((kAMPK*x17(t)*x23(t))/(KmAMPK+x23(t)))-((kAMPK*x18(t)*x23(t))/(KmAMPK+x23(t)))+((kPP1*PP1tot*x24(t))/(KmPP1+x24(t))),
+    x24'(t) =  ((kAMPK*x8(t)*x23(t))/(KmAMPK+x23(t)))+((kAMPK*x17(t)*x23(t))/(KmAMPK+x23(t)))+((kAMPK*x18(t)*x23(t))/(KmAMPK+x23(t)))-((kPP1*PP1tot*x24(t))/(KmPP1+x24(t))),
+    y1(t) = x24(t) / (x23(t) + x24(t))
+)
