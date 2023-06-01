@@ -1,0 +1,4 @@
+Locally Identifiable parameters are
+kOffATP, kOffADP, kOffAMP, 
+Locally Nonidentifiable parameters are
+x16, kPP, x18, Jhydro, x6, x8, kOnAMP, KmLKB1, KmPP, x19, kOnADP, Jgly, x5, Joxphos, kAMPK, kCaMKK, x13, x1, KmPP1, KmCaMKK, x2, x4, x22, kOnATP, x9, x11, x21, x12, Jak, LKB1tot, x24, PP1tot, KmAMPK, x23, x17, CaMKKtot, PPtot, kPP1, x0, x10, x14, x15, x7, x3, x20, kLKB1, 

@@ -1,7 +1,10 @@
 using StructuralIdentifiability
 
-file_list = ["../odes/ampk_MA_double_mech.jl", "../odes/ampk_MA_single_mech.jl", "../odes/ampk_MM_double_mech.jl", "../odes/ampk_MM_single_mech.jl"]
-model_list = ["MA_double", "MA_single", "MM_double", "MM_single"]
+# file_list = ["../odes/ampk_MA_double_mech.jl", "../odes/ampk_MA_single_mech.jl", "../odes/ampk_MM_double_mech.jl", "../odes/ampk_MM_single_mech.jl", "../odes/ampk_qss_single.jl", "../odes/ampk_qss2_single.jl"]
+# model_list = ["MA_double", "MA_single", "MM_double", "MM_single", "qss_single", "qss2_single"]
+
+file_list = ["../odes/ampk_qss_single.jl", "../odes/ampk_qss2_single.jl"]
+model_list = ["qss_single", "qss2_single"]
 
 for (file, model) in zip(file_list, model_list)
     println("Running: $model...")
