@@ -190,7 +190,7 @@ new_params = jnp.array(param_vals_sobol_MA_corr).reshape((n_loops,n_devices,para
 print('Running simulations...')
 sols_sobol_MA =[]
 tnow = time.time()
-for i in tdqm(range(n_loops)):
+for i in tqdm(range(n_loops)):
     sol = qoi_fn_pmap(new_params[i,:,:], rhs, rhs_stress, y0, ampkar_idx, pampkar_idx)
     sols_sobol_MA.append(sol)
     # print('loop', i, 'of', n_loops, 'complete')
