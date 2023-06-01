@@ -4,7 +4,7 @@ from SALib.sample import morris as morris_samp
 from SALib.analyze import sobol as sobol_analyze
 from SALib.analyze import morris as morris_analyze
 from SALib.analyze.hdmr import analyze as hdmr_analyze
-import tdqm
+from tqdm import tdqm
 import os
 import sys
 import multiprocessing as mp
