@@ -34,7 +34,7 @@ import diffrax as dfrx
 
 # load code
 sys.path.insert(0, '../odes')
-import ampk_MA_double_mech_diffrax as model
+import ampk_newmech_MA_single_diffrax as model
 from gsa_utils import *
 
 jax.config.update('jax_enable_x64', True)
@@ -45,7 +45,7 @@ print(len(jax.devices()))
 ############################################
 print('Saving to: ', dir)
 
-fname = 'MA_double_mech/'
+fname = 'newmech_MA_single/'
 savedir = dir+fname
 if not os.path.exists(savedir):
     os.makedirs(savedir)
@@ -58,13 +58,12 @@ if not os.path.exists(savedir):
 # we use plus or minus on order of magnitude of any known values and then make reasonable assumptions for unknowns
 # Note we fix all off rates to 1.0 and dont bother sampling these or computing sensitivities
 ############################################
-MA_nominals = pd.read_csv('nominal_params_MA.csv')
-MM_nominals = pd.read_csv('nominal_params_MM.csv')
+MA_nominals = pd.read_csv('nominal_params_newmech_MA.csv')
+MM_nominals = pd.read_csv('nominal_params_newmech_MM.csv')
 nominal_vals_MA = MA_nominals['value'].to_list()
 param_names_MA = MA_nominals['parameter'].to_list()
 nominal_vals_MM = MM_nominals['value'].to_list()
 param_names_MM = MM_nominals['parameter'].to_list()
-
 
 # metabolism_params
 metab_parms_basal = {'kGly': 1300.0,'kHydro':1.4e-3,'kForAK':40.44,
@@ -83,19 +82,14 @@ bounds_MM = {'num_vars':14, 'names':param_names_MM, 'bounds': bounds_MM,}
 
 
 # states and initial conditions
-state_names = ['AMP', 'ADP', 'ATP', 'AMPK', 'pAMPK', 'AMP_AMPK', 'ADP_AMPK', 
-               'ATP_AMPK', 'AMP_pAMPK', 'ADP_pAMPK', 'ATP_pAMPK', 'AMP_AMP_AMPK', 
-               'AMP_ADP_AMPK', 'AMP_ATP_AMPK', 'ADP_ADP_AMPK', 'ADP_ATP_AMPK', 
-               'ATP_ATP_AMPK', 'AMP_AMP_pAMPK', 'AMP_ADP_pAMPK', 'AMP_ATP_pAMPK', 
-               'ADP_ADP_pAMPK', 'ADP_ATP_pAMPK', 'ATP_ATP_pAMPK', 'CaMKK', 
-               'CaMKK_AMPK', 'CaMKK_AMP_AMPK', 'CaMKK_ADP_AMPK', 'CaMKK_ATP_AMPK', 
-               'CaMKK_AMP_AMP_AMPK', 'CaMKK_AMP_ADP_AMPK', 'CaMKK_AMP_ATP_AMPK', 
-               'CaMKK_ADP_ADP_AMPK', 'CaMKK_ADP_ATP_AMPK', 'CaMKK_ATP_ATP_AMPK', 
-               'LKB1', 'LKB1_AMP_AMPK', 'LKB1_ADP_AMPK', 'LKB1_AMP_AMP_AMPK', 
-               'LKB1_AMP_ADP_AMPK', 'LKB1_ADP_ADP_AMPK', 'PP', 'PP_pAMPK', 
-               'PP_ATP_pAMPK', 'PP_AMP_ATP_pAMPK', 'PP_ADP_ATP_pAMPK', 
-               'PP_ATP_ATP_pAMPK', 'AMPKAR', 'pAMPKAR', 'AMPKAR_AMP_pAMPK', 
-               'AMPKAR_AMP_AMP_pAMPK', 'AMPKAR_AMP_ADP_pAMPK', 'PP1', 'PP1_pAMPKAR']
+state_names = ['AMP', 'ADP', 'ATP'
+               'AMPK', 'pAMPK', 
+               'AMP_AMPK', 'AMP_pAMPK',
+               'CaMKK', 'CaMKK_AMPK', 'CaMKK_AMP_AMPK',
+               'LKB1', 'LKB1_AMPK', 'LKB1_AMP_AMPK',
+               'PP', 'PP_pAMPK', 
+               'AMPKAR', 'pAMPKAR', 'AMPKAR_pAMPK', 'AMPKAR_AMP_pAMPK', 
+               'PP1', 'PP1_pAMPKAR']
 
 ampkar_idx = state_names.index('AMPKAR')
 pampkar_idx = state_names.index('pAMPKAR')
@@ -121,8 +115,8 @@ seed = np.random.seed(seed=2048)
 ################################################
 #                   Model RHS                  #
 ################################################
-rhs = model.ampk_MA_double_mech(**metab_parms_basal)
-rhs_stress = model.ampk_MA_double_mech(**metab_parms_stress)
+rhs = model.ampk_newmech_MA_single(**metab_parms_basal)
+rhs_stress = model.ampk_newmech_MA_single(**metab_parms_stress)
 rhs = dfrx.ODETerm(rhs)
 rhs_stress = dfrx.ODETerm(rhs_stress)
 
@@ -157,18 +151,16 @@ np.save(savedir + 'param_vals_sobol_MA_corr.npy', np.array(param_vals_sobol_MA_c
 
 # Convert from parameter samples to full parameter sets, because we do not sample
 # all parameters in the model
-n_params_true = 22
+n_params_true = 20
 temp = np.empty(shape=(param_vals_sobol_MA_corr.shape[0], n_params_true))
 
 for i in range(param_vals_sobol_MA_corr.shape[0]):
-    temp[i,:] = np.array(compute_MA_params(param_vals_sobol_MA_corr[i,:]))
+    temp[i,:] = np.array(compute_newmech_MA_params(param_vals_sobol_MA_corr[i,:]))
 
 param_vals_sobol_MA_corr = temp
 
 # Run simulations
 print('Reshaping input parameters...')
-# qoi_fn = lambda params: single_model_eval(params, rhs, rhs_stress, y0)
-# qoi_fn_vmap = jax.vmap(single_model_eval, in_axes=(0,None,None,None))
 qoi_fn_pmap = jax.pmap(single_model_eval_nansafe, in_axes=(0,None,None,None,None,None))
 
 params_shape = param_vals_sobol_MA_corr.shape # get shape of parameter vectors (n_sampls, n_params)
