@@ -4,6 +4,7 @@ from SALib.sample import morris as morris_samp
 from SALib.analyze import sobol as sobol_analyze
 from SALib.analyze import morris as morris_analyze
 from SALib.analyze.hdmr import analyze as hdmr_analyze
+import tdqm
 import os
 import sys
 import multiprocessing as mp
@@ -72,13 +73,8 @@ metab_parms_basal = {'kGly': 1300.0,'kHydro':1.4e-3,'kForAK':40.44,
 metab_parms_stress = {'kGly': 4.5,'kHydro':1.4e-3,'kForAK':40.44,
                       'kRevAK':1.1e-3,'VmaxOxPhos':0.5,'Kadp': 5.8e-2,'n': 2.568,}
 
-# bounds and problem dicts for SALib
-# bounds_MA = [bounds_MA_df['lower'].to_list(), bounds_MA_df['upper'].to_list()]
-# bounds_MA = [[lb, ub] for lb, ub in zip(bounds_MA[0], bounds_MA[1])]
-# bounds_MM = [bounds_MM_df['lower'].to_list(), bounds_MM_df['upper'].to_list()]
-# bounds_MM = [[lb, ub] for lb, ub in zip(bounds_MM[0], bounds_MM[1])]
-lb_mult = 0.5
-ub_mult = 1.5
+lb_mult = 0.1
+ub_mult = 10
 bounds_MA = [[lb_mult*param, ub_mult*param] for param in nominal_vals_MA]
 bounds_MM = [[lb_mult*param, ub_mult*param] for param in nominal_vals_MM]
 
@@ -88,7 +84,19 @@ bounds_MM = {'num_vars':14, 'names':param_names_MM, 'bounds': bounds_MM,}
 
 
 # states and initial conditions
-state_names = ['AMP', 'ADP', 'ATP', 'AMPK', 'pAMPK', 'AMP_AMPK', 'ADP_AMPK', 'ATP_AMPK', 'AMP_pAMPK', 'ADP_pAMPK', 'ATP_pAMPK', 'AMP_AMP_AMPK', 'AMP_ADP_AMPK', 'AMP_ATP_AMPK', 'ADP_ADP_AMPK', 'ADP_ATP_AMPK', 'ATP_ATP_AMPK', 'AMP_AMP_pAMPK', 'AMP_ADP_pAMPK', 'AMP_ATP_pAMPK', 'ADP_ADP_pAMPK', 'ADP_ATP_pAMPK', 'ATP_ATP_pAMPK', 'CaMKK', 'CaMKK_AMPK', 'CaMKK_AMP_AMPK', 'CaMKK_ADP_AMPK', 'CaMKK_ATP_AMPK', 'CaMKK_AMP_AMP_AMPK', 'CaMKK_AMP_ADP_AMPK', 'CaMKK_AMP_ATP_AMPK', 'CaMKK_ADP_ADP_AMPK', 'CaMKK_ADP_ATP_AMPK', 'CaMKK_ATP_ATP_AMPK', 'LKB1', 'LKB1_AMP_AMPK', 'LKB1_ADP_AMPK', 'LKB1_AMP_AMP_AMPK', 'LKB1_AMP_ADP_AMPK', 'LKB1_ADP_ADP_AMPK', 'PP', 'PP_pAMPK', 'PP_ATP_pAMPK', 'PP_AMP_ATP_pAMPK', 'PP_ADP_ATP_pAMPK', 'PP_ATP_ATP_pAMPK', 'AMPKAR', 'pAMPKAR', 'AMPKAR_AMP_pAMPK', 'AMPKAR_AMP_AMP_pAMPK', 'AMPKAR_AMP_ADP_pAMPK', 'PP1', 'PP1_pAMPKAR']
+state_names = ['AMP', 'ADP', 'ATP', 'AMPK', 'pAMPK', 'AMP_AMPK', 'ADP_AMPK', 
+               'ATP_AMPK', 'AMP_pAMPK', 'ADP_pAMPK', 'ATP_pAMPK', 'AMP_AMP_AMPK', 
+               'AMP_ADP_AMPK', 'AMP_ATP_AMPK', 'ADP_ADP_AMPK', 'ADP_ATP_AMPK', 
+               'ATP_ATP_AMPK', 'AMP_AMP_pAMPK', 'AMP_ADP_pAMPK', 'AMP_ATP_pAMPK', 
+               'ADP_ADP_pAMPK', 'ADP_ATP_pAMPK', 'ATP_ATP_pAMPK', 'CaMKK', 
+               'CaMKK_AMPK', 'CaMKK_AMP_AMPK', 'CaMKK_ADP_AMPK', 'CaMKK_ATP_AMPK', 
+               'CaMKK_AMP_AMP_AMPK', 'CaMKK_AMP_ADP_AMPK', 'CaMKK_AMP_ATP_AMPK', 
+               'CaMKK_ADP_ADP_AMPK', 'CaMKK_ADP_ATP_AMPK', 'CaMKK_ATP_ATP_AMPK', 
+               'LKB1', 'LKB1_AMP_AMPK', 'LKB1_ADP_AMPK', 'LKB1_AMP_AMP_AMPK', 
+               'LKB1_AMP_ADP_AMPK', 'LKB1_ADP_ADP_AMPK', 'PP', 'PP_pAMPK', 
+               'PP_ATP_pAMPK', 'PP_AMP_ATP_pAMPK', 'PP_ADP_ATP_pAMPK', 
+               'PP_ATP_ATP_pAMPK', 'AMPKAR', 'pAMPKAR', 'AMPKAR_AMP_pAMPK', 
+               'AMPKAR_AMP_AMP_pAMPK', 'AMPKAR_AMP_ADP_pAMPK', 'PP1', 'PP1_pAMPKAR']
 
 ampkar_idx = state_names.index('AMPKAR')
 pampkar_idx = state_names.index('pAMPKAR')
@@ -102,11 +110,11 @@ y0[idxs[0]] = 2e-5   # AMP
 y0[idxs[1]] = 1.3e-1 # ADP
 y0[idxs[2]] = 8.2   # ATP
 y0[idxs[3]] = 0.6   # AMPK
-y0[idxs[4]] = 1.0   # CaMKK
-y0[idxs[5]] = 1.0   # LKB1
-y0[idxs[6]] = 1.0   # PP
+y0[idxs[4]] = 10.0   # CaMKK
+y0[idxs[5]] = 10.0   # LKB1
+y0[idxs[6]] = 10.0   # PP
 y0[idxs[7]] = 0.1   # AMPKAR
-y0[idxs[8]] = 1.0   # PP1
+y0[idxs[8]] = 10.0   # PP1
 
 # random seed for reproducibility
 seed = np.random.seed(seed=2048)
@@ -123,7 +131,7 @@ rhs_stress = dfrx.ODETerm(rhs_stress)
 # Full scale case with large number of samples #
 ################################################
 # generate samples using the Sobol sampling method
-nsamps = 1024
+nsamps = 2048
 param_vals_sobol_MA = sobol_samp.sample(bounds_MA, nsamps, calc_second_order=True, seed=seed)
 param_vals_sobol_MM = sobol_samp.sample(bounds_MM, nsamps, calc_second_order=True, seed=seed)
 
@@ -183,10 +191,10 @@ new_params = jnp.array(param_vals_sobol_MA_corr).reshape((n_loops,n_devices,para
 print('Running simulations...')
 sols_sobol_MA =[]
 tnow = time.time()
-for i in range(n_loops):
+for i in tdqm(range(n_loops)):
     sol = qoi_fn_pmap(new_params[i,:,:], rhs, rhs_stress, y0, ampkar_idx, pampkar_idx)
     sols_sobol_MA.append(sol)
-    print('loop', i, 'of', n_loops, 'complete')
+    # print('loop', i, 'of', n_loops, 'complete')
 tend = time.time()
 
 print('Simulations took {} seconds'.format(tend-tnow))
