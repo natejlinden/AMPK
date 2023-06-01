@@ -1,3 +1,6 @@
+from os import environ
+environ['OMP_NUM_THREADS'] = '1'
+
 import numpy as np
 from SALib.sample import sobol as sobol_samp
 from SALib.sample import morris as morris_samp
@@ -24,7 +27,7 @@ n_devices = int(2**np.ceil(math.log(cpu_mult*n_cores, 2))) # sets n_devices to t
 print('Set {} XLA devices'.format(n_devices))
 
 xla_flag = '--xla_force_host_platform_device_count={}'.format(n_devices)
-os.environ['XLA_FLAGS']=xla_flag
+environ['XLA_FLAGS']=xla_flag
 
 import jax
 import jax.numpy as jnp
