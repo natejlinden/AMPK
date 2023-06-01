@@ -7,7 +7,7 @@ from SALib.sample import morris as morris_samp
 from SALib.analyze import sobol as sobol_analyze
 from SALib.analyze import morris as morris_analyze
 from SALib.analyze.hdmr import analyze as hdmr_analyze
-from tqdm import tdqm
+from tqdm import tqdm
 import os
 import sys
 import multiprocessing as mp
@@ -185,7 +185,7 @@ new_params = jnp.array(param_vals_sobol_MA_corr).reshape((n_loops,n_devices,para
 print('Running simulations...')
 sols_sobol_MA =[]
 tnow = time.time()
-for i in tdqm(range(n_loops)):
+for i in tqdm(range(n_loops)):
     sol = qoi_fn_pmap(new_params[i,:,:], rhs, rhs_stress, y0, ampkar_idx, pampkar_idx)
     sols_sobol_MA.append(sol)
     # print('loop', i, 'of', n_loops, 'complete')
