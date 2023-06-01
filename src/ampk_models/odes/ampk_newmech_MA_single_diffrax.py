@@ -118,7 +118,7 @@ class ampk_newmech_MA_single(eqx.Module):
         dydt = dydt.at[12].set(J10 - J11) # LKB1-AMP-AMPK
         dydt = dydt.at[13].set(-J12 + J13) # PP
         dydt = dydt.at[14].set(J12 - J13) # PP-pAMPK
-        dydt = dydt.at[15].set(J14 - J16 + J19) # AMPKAR
+        dydt = dydt.at[15].set(-J14 - J16 + J19) # AMPKAR
         dydt = dydt.at[16].set(J15 + J17 - J18) # pAMPKAR
         dydt = dydt.at[17].set(-J3 + J14 - J15) # AMPKAR-pAMPK
         dydt = dydt.at[18].set(J3 + J16 - J17) # AMPKAR-AMP-pAMPK
