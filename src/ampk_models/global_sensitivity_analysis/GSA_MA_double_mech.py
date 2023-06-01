@@ -9,6 +9,7 @@ import sys
 import multiprocessing as mp
 import time
 import math
+import pandas as pd
 
 # get user inputs
 dir = sys.argv[1]
@@ -43,7 +44,6 @@ print(len(jax.devices()))
 ############################################
 print('Saving to: ', dir)
 
-# fname = 'MA_double_mech/'
 fname = 'MA_double_mech_newQoI/'
 savedir = dir+fname
 if not os.path.exists(savedir):
@@ -51,30 +51,20 @@ if not os.path.exists(savedir):
     print('Created directory: ', savedir)
 
 ############################################
-# Bounds and info for params #
+# Bounds and other info for the GSA #
 ############################################
-
 # define the bounds for the AMPK parameters
 # we use plus or minus on order of magnitude of any known values and then make reasonable assumptions for unknowns
 # Note we fix all off rates to 1.0 and dont bother sampling these or computing sensitivities
 ############################################
-# First for Mass action parameters
-nominal_vals_MA = [
-   2.5e-3, # KdAMP
-   1.5e-3, # KdADP
-   1.7e-3, # KdATP
-   90.467, # kOnCaMKK = (koff+kphos/Km)
-   0.357, # kPhosCaMKK
-   0.742, # kOnLKB1
-   3.92e-2, # kPhosLKB1
-   16.56, # kOnPP
-   1.1e-1, # kDephosPP
-   1569.59, # kOnAMPK
-   6.33, # kPhosAMPK
-   16.56, # kOnPP1
-   1.1e-1, # kDephosPP1
-   1e-3, # AMPKAR
-]
+MA_nominals = pd.read_csv('nominal_params_MA.csv')
+MM_nominals = pd.read_csv('nominal_params_MM.csv')
+nominal_vals_MA = MA_nominals['value'].to_list()
+param_names_MA = MA_nominals['parameter'].to_list()
+nominal_vals_MM = MM_nominals['value'].to_list()
+param_names_MM = MM_nominals['parameter'].to_list()
+# bounds_MA_df = pd.read_csv('param_bounds_MA_tmp.csv')
+# bounds_MM_df = pd.read_csv('param_bounds_MM_tmp.csv')
 
 # metabolism_params
 metab_parms_basal = {'kGly': 1300.0,'kHydro':1.4e-3,'kForAK':40.44,
@@ -82,144 +72,44 @@ metab_parms_basal = {'kGly': 1300.0,'kHydro':1.4e-3,'kForAK':40.44,
 metab_parms_stress = {'kGly': 4.5,'kHydro':1.4e-3,'kForAK':40.44,
                       'kRevAK':1.1e-3,'VmaxOxPhos':0.5,'Kadp': 5.8e-2,'n': 2.568,}
 
+# bounds and problem dicts for SALib
+# bounds_MA = [bounds_MA_df['lower'].to_list(), bounds_MA_df['upper'].to_list()]
+# bounds_MA = [[lb, ub] for lb, ub in zip(bounds_MA[0], bounds_MA[1])]
+# bounds_MM = [bounds_MM_df['lower'].to_list(), bounds_MM_df['upper'].to_list()]
+# bounds_MM = [[lb, ub] for lb, ub in zip(bounds_MM[0], bounds_MM[1])]
 lb_mult = 0.5
 ub_mult = 1.5
 bounds_MA = [[lb_mult*param, ub_mult*param] for param in nominal_vals_MA]
-
-param_names_MA = ['KdAMP', 'KdADP', 'KdATP', 'kOnCaMKK', 'kPhosCaMKK', 
-               'kOnLKB1','kPhosLKB1','kOnPP','kDephosPP', 
-               'kOnAMPK','kPhosAMPK', 'kOnPP1','kDephosPP1', 'AMPKAR']
-state_names = ['AMP', 'ADP', 'ATP', 'AMPK', 'pAMPK', 'AMP_AMPK', 'ADP_AMPK', 'ATP_AMPK', 'AMP_pAMPK', 'ADP_pAMPK', 'ATP_pAMPK', 'AMP_AMP_AMPK', 'AMP_ADP_AMPK', 'AMP_ATP_AMPK', 'ADP_ADP_AMPK', 'ADP_ATP_AMPK', 'ATP_ATP_AMPK', 'AMP_AMP_pAMPK', 'AMP_ADP_pAMPK', 'AMP_ATP_pAMPK', 'ADP_ADP_pAMPK', 'ADP_ATP_pAMPK', 'ATP_ATP_pAMPK', 'CaMKK', 'CaMKK_AMPK', 'CaMKK_AMP_AMPK', 'CaMKK_ADP_AMPK', 'CaMKK_ATP_AMPK', 'CaMKK_AMP_AMP_AMPK', 'CaMKK_AMP_ADP_AMPK', 'CaMKK_AMP_ATP_AMPK', 'CaMKK_ADP_ADP_AMPK', 'CaMKK_ADP_ATP_AMPK', 'CaMKK_ATP_ATP_AMPK', 'LKB1', 'LKB1_AMP_AMPK', 'LKB1_ADP_AMPK', 'LKB1_AMP_AMP_AMPK', 'LKB1_AMP_ADP_AMPK', 'LKB1_ADP_ADP_AMPK', 'PP', 'PP_pAMPK', 'PP_ATP_pAMPK', 'PP_AMP_ATP_pAMPK', 'PP_ADP_ATP_pAMPK', 'PP_ATP_ATP_pAMPK', 'AMPKAR', 'pAMPKAR', 'AMPKAR_AMP_pAMPK', 'AMPKAR_AMP_AMP_pAMPK', 'AMPKAR_AMP_ADP_pAMPK', 'PP1', 'PP1_pAMPKAR']
-
-# initial conditions
-to_set = ['AMP', 'ADP', 'ATP', 'AMPK', 'CaMKK', 'LKB1', 'PP', 'AMPKAR', 'PP1']
-idxs = [state_names.index(item) for item in to_set]
-
-print(idxs)
-
-y0 = np.zeros((53,))
-y0[idxs[0]] = 2e-5   # 'AMP' mM
-y0[idxs[1]] = 1.3e-1 # 'ADP mM
-y0[idxs[2]] = 8.2   # 'ATP mM
-y0[idxs[3]] = 0.6   # 'AMPK mM
-y0[idxs[4]] = 1.0   # 'CaMKK_AMPK mM
-y0[idxs[5]] = 1.0   # 'CaMKK_AMPK mM
-y0[idxs[6]] = 1.0   # 'CaMKK_AMPK mM
-y0[idxs[7]] = 0.1   # 'AMPKAR mM
-y0[idxs[8]] = 1.0   # 'CaMKK_AMPK mM
-
-y0 = np.array(y0)
-
-# function to compute all MA params from sampled params
-def compute_MA_params(params):
-    return (1.0, # kOnAMP
-            params[0], # kOffAMP
-            1.0 , # kOnADP
-            params[1], # kOffADP
-            1.0, # kOnATP
-            params[2], # kOffATP
-            params[3], # kOnCaMKK
-            1.0, # kOffCaMKK
-            params[4], # kPhosCaMKK
-            params[5], # kOnLKB1
-            1.0, # kOffLKB1
-            params[6], # kPhosLKB1
-            params[7], # kOnPP
-            1.0, # kOffPP
-            params[8], # kDephosPP
-            params[9], # kOnAMPK
-            1.0, # kOffAMPK
-            params[10], # kPhosAMPK
-            params[11], # kOnPP1
-            1.0, # kOffPP1
-            params[12]) # kDephosPP1
-
-############################################
-# We also want to sample Michaelis-Menten parameters to generate correlated samples
-# of the mass action parameters
-nominal_vals_MM = [
-   2.5e-3, # KdAMP
-   1.5e-3, # KdADP
-   1.7e-3, # KdATP
-   0.357, # kPhosCaMKK
-   1.5e-2,  # KmCaMKK
-   3.92e-2, # kPhosLKB1
-   1.4,  # KmLKB1
-   1.1e-1, # kDephosPP
-   6.7e-2, # KmPP
-   6.33, # kPhosAMPK
-   4.67e-3, # KmAMPK
-
-   1.1e-1, # kDephosPP1
-   6.7e-2, # KmPP1
-   1e-3, # AMPKAR
-]
-
 bounds_MM = [[lb_mult*param, ub_mult*param] for param in nominal_vals_MM]
-param_names_MM = ['KdAMP', 'KdADP', 'KdATP', 'kPhosCaMKK', 'KmCamKK', 'kPhosLKB1', 'KmLKB1', 'kDephosPP', 'KmPP', 'kPhosAMPK', 'KmAMPK', 
-               'kDephosPP1', 'KmPP1', 'AMPKAR']
 
 # dictionary of the problem for SALib
 bounds_MA = {'num_vars':14, 'names':param_names_MA, 'bounds': bounds_MA,}
 bounds_MM = {'num_vars':14, 'names':param_names_MM, 'bounds': bounds_MM,}
 
+
+# states and initial conditions
+state_names = ['AMP', 'ADP', 'ATP', 'AMPK', 'pAMPK', 'AMP_AMPK', 'ADP_AMPK', 'ATP_AMPK', 'AMP_pAMPK', 'ADP_pAMPK', 'ATP_pAMPK', 'AMP_AMP_AMPK', 'AMP_ADP_AMPK', 'AMP_ATP_AMPK', 'ADP_ADP_AMPK', 'ADP_ATP_AMPK', 'ATP_ATP_AMPK', 'AMP_AMP_pAMPK', 'AMP_ADP_pAMPK', 'AMP_ATP_pAMPK', 'ADP_ADP_pAMPK', 'ADP_ATP_pAMPK', 'ATP_ATP_pAMPK', 'CaMKK', 'CaMKK_AMPK', 'CaMKK_AMP_AMPK', 'CaMKK_ADP_AMPK', 'CaMKK_ATP_AMPK', 'CaMKK_AMP_AMP_AMPK', 'CaMKK_AMP_ADP_AMPK', 'CaMKK_AMP_ATP_AMPK', 'CaMKK_ADP_ADP_AMPK', 'CaMKK_ADP_ATP_AMPK', 'CaMKK_ATP_ATP_AMPK', 'LKB1', 'LKB1_AMP_AMPK', 'LKB1_ADP_AMPK', 'LKB1_AMP_AMP_AMPK', 'LKB1_AMP_ADP_AMPK', 'LKB1_ADP_ADP_AMPK', 'PP', 'PP_pAMPK', 'PP_ATP_pAMPK', 'PP_AMP_ATP_pAMPK', 'PP_ADP_ATP_pAMPK', 'PP_ATP_ATP_pAMPK', 'AMPKAR', 'pAMPKAR', 'AMPKAR_AMP_pAMPK', 'AMPKAR_AMP_AMP_pAMPK', 'AMPKAR_AMP_ADP_pAMPK', 'PP1', 'PP1_pAMPKAR']
+
+ampkar_idx = state_names.index('AMPKAR')
+pampkar_idx = state_names.index('pAMPKAR')
+
+
+# Set initial conditions
+to_set = ['AMP', 'ADP', 'ATP', 'AMPK', 'CaMKK', 'LKB1', 'PP', 'AMPKAR', 'PP1']
+idxs = [state_names.index(item) for item in to_set]
+y0 = np.zeros((53,))
+y0[idxs[0]] = 2e-5   # AMP
+y0[idxs[1]] = 1.3e-1 # ADP
+y0[idxs[2]] = 8.2   # ATP
+y0[idxs[3]] = 0.6   # AMPK
+y0[idxs[4]] = 1.0   # CaMKK
+y0[idxs[5]] = 1.0   # LKB1
+y0[idxs[6]] = 1.0   # PP
+y0[idxs[7]] = 0.1   # AMPKAR
+y0[idxs[8]] = 1.0   # PP1
+
 # random seed for reproducibility
 seed = np.random.seed(seed=2048)
-
-#####################################################################
-# SET UP Jitable functions to solve to steady-state and compute qoi #
-#####################################################################
-@jax.jit
-def solve_to_steady_state(params, rhs, y0): #, thresh=1e-16):
-    solver=dfrx.Kvaerno5()
-    event = dfrx.SteadyStateEvent(rtol=1e-12, atol=1e-12)
-    stepsize_controller = dfrx.PIDController(rtol=1e-10, atol=1e-10)
-    t0 = 0.0
-    t1 = 5e6 # 3000.0 # 1000 seconds
-    dt0 = 1e-8 # initial time step
-
-    # initial solve
-    sol = dfrx.diffeqsolve(
-        rhs, 
-        solver, 
-        t0, 
-        t1, # max time if ss check is not met
-        dt0, 
-        y0, 
-        # saveat=saveat, 
-        discrete_terminating_event=event,
-        stepsize_controller=stepsize_controller,
-        args=params)
-    
-    return sol # returns the final state
-
-# jitable function to compute the qois
-@jax.jit
-def single_model_eval(params, rhs_basal, rhs_stress, y0, ampkar_idx=46, pampkar_idx=47):
-    # update y0 for AMPKAR
-    y0 = y0.at[ampkar_idx].set(params[-1])
-    params = compute_MA_params(params)
-
-    # find basal steady-state
-    sol_basal = solve_to_steady_state(params, rhs_basal, y0) #, 1e-16)
-
-    # apply stimulus and run again
-    sol_stress = solve_to_steady_state(params, rhs_stress, sol_basal.ys[-1,:]) #, 1e-16)
-
-    # compute the ratio of pAMPKAR/AMPKAR at the end of the stress simulation
-    basal_ratio = sol_basal.ys[0,pampkar_idx]/sol_basal.ys[0,ampkar_idx]
-    stress_ratio = sol_stress.ys[0,pampkar_idx]/sol_stress.ys[0,ampkar_idx]
-    norm_change = (stress_ratio - basal_ratio) / basal_ratio
-    
-    return jnp.array([norm_change, sol_basal.ts[0], sol_stress.ts[0]])
-
-@jax.jit
-def single_model_eval_nansafe(params, rhs_basal, rhs_stress, y0, ampkar_idx=46, pampkar_idx=47):
-    pred = jnp.sum(jnp.isnan(params))
-    false_fun = lambda params: single_model_eval(params, rhs_basal, 
-                                                 rhs_stress, y0, ampkar_idx, pampkar_idx)
-    true_fun = lambda params: jnp.array([jnp.nan, jnp.nan, jnp.nan])
-    return lax.cond(pred, true_fun, false_fun, params)
 
 ################################################
 #                   Model RHS                  #
@@ -233,7 +123,7 @@ rhs_stress = dfrx.ODETerm(rhs_stress)
 # Full scale case with large number of samples #
 ################################################
 # generate samples using the Sobol sampling method
-nsamps = 4096 # 1024
+nsamps = 1024
 param_vals_sobol_MA = sobol_samp.sample(bounds_MA, nsamps, calc_second_order=True, seed=seed)
 param_vals_sobol_MM = sobol_samp.sample(bounds_MM, nsamps, calc_second_order=True, seed=seed)
 
@@ -242,13 +132,31 @@ param_vals_sobol_MA_corr = np.array(param_vals_sobol_MA)
 param_vals_sobol_MM_np = np.array(param_vals_sobol_MM)
 
 # now compute all kons using samples of Km and from the MM model and Kcat from MA model
-kcat_idxs_MA = [4,6,8,10,12]
-kon_idxs_MA = [3,5,7,9,11]
-km_idxs_MM = [4,6,8,10,12]
-for kcat_i, kon_i, km_i in zip(kcat_idxs_MA, kon_idxs_MA, km_idxs_MM):
-    param_vals_sobol_MA_corr[:,kon_i] = (1+param_vals_sobol_MA_corr[:,kcat_i])/param_vals_sobol_MM_np[:,km_i]
+to_set = ['kPhosCaMKK', 'kPhosLKB1','kDephosPP','kPhosAMPK', 'kDephosPP1']
+kcat_idxs_MA = [param_names_MA.index(item) for item in to_set]
+to_set = ['kOnCaMKK', 'kOnLKB1','kOnPP','kOnAMPK','kOnPP1']
+kon_idxs_MA = [param_names_MA.index(item) for item in to_set]
+to_set = ['KmCaMKK','KmLKB1', 'KmPP', 'KmAMPK', 'KmPP1']
+km_idxs_MM = [param_names_MM.index(item) for item in to_set]
 
-np.save(savedir + 'param_vals_sobol_MA_corr_larger.npy', np.array(param_vals_sobol_MA_corr))
+for kcat_i, kon_i, km_i in zip(kcat_idxs_MA, kon_idxs_MA, km_idxs_MM):
+    _, param_vals_sobol_MA_corr[:,kon_i] =  michaelis_menten_to_mass_action(None, 
+                                            param_vals_sobol_MM_np[:,km_i], 
+                                            None, k_rev=1.0, 
+                                            k_cat=+param_vals_sobol_MA_corr[:,kcat_i])
+    
+# save parameter samples
+np.save(savedir + 'param_vals_sobol_MA_corr.npy', np.array(param_vals_sobol_MA_corr))
+
+# Convert from parameter samples to full parameter sets, because we do not sample
+# all parameters in the model
+n_params_true = 22
+temp = np.empty(shape=(param_vals_sobol_MA_corr.shape[0], n_params_true))
+
+for i in range(param_vals_sobol_MA_corr.shape[0]):
+    temp[i,:] = np.array(compute_MA_params(param_vals_sobol_MA_corr[i,:]))
+
+param_vals_sobol_MA_corr = temp
 
 # Run simulations
 print('Reshaping input parameters...')
@@ -271,8 +179,6 @@ if pad:
 n_loops = int(np.ceil(params_shape[0]/n_devices))
 new_params = jnp.array(param_vals_sobol_MA_corr).reshape((n_loops,n_devices,params_shape[1]))
 
-ampkar_idx = state_names.index('AMPKAR')
-pampkar_idx = state_names.index('pAMPKAR')
 # we are now ready to run simulations
 print('Running simulations...')
 sols_sobol_MA =[]
@@ -285,7 +191,7 @@ tend = time.time()
 
 print('Simulations took {} seconds'.format(tend-tnow))
 print('Saving results...')
-np.save(savedir + 'sols_sobol_corr_larger.npy', jnp.array(sols_sobol_MA))
+np.save(savedir + 'sols_sobol_corr.npy', jnp.array(sols_sobol_MA))
 
 print('Complete!')
 quit()

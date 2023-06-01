@@ -175,7 +175,7 @@ seed = np.random.seed(seed=2048)
 def solve_to_steady_state(params, rhs, y0): #, thresh=1e-16):
     solver=dfrx.Kvaerno5()
     event = dfrx.SteadyStateEvent(rtol=1e-12, atol=1e-12)
-    stepsize_controller = dfrx.PIDController(rtol=1e-10, atol=1e-10)
+    stepsize_controller = dfrx.PIDController(rtol=1e-9, atol=1e-9)
     t0 = 0.0
     t1 = 5e6 # 3000.0 # 1000 seconds
     dt0 = 1e-8 # initial time step
