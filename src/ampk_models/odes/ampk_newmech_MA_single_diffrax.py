@@ -49,21 +49,21 @@ class ampk_newmech_MA_single(eqx.Module):
         """
         # unpack parameters
         KdAMP      = args[0] # AMP binding
-        kCaMKK     = args[1] # CaMKK
-        konCaMKK   = args[2]
-        koffCaMKK  = args[3]
-        kLKB1      = args[4] # LKB1 
-        konLKB1    = args[5]
-        koffLKB1   = args[6]
-        kPP        = args[7] # AMPK Phosphatase
-        konPP      = args[8]
-        koffPP     = args[9]
-        kAMPK      = args[10] # AMPK kinase
-        konAMPK    = args[11]
-        koffAMPK   = args[12]
-        kPP1       = args[13] # pAMPKAR Phosphatase
-        konPP1     = args[14]
-        koffPP1    = args[15]
+        konCaMKK   = args[1] # CaMKK
+        koffCaMKK  = args[2]
+        kCaMKK     = args[3] 
+        konLKB1    = args[4] # LKB1
+        koffLKB1   = args[5]
+        kLKB1      = args[6]
+        konPP      = args[7] # AMPK Phosphatase
+        koffPP     = args[8]
+        kPP        = args[9]
+        konAMPK    = args[10] # AMPK kinase
+        koffAMPK   = args[11]
+        kAMPK      = args[12]
+        konPP1     = args[13] # pAMPKAR Phosphatase
+        koffPP1    = args[14]
+        kPP1       = args[15]
         alpha      = args[16]
         beta       = args[17]
         
