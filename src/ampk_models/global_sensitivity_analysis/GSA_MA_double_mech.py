@@ -70,10 +70,12 @@ param_names_MM = MM_nominals['parameter'].to_list()
 
 
 # metabolism_params
-metab_parms_basal = {'kGly': 1300.0,'kHydro':1.4e-3,'kForAK':40.44,
-                     'kRevAK':1.1e-3,'VmaxOxPhos':0.5,'Kadp': 5.8e-2,'n': 2.568,}
-metab_parms_stress = {'kGly': 4.5,'kHydro':1.4e-3,'kForAK':40.44,
-                      'kRevAK':1.1e-3,'VmaxOxPhos':0.5,'Kadp': 5.8e-2,'n': 2.568,}
+metab_parms_basal = {'kGly': 0.5,'kHydro':0.1,
+                     'VforAK': 14.66, 'KeqAK': 2.21, 'kmm': 0.32, 'kmd': 0.35, 'kmt': 0.27,
+                     'VmaxOxPhos':0.5,'Kadp': 5.8e-2,'n': 2.568,}
+metab_parms_stress = {'kGly': 0.005,'kHydro':0.1,
+                      'VforAK': 14.66, 'KeqAK': 2.21, 'kmm': 0.32, 'kmd': 0.35, 'kmt': 0.27,
+                     'VmaxOxPhos':0.5,'Kadp': 5.8e-2,'n': 2.568,}
 
 lb_mult = 0.1
 ub_mult = 10
@@ -108,8 +110,8 @@ pampkar_idx = state_names.index('pAMPKAR')
 to_set = ['AMP', 'ADP', 'ATP', 'AMPK', 'CaMKK', 'LKB1', 'PP', 'AMPKAR', 'PP1']
 idxs = [state_names.index(item) for item in to_set]
 y0 = np.zeros((53,))
-y0[idxs[0]] = 2e-5   # AMP
-y0[idxs[1]] = 1.3e-1 # ADP
+y0[idxs[0]] = 2e-2   # AMP
+y0[idxs[1]] = 1.3 # ADP
 y0[idxs[2]] = 8.2   # ATP
 y0[idxs[3]] = 0.6   # AMPK
 y0[idxs[4]] = 10.0   # CaMKK

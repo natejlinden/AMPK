@@ -51,8 +51,8 @@ idxs = [state_names.index(item) for item in to_set]
 
 # print(idxs)
 y0 = np.zeros((len(state_names),))
-y0[idxs[0]] = 2e-5   # 'AMP' mM
-y0[idxs[1]] = 1.3e-1 # 'ADP mM
+y0[idxs[0]] = 2e-2   # 'AMP' mM
+y0[idxs[1]] = 1.3 # 'ADP mM
 y0[idxs[2]] = 8.2   # 'ATP mM
 y0[idxs[3]] = 0.6   # 'AMPK mM
 y0[idxs[4]] = 10.0   # CaMKK mM
@@ -65,10 +65,12 @@ y0 = np.array(y0)
 
 
 # metabolism_params
-metab_parms_basal = {'kGly': 1300.0,'kHydro':1.4e-3,'kForAK':40.44,
-                     'kRevAK':1.1e-3,'VmaxOxPhos':0.5,'Kadp': 5.8e-2,'n': 2.568,}
-metab_parms_stress = {'kGly': 4.5,'kHydro':1.4e-3,'kForAK':40.44,
-                      'kRevAK':1.1e-3,'VmaxOxPhos':0.5,'Kadp': 5.8e-2,'n': 2.568,}
+metab_parms_basal = {'kGly': 0.5,'kHydro':0.1,
+                     'VforAK': 14.66, 'KeqAK': 2.21, 'kmm': 0.32, 'kmd': 0.35, 'kmt': 0.27,
+                     'VmaxOxPhos':0.5,'Kadp': 5.8e-2,'n': 2.568,}
+metab_parms_stress = {'kGly': 0.005,'kHydro':0.1,
+                      'VforAK': 14.66, 'KeqAK': 2.21, 'kmm': 0.32, 'kmd': 0.35, 'kmt': 0.27,
+                     'VmaxOxPhos':0.5,'Kadp': 5.8e-2,'n': 2.568,}
 
 # load nominal vals and compute bounds
 nominal_df = pd.read_csv(nominals_file)
