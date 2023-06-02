@@ -54,7 +54,6 @@ for model_info in model_names_nominals:
     thresh = 0.1
     min_max = np.vstack((np.min(param_vals_sobol_corr, axis=0),
                          np.max(param_vals_sobol_corr, axis=0))).transpose()
-    print(min_max)
     condition = np.abs(bounds - min_max)/bounds > thresh
     bounds = np.where(condition, min_max, bounds)
 
