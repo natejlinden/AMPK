@@ -83,7 +83,7 @@ def solve_model(params, rhs, y0, t1, times):
     stepsize_controller = dfrx.PIDController(rtol=1e-10, atol=1e-10)
     t0 = times[0]
     # times = jnp.arange(t0, t1, 0.5)
-    dt0 = jnp.array(1e-8) # initial time step
+    dt0 = 1e-8 # initial time step
     saveat=dfrx.SaveAt(ts=times)
 
     # solve
@@ -105,7 +105,7 @@ rhs = dfrx.ODETerm(rhs)
 rhs_stress = dfrx.ODETerm(rhs_stress)
 
 # run once to compile
-times = jnp.arange(0.0, 1000.0, 0.5)
+times = np.arange(0.0, 1000.0, 0.5)
 sol = solve_model(nominal_vals, rhs_stress, y0, 1000.0, times)
 solve_model(nominal_vals, rhs_stress, y0, 1000.0, times)
 
