@@ -62,7 +62,7 @@ for model_info in model_names_nominals:
     ####### HISTOGRAM OF QOI #######
     fig, ax = plt.subplots(1,1, figsize=(2.25,3))
     ax.hist(sobol_sols_corr[:,1], bins=20)
-    ax.set_xlabel('normalized change \n pAMPKAR/AMPKAR', labelpad=2)
+    ax.set_xlabel('change \n pAMPKAR/AMPKARtot', labelpad=5)
     ax.set_ylabel('count')
     fig.savefig('../../../figures/' + savedir + 'change_hist.pdf')
     plt.show()
