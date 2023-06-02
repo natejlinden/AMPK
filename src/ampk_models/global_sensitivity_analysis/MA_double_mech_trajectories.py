@@ -81,9 +81,9 @@ def solve_model(params, rhs, y0, t1, times):
     params = compute_MA_params(params)
     solver=dfrx.Kvaerno5()
     stepsize_controller = dfrx.PIDController(rtol=1e-10, atol=1e-10)
-    t0 = 0.0
+    t0 = times[0]
     # times = jnp.arange(t0, t1, 0.5)
-    dt0 = 1e-8 # initial time step
+    dt0 = jnp.array(1e-8) # initial time step
     saveat=dfrx.SaveAt(ts=times)
 
     # solve
