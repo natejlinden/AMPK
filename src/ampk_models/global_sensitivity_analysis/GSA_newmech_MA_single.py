@@ -85,7 +85,7 @@ bounds_MM = {'num_vars':14, 'names':param_names_MM, 'bounds': bounds_MM,}
 
 
 # states and initial conditions
-state_names = ['AMP', 'ADP', 'ATP'
+state_names = ['AMP', 'ADP', 'ATP',
                'AMPK', 'pAMPK', 
                'AMP_AMPK', 'AMP_pAMPK',
                'CaMKK', 'CaMKK_AMPK', 'CaMKK_AMP_AMPK',
