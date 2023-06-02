@@ -116,12 +116,12 @@ for i in range(n_samples):
     sample = param_vals_sobol_corr[idxs[i],:]
     sol = sobol_sols_corr[idxs[i],:]
     # run the model to initial steady-state
-    times = jnp.arange(0.0, sol[1], sol[1]/1000)
-    sol_1 = solve_model(sample, rhs, y0, sol[1], times)
+    times = jnp.arange(0.0, sol[2], sol[2]/1000)
+    sol_1 = solve_model(sample, rhs, y0, sol[2], times)
     # now actually run to get a solution
     # note sol[0] will be the ic and sol[1] will be the time to steady-state
-    times = jnp.arange(0.0, sol[2], sol[2]/1000)
-    sol_2 = solve_model(sample, rhs_stress, sol_1.ys[-1,:], sol[2], times)
+    times = jnp.arange(0.0, sol[3], sol[3]/1000)
+    sol_2 = solve_model(sample, rhs_stress, sol_1.ys[-1,:], sol[3], times)
     # plot the solution
     ax.plot(sol_1.ts, sol_1.ys[:,ampkar_idx+1]/sample[-1], 'k', label=f'sample {idxs[i]}', alpha=0.5)
     ax.plot(sol_1.ts[-1]+sol_2.ts, sol_2.ys[:,ampkar_idx+1]/sample[-1], 'b', label=f'sample {idxs[i]}', alpha=0.5)
