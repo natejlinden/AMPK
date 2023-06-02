@@ -23,24 +23,14 @@ class ampk_newmech_MA_single(eqx.Module):
     # metabolic params
     kGly: float
     kHydro: float
-    kForAK: float
-    kRevAK: float
+    VforAK: float
+    KeqAK: float
+    kmm: float
+    kmd: float
+    kmt: float
     VmaxOxPhos: float
     Kadp: float
     n: float
-
-
-    def __init__(self, kGly, kHydro, kForAK, kRevAK, VmaxOxPhos, Kadp, n):
-        """Initialize the model. Set fixed parameters."""
-        # TODO: expand docstring
-        # TODO: add default values
-        self.kGly = kGly
-        self.kHydro = kHydro
-        self.kForAK = kForAK
-        self.kRevAK = kRevAK
-        self.VmaxOxPhos = VmaxOxPhos
-        self.Kadp = Kadp
-        self.n = n
 
     def __call__(self, t, y, args):
         """Right hand side of the AMPK_ma_double_mech regulation model.
@@ -97,7 +87,12 @@ class ampk_newmech_MA_single(eqx.Module):
         # ATP hydrolysis
         Jhydro = self.kHydro*y[2]
         # Adenylate Kinase
-        JAK = (self.kForAK*y[2]*y[0]) - (self.kRevAK*y[1]*y[1])
+        num_for = (self.VforAK*y[2]*y[0])/(self.kmt*self.kmm)
+        den = (1 + (y[2]/self.kmt) + (y[0]/self.kmm) + ((y[2]*y[0])/(self.kmt*self.kmm)) + 
+                   ((2*y[1])/self.kmd) + ((y[1]**2)/(self.kmd**2)))
+        VrevAK = (self.VforAK*(self.kmd**2))/(self.KeqAK*self.kmt*self.kmm)
+        num_rev = (VrevAK*(y[1]**2))/(self.kmd**2)
+        JAK = (num_for - num_rev)/den
         # Oxidative Phos
         Joxphos = (self.VmaxOxPhos * ((y[1]/self.Kadp)**self.n))/(1 + ((y[1]/self.Kadp)**self.n))
 
