@@ -30,12 +30,12 @@ lb_mult, ub_mult = 0.1, 10.0
 
 for model_info in model_names_nominals:
     model, nominals_file = model_info
-    savedir = './' + model + '/'
+    savedir = model + '/'
 
     ####### PREPROCESSING #######
     # load parameter samples and simulation results
-    param_vals_sobol_corr = np.load(savedir + 'param_vals_sobol_MA_corr.npy')
-    sobol_sols_corr = np.load(savedir + 'sols_sobol_corr.npy')
+    param_vals_sobol_corr = np.load('./' + savedir + 'param_vals_sobol_MA_corr.npy')
+    sobol_sols_corr = np.load('./' + savedir + 'sols_sobol_corr.npy')
 
     # reshape into 2D array
     sobol_sols_corr = sobol_sols_corr.reshape(sobol_sols_corr.shape[0]*sobol_sols_corr.shape[1], sobol_sols_corr.shape[2])
@@ -61,17 +61,17 @@ for model_info in model_names_nominals:
 
     ####### HISTOGRAM OF QOI #######
     fig, ax = plt.subplots(1,1, figsize=(2.25,3))
-    ax.hist(sobol_sols_corr[:,0], bins=20)
+    ax.hist(sobol_sols_corr[:,1], bins=20)
     ax.set_xlabel('normalized change \n pAMPKAR/AMPKAR', labelpad=2)
     ax.set_ylabel('count')
-    fig.savefig(savedir + 'normalized_change_hist.pdf')
+    fig.savefig('../../../figures/' + savedir + 'change_hist.pdf')
     plt.show()
 
     ####### COMPUTE SENSITIVITIY INDICES #######
-    Si_sobol = sobol_analyze.analyze(problem, sobol_sols_corr[:,0], calc_second_order=True)
-    np.save(savedir + 'sobol_normalized_change.npy', Si_sobol)
-    Si_hdmr = hdmr_analyze(problem, param_vals_sobol_corr, sobol_sols_corr[:,0])
-    np.save(savedir + 'hdmr_normalized_change.npy', Si_hdmr)
+    Si_sobol = sobol_analyze.analyze(problem, sobol_sols_corr[:,1], calc_second_order=True)
+    np.save('./' + savedir + 'sobol_change.npy', Si_sobol)
+    Si_hdmr = hdmr_analyze(problem, param_vals_sobol_corr, sobol_sols_corr[:,1])
+    np.save('./' + savedir + 'hdmr_change.npy', Si_hdmr)
 
     ####### SORT #######
     # sort sobol indices by ST
@@ -105,7 +105,7 @@ for model_info in model_names_nominals:
             log=False)
     plt.xticks(np.arange(0,14), Si_sobol_sorted['name'], rotation='vertical')
     plt.ylabel('Sobol First Order')
-    fig.savefig(savedir + 'S1_normalized_change.pdf')
+    fig.savefig('../../../figures/' + savedir + 'S1_change.pdf')
     plt.show()
 
     # sobol total order
@@ -115,7 +115,7 @@ for model_info in model_names_nominals:
             log=False)
     plt.xticks(np.arange(0,14), Si_sobol_sorted['name'], rotation='vertical')
     plt.ylabel('Sobol Total Order')
-    fig.savefig(savedir + 'ST_normalized_change.pdf')
+    fig.savefig('../../../figures/' + savedir + 'ST_change.pdf')
     plt.show()
 
     # HDMR indices
@@ -134,7 +134,7 @@ for model_info in model_names_nominals:
     plt.ylabel('HDMR Contribution')
     plt.legend()
     plt.show()
-    fig.savefig(savedir + 'hdmr_normalized_change.pdf')
+    fig.savefig('../../../figures/' + savedir + 'hdmr_change.pdf')
 
 
 
