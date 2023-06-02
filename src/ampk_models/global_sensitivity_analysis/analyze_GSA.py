@@ -54,15 +54,16 @@ for model_info in model_names_nominals:
     # if the difference is greater the 10% of the original bounds keep the min/max
     # otherwise keep the bounds
     thresh = 0.1
-    min_max = np.hstack((np.min(param_vals_sobol_corr, axis=0).transpose(),
-                         np.max(param_vals_sobol_corr, axis=0).transpose()))
+    min_max = np.vstack((np.min(param_vals_sobol_corr, axis=0),
+                         np.max(param_vals_sobol_corr, axis=0))).transpose()
+    print(min_max)
     condition = np.abs(bounds - min_max)/bounds > thresh
     bounds = np.where(condition, min_max, bounds)
 
     problem = {'num_vars':n_params, 'names':param_names, 'bounds': bounds,} # dict for SALib
 
     ####### HISTOGRAM OF QOI #######
-    for i in range(nqoi):
+    for i in range(len(qoi_names)):
         fig, ax = plt.subplots(1,1, figsize=(2.25,3))
         ax.hist(sobol_sols_corr[:,0], bins=20)
         ax.set_xlabel(qoi_names[i][0], labelpad=2)
