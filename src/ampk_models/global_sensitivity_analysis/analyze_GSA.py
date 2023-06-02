@@ -103,7 +103,7 @@ for model_info in model_names_nominals:
     ax.bar(np.arange(0,len(param_names)), Si_sobol_sorted['S1'],
             yerr=Si_sobol_sorted['S1_conf'],
             log=False)
-    plt.xticks(np.arange(0,14), Si_sobol_sorted['name'], rotation='vertical')
+    plt.xticks(np.arange(0,len(param_names)), Si_sobol_sorted['name'], rotation='vertical')
     plt.ylabel('Sobol First Order')
     fig.savefig('../../../figures/' + savedir + 'S1_change.pdf')
     plt.show()
@@ -113,7 +113,7 @@ for model_info in model_names_nominals:
     ax.bar(np.arange(0,len(param_names)), Si_sobol_sorted['ST'],
             yerr=Si_sobol_sorted['ST_conf'],
             log=False)
-    plt.xticks(np.arange(0,14), Si_sobol_sorted['name'], rotation='vertical')
+    plt.xticks(np.arange(0,len(param_names)), Si_sobol_sorted['name'], rotation='vertical')
     plt.ylabel('Sobol Total Order')
     fig.savefig('../../../figures/' + savedir + 'ST_change.pdf')
     plt.show()
