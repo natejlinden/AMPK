@@ -80,8 +80,8 @@ bounds_MA = [[lb_mult*param, ub_mult*param] for param in nominal_vals_MA]
 bounds_MM = [[lb_mult*param, ub_mult*param] for param in nominal_vals_MM]
 
 # dictionary of the problem for SALib
-bounds_MA = {'num_vars':14, 'names':param_names_MA, 'bounds': bounds_MA,}
-bounds_MM = {'num_vars':14, 'names':param_names_MM, 'bounds': bounds_MM,}
+bounds_MA = {'num_vars':13, 'names':param_names_MA, 'bounds': bounds_MA,}
+bounds_MM = {'num_vars':13, 'names':param_names_MM, 'bounds': bounds_MM,}
 
 
 # states and initial conditions
