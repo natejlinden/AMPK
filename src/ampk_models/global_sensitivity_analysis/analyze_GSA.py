@@ -27,8 +27,6 @@ mpl.rcParams['figure.autolayout'] = True
 model_names_nominals = [('MA_double_mech', 'nominal_params_MA.csv'), 
                         ('newmech_MA_single', 'nominal_params_newmech_MA.csv')]
 lb_mult, ub_mult = 0.1, 10.0
-qoi_names = [('normalized change \n pAMPKAR/AMPKAR', 'norm_change'), 
-             ('change \n pAMPKAR/AMPKAR', 'change')]
 
 for model_info in model_names_nominals:
     model, nominals_file = model_info
@@ -63,13 +61,81 @@ for model_info in model_names_nominals:
     problem = {'num_vars':n_params, 'names':param_names, 'bounds': bounds,} # dict for SALib
 
     ####### HISTOGRAM OF QOI #######
-    for i in range(len(qoi_names)):
-        fig, ax = plt.subplots(1,1, figsize=(2.25,3))
-        ax.hist(sobol_sols_corr[:,0], bins=20)
-        ax.set_xlabel(qoi_names[i][0], labelpad=2)
-        ax.set_ylabel('count')
-        fig.savefig(savedir + qoi_names[i][1] + '_hist.pdf')
-        plt.show()
+    fig, ax = plt.subplots(1,1, figsize=(2.25,3))
+    ax.hist(sobol_sols_corr[:,0], bins=20)
+    ax.set_xlabel('normalized change \n pAMPKAR/AMPKAR', labelpad=2)
+    ax.set_ylabel('count')
+    fig.savefig(savedir + 'normalized_change_hist.pdf')
+    plt.show()
+
+    ####### COMPUTE SENSITIVITIY INDICES #######
+    Si_sobol = sobol_analyze.analyze(problem, sobol_sols_corr[:,0], calc_second_order=True)
+    np.save(savedir + 'sobol_normalized_change.npy', Si_sobol)
+    Si_hdmr = hdmr_analyze(problem, param_vals_sobol_corr, sobol_sols_corr[:,0])
+    np.save(savedir + 'hdmr_normalized_change.npy', Si_hdmr)
+
+    ####### SORT #######
+    # sort sobol indices by ST
+    dtype = [('name', 'U10'), ('S1', float), ('S1_conf', float), 
+             ('ST', float), ('ST_conf', float)]
+
+    Si_sobol_sorted = np.array([(name, S1, S1_conf, ST, ST_conf) for 
+                               name, S1, S1_conf, ST, ST_conf 
+                               in zip(param_names, Si_sobol['S1'], 
+                                      Si_sobol['S1_conf'], Si_sobol['ST'], 
+                                      Si_sobol['ST_conf'])], dtype=dtype)
+    Si_sobol_sorted = np.sort(Si_sobol_sorted, order='ST')[::-1]
+
+    # sort hdmr by S
+    dtype = [('name', 'U10'), ('Sa', float), ('Sa_conf', float), ('Sb', float), 
+             ('Sb_conf', float), ('S', float), ('S_conf', float), ('ST', float), 
+             ('ST_conf', float)]
+    Si_hdmr_sorted = np.array([(name, Sa, Sa_conf, Sb, Sb_conf, S, S_conf, ST, ST_conf) 
+                                     for name, Sa, Sa_conf, Sb, Sb_conf, S, S_conf, ST, ST_conf 
+                                     in zip(param_names, Si_hdmr['Sa'], Si_hdmr['Sa_conf'], 
+                                            Si_hdmr['Sb'], Si_hdmr['Sb_conf'],
+                                            Si_hdmr['S'], Si_hdmr['S_conf'],
+                                            Si_hdmr['ST'], Si_hdmr['ST_conf'])], dtype=dtype)
+    Si_hdmr_sorted = np.sort(Si_hdmr_sorted, order='S')[::-1]
+
+    ####### PLOT #######
+    # sobol first order
+    fig, ax = plt.subplots(figsize=(4,3))
+    ax.bar(np.arange(0,len(param_names)), Si_sobol_sorted['S1'],
+            yerr=Si_sobol_sorted['S1_conf'],
+            log=False)
+    plt.xticks(np.arange(0,14), Si_sobol_sorted['name'], rotation='vertical')
+    plt.ylabel('Sobol First Order')
+    fig.savefig(savedir + 'S1_normalized_change.pdf')
+    plt.show()
+
+    # sobol total order
+    fig, ax = plt.subplots(figsize=(4,3))
+    ax.bar(np.arange(0,len(param_names)), Si_sobol_sorted['ST'],
+            yerr=Si_sobol_sorted['ST_conf'],
+            log=False)
+    plt.xticks(np.arange(0,14), Si_sobol_sorted['name'], rotation='vertical')
+    plt.ylabel('Sobol Total Order')
+    fig.savefig(savedir + 'ST_normalized_change.pdf')
+    plt.show()
+
+    # HDMR indices
+    fig, ax = plt.subplots(figsize=(4,3))
+    ax.bar(np.arange(0,len(Si_hdmr_sorted['Sa'][0:len(param_names)])), 
+        Si_hdmr_sorted['Sa'][0:len(param_names)],
+        bottom=np.zeros(len(Si_hdmr_sorted['Sa'][0:len(param_names)])), 
+        label=r'$Sa$ (Structural)')
+    ax.bar(np.arange(0,len(Si_hdmr_sorted['Sb'][0:len(param_names)])), 
+        Si_hdmr_sorted['Sb'][0:len(param_names)],
+        bottom=Si_hdmr_sorted['Sa'][0:len(param_names)], 
+        label=r'$Sb$ (Correlated)',
+        yerr=Si_hdmr_sorted['S_conf'])
+    plt.xticks(np.arange(0, len(Si_hdmr_sorted['name'][0:len(param_names)])), 
+               Si_hdmr_sorted['name'][0:len(param_names)], rotation='vertical')
+    plt.ylabel('HDMR Contribution')
+    plt.legend()
+    plt.show()
+    fig.savefig(savedir + 'hdmr_normalized_change.pdf')
 
 
 
