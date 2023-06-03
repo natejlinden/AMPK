@@ -165,9 +165,9 @@ class ampk_MA_double_mech(eqx.Module):
 
         # now return the odes for each state variable
         dydt = jnp.zeros((53,)) # 53 state variables jax array
-        dydt = dydt.at[0].set(-J1-J4-J7-J8-J9-J16-J17-J18-Jak)
-        dydt = dydt.at[1].set(-J2-J5-J10-J11-J12-J19-J20-J21-Jgly+2*Jak+Jhydro-Joxphos)
-        dydt = dydt.at[2].set(-J3-J6-J13-J14-J15-J22-J23-J24+Jgly-Jak-Jhydro+Joxphos)
+        dydt = dydt.at[0].set(-J1-J4-J7-J8-J9-J16-J17-J18-JAK)
+        dydt = dydt.at[1].set(-J2-J5-J10-J11-J12-J19-J20-J21-Jgly+2*JAK+Jhydro-Joxphos)
+        dydt = dydt.at[2].set(-J3-J6-J13-J14-J15-J22-J23-J24+Jgly-JAK-Jhydro+Joxphos)
         dydt = dydt.at[3].set(-J1-J2-J3-J25+J56)
         dydt = dydt.at[4].set(-J4-J5-J6+J26-J55)
         dydt = dydt.at[5].set(J1-J7-J10-J13-J27-J45)
