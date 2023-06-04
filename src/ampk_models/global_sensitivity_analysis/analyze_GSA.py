@@ -24,9 +24,10 @@ plt.style.use('~/.matplotlib/custom.mplstyle')
 mpl.rcParams['figure.autolayout'] = True
 
 # we will peform the analysis over all models
-model_names_nominals = [('MA_double_mech', 'nominal_params_MA.csv'), 
-                        ('newmech_MA_single', 'nominal_params_newmech_MA.csv')]
-lb_mult, ub_mult = 0.1, 10.0
+# model_names_nominals = [('MA_double_mech', 'nominal_params_MA.csv'), 
+#                         ('newmech_MA_single', 'nominal_params_newmech_MA.csv')]
+model_names_nominals = [('newmech_MA_single', 'nominal_params_newmech_MA.csv')]
+lb_mult, ub_mult = 0.001, 50.0
 
 for model_info in model_names_nominals:
     model, nominals_file = model_info
@@ -61,17 +62,17 @@ for model_info in model_names_nominals:
 
     ####### HISTOGRAM OF QOI #######
     fig, ax = plt.subplots(1,1, figsize=(2.25,3))
-    ax.hist(sobol_sols_corr[:,1], bins=20)
-    ax.set_xlabel('change \n pAMPKAR/AMPKARtot', labelpad=5)
+    ax.hist(sobol_sols_corr[:,2], bins=20)
+    ax.set_xlabel('pAMPKAR/AMPKARtot final', labelpad=5)
     ax.set_ylabel('count')
-    fig.savefig('../../../figures/' + savedir + 'change_hist.pdf')
+    fig.savefig('../../../figures/' + savedir + 'pamapkar_final_hist.pdf')
     plt.show()
 
     ####### COMPUTE SENSITIVITIY INDICES #######
-    Si_sobol = sobol_analyze.analyze(problem, sobol_sols_corr[:,1], calc_second_order=True)
-    np.save('./' + savedir + 'sobol_change.npy', Si_sobol)
-    Si_hdmr = hdmr_analyze(problem, param_vals_sobol_corr, sobol_sols_corr[:,1])
-    np.save('./' + savedir + 'hdmr_change.npy', Si_hdmr)
+    Si_sobol = sobol_analyze.analyze(problem, sobol_sols_corr[:,2], calc_second_order=True)
+    np.save('./' + savedir + 'sobol_pampkar_final.npy', Si_sobol)
+    Si_hdmr = hdmr_analyze(problem, param_vals_sobol_corr, sobol_sols_corr[:,2])
+    np.save('./' + savedir + 'hdmr_pampkar_final.npy', Si_hdmr)
 
     ####### SORT #######
     # sort sobol indices by ST
@@ -105,7 +106,7 @@ for model_info in model_names_nominals:
             log=False)
     plt.xticks(np.arange(0,len(param_names)), Si_sobol_sorted['name'], rotation='vertical')
     plt.ylabel('Sobol First Order')
-    fig.savefig('../../../figures/' + savedir + 'S1_change.pdf')
+    fig.savefig('../../../figures/' + savedir + 'S1_pamapkar_final.pdf')
     plt.show()
 
     # sobol total order
@@ -115,7 +116,7 @@ for model_info in model_names_nominals:
             log=False)
     plt.xticks(np.arange(0,len(param_names)), Si_sobol_sorted['name'], rotation='vertical')
     plt.ylabel('Sobol Total Order')
-    fig.savefig('../../../figures/' + savedir + 'ST_change.pdf')
+    fig.savefig('../../../figures/' + savedir + 'ST_pamapkar_final.pdf')
     plt.show()
 
     # HDMR indices
@@ -134,7 +135,7 @@ for model_info in model_names_nominals:
     plt.ylabel('HDMR Contribution')
     plt.legend()
     plt.show()
-    fig.savefig('../../../figures/' + savedir + 'hdmr_change.pdf')
+    fig.savefig('../../../figures/' + savedir + 'hdmr_pamapkar_final.pdf')
 
 
 
