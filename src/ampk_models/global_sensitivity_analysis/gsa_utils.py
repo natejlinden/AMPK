@@ -51,7 +51,7 @@ def single_model_eval(params, rhs_basal, rhs_stress, y0, ampkar_idx,
     change = stress - basal
     norm_change = change / basal
     
-    return jnp.array([norm_change, change, sol_basal.ts[0], sol_stress.ts[0]])
+    return jnp.array([norm_change, change, stress, sol_basal.ts[0], sol_stress.ts[0]])
 
 @jax.jit
 def single_model_eval_nansafe(params, rhs_basal, rhs_stress, y0, ampkar_idx, 
