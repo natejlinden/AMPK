@@ -76,8 +76,8 @@ metab_parms_stress = {'kGly': 0.005,'kHydro':0.1,
                       'VforAK': 14.66, 'KeqAK': 2.21, 'kmm': 0.32, 'kmd': 0.35, 'kmt': 0.27,
                      'VmaxOxPhos':0.5,'Kadp': 5.8e-2,'n': 2.568,}
 
-lb_mult = 0.1
-ub_mult = 10
+lb_mult = 0.001
+ub_mult = 50.0
 bounds_MA = [[lb_mult*param, ub_mult*param] for param in nominal_vals_MA]
 bounds_MM = [[lb_mult*param, ub_mult*param] for param in nominal_vals_MM]
 
@@ -129,7 +129,7 @@ rhs_stress = dfrx.ODETerm(rhs_stress)
 # Full scale case with large number of samples #
 ################################################
 # generate samples using the Sobol sampling method
-nsamps = 2048
+nsamps = 4096
 param_vals_sobol_MA = sobol_samp.sample(bounds_MA, nsamps, calc_second_order=True, seed=seed)
 param_vals_sobol_MM = sobol_samp.sample(bounds_MM, nsamps, calc_second_order=True, seed=seed)
 
