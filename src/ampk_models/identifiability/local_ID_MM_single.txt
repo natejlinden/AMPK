@@ -1,4 +1,4 @@
-Locally Identifiable parameters are
-kOffAMP, kOffADP, kOffATP, kHydro, 
-Locally Nonidentifiable parameters are
-kOnAMP, CaMKKtot, KmCaMKK, x1, x4, x8, kLKB1, x7, KmLKB1, kCaMKK, kPP1, x13, x3, kOnADP, kRevAK, x9, x11, PP1tot, x2, kForAK, KmAMPK, KmPP1, kAMPK, x6, PPtot, x10, LKB1tot, kPP, kGly, KmPP, kOnATP, x12, x5, 
+Locally Identifiable parameters:
+kHydro, kOffADP, kOffAMP, KeqAK, kOffATP, 
+Nonidentifiable parameters:
+x1, x6, kOnADP, PPtot, x11, kPP1, PP1tot, kmd, x3, x7, kOnATP, x5, KmLKB1, VforAK, kAMPK, kPP, x2, LKB1tot, KmPP, kCaMKK, kLKB1, CaMKKtot, x4, kmm, x9, kmt, KmAMPK, x8, x12, KmCaMKK, x10, x13, KmPP1, kOnAMP, kGly, 

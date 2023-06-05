@@ -1,4 +1,4 @@
-Locally Identifiable parameters are
-kPhosAMPK, kOffAMP, kDephosPP1, kOffAMPK, kOffPP, kPhosCaMKK, kOffCaMKK, kOffLKB1, kPhosLKB1, kDephosPP, kOffPP1, kOffADP, kHydro, kOffATP, 
-Locally Nonidentifiable parameters are
-x39, x4, x7, x23, x42, x47, x36, x20, x41, x11, x21, x16, x13, x18, kForAK, x12, x8, kOnPP1, x15, x37, x19, x27, x34, x45, x30, kOnLKB1, x29, x22, x43, x31, x6, x10, x40, x17, kRevAK, kOnAMPK, x52, x38, kOnCaMKK, x1, x28, kOnAMP, x33, x24, x48, x50, x25, x44, x2, x9, x46, kOnATP, kOnPP, x14, kOnADP, x26, kGly, x0, x5, x49, x32, x35, x3, x51, 
+Locally Identifiable parameters:
+kOffAMP, kOffPP1, kOffCaMKK, kPhosLKB1, kHydro, kOffADP, kOffATP, KeqAK, kPhosCaMKK, kOffAMPK, kDephosPP1, kOffLKB1, kOffPP, kDephosPP, kPhosAMPK, 
+Nonidentifiable parameters:
+x31, x25, kmd, x17, x9, x23, x11, kOnAMP, x36, x39, x26, x15, x35, x33, kOnLKB1, kOnPP, VforAK, x52, x45, x27, x34, x49, kmm, x46, kOnCaMKK, x14, kGly, kmt, x19, x5, x40, x20, x41, x37, x10, x50, x38, x42, x4, x51, x29, kOnADP, x32, x18, x8, x21, x16, x24, x7, x53, kOnATP, x6, kOnPP1, x3, x1, x48, x2, x43, x44, x12, x22, x30, x28, kOnAMPK, x47, x13, 
