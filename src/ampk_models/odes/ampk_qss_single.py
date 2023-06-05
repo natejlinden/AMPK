@@ -47,9 +47,12 @@ def ampk_qss_single_get_params():
         'kGly':(),
         # ATP hydrolysis
         'kHydro':(),
-        # Adenylate kinase
-        'kForAK':(),
-        'kRevAK':(),
+         # Adenylate kinase
+        'VforAK':(),
+        'kmm':(),
+        'kmd':(),
+        'kmt':(),
+        'KeqAK':(),
         # Oxidative phos
         'VmaxOxPhos':(),
         'Kadp':(),
@@ -98,16 +101,20 @@ def ampk_qss_single_RHS(t, y, p):
     # ATP hydrolysis
     Jhydro = p.kHydro*y.ATP
     # Adenylate Kinase
-    JakFor = (p.kForAK*y.ATP*y.AMP) 
-    JakRev = (p.kRevAK*y.ADP*y.ADP)
+    num_for = (p.VforAK*y.ATP*y.AMP)/(p.kmt*p.kmm)
+    den = (1 + (y.ATP/p.kmt) + (y.AMP/p.kmm) + ((y.ATP*y.AMP)/(p.kmt*p.kmm)) + 
+                ((2*y.ADP)/p.kmd) + ((y.ADP**2)/(p.kmd**2)))
+    VrevAK = (p.VforAK*(p.kmd**2))/(p.KeqAK*p.kmt*p.kmm)
+    num_rev = (VrevAK*(y.ADP**2))/(p.kmd**2)
+    JAK = (num_for - num_rev)/den
     # Oxidative Phos
     Joxphos = (p.VmaxOxPhos * ((y.ADP/p.Kadp)**p.n))/(1 + ((y.ADP/p.Kadp)**p.n))
 
     # now return the odes for each state variable
     return {
-        'AMP': -JakFor + JakRev,
-        'ADP': -2*Jgly + 2*JakFor - 2*JakRev + Jhydro - Joxphos,
-        'ATP': 2*Jgly - JakFor + JakRev - Jhydro + Joxphos,
+        'AMP': -JAK,
+        'ADP': -Jgly + 2*JAK + Jhydro - Joxphos,
+        'ATP': Jgly -JAK - Jhydro + Joxphos,
         'AMPK': -J1 - J2 + J3,
         'pAMPK': J1 + J2 - J3,
         'AMPKAR': -J4 + J5,

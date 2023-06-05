@@ -21,26 +21,16 @@ class ampk_qss_single(eqx.Module):
 
     # fixed parameters
     # metabolic params
-    kGly: float
+    k kGly: float
     kHydro: float
-    kForAK: float
-    kRevAK: float
+    VforAK: float
+    KeqAK: float
+    kmm: float
+    kmd: float
+    kmt: float
     VmaxOxPhos: float
     Kadp: float
     n: float
-
-
-    def __init__(self, kGly, kHydro, kForAK, kRevAK, VmaxOxPhos, Kadp, n):
-        """Initialize the model. Set fixed parameters."""
-        # TODO: expand docstring
-        # TODO: add default values
-        self.kGly = kGly
-        self.kHydro = kHydro
-        self.kForAK = kForAK
-        self.kRevAK = kRevAK
-        self.VmaxOxPhos = VmaxOxPhos
-        self.Kadp = Kadp
-        self.n = n
 
     def __call__(self, t, y, args):
         """Right hand side of the AMPK_ma_double_mech regulation model.
@@ -83,18 +73,22 @@ class ampk_qss_single(eqx.Module):
         Jgly = 2*self.kGly*y[1]*y[1]
         # ATP hydrolysis
         Jhydro = self.kHydro*y[2]
-        # Adenylate Kinase
-        JakFor = (self.kForAK*y[2]*y[0]) # MASS ACTION KINETICS!
-        JakRev = (self.kRevAK*y[1]*y[1])
+       # Adenylate Kinase
+        num_for = (self.VforAK*y[2]*y[0])/(self.kmt*self.kmm)
+        den = (1 + (y[2]/self.kmt) + (y[0]/self.kmm) + ((y[2]*y[0])/(self.kmt*self.kmm)) + 
+                   ((2*y[1])/self.kmd) + ((y[1]**2)/(self.kmd**2)))
+        VrevAK = (self.VforAK*(self.kmd**2))/(self.KeqAK*self.kmt*self.kmm)
+        num_rev = (VrevAK*(y[1]**2))/(self.kmd**2)
+        JAK = (num_for - num_rev)/den
         # Oxidative Phos
         Joxphos = (self.VmaxOxPhos * ((y[1]/self.Kadp)**self.n))/(1 + ((y[1]/self.Kadp)**self.n))
 
 
         # now return the odes for each state variable
         dydt = jnp.zeros((7,))
-        dydt = dydt.at[0].set(-JakFor + JakRev) # AMP
-        dydt = dydt.at[1].set(-2*Jgly + 2*JakFor - 2*JakRev + Jhydro - Joxphos) # ADP
-        dydt = dydt.at[2].set(2*Jgly - JakFor + JakRev - Jhydro + Joxphos) # ATP
+        dydt = dydt.at[0].set(-JAK) # AMP
+        dydt = dydt.at[1].set(-2*Jgly + 2*JAK + Jhydro - Joxphos) # ADP
+        dydt = dydt.at[2].set(2*Jgly -JAK - Jhydro + Joxphos) # ATP
         dydt = dydt.at[3].set(-J1 - J2 + J3) # AMPK
         dydt = dydt.at[4].set(J1 + J2 - J3) # pAMPK
         dydt = dydt.at[5].set(-J4 + J5) # AMPKAR

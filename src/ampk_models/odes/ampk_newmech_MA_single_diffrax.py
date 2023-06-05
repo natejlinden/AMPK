@@ -99,8 +99,8 @@ class ampk_newmech_MA_single(eqx.Module):
         # now return the odes for each state variable
         dydt = jnp.zeros_like(y)
         dydt = dydt.at[0].set(-J1 - J2 - J3 -JAK) # AMP
-        dydt = dydt.at[1].set(-2*Jgly+2*JAK+Jhydro-Joxphos) # ADP
-        dydt = dydt.at[2].set(2*Jgly-JAK-Jhydro+Joxphos) # ATP
+        dydt = dydt.at[1].set(-Jgly+2*JAK+Jhydro-Joxphos) # ADP
+        dydt = dydt.at[2].set(Jgly-JAK-Jhydro+Joxphos) # ATP
         dydt = dydt.at[3].set(-J1 - J4 - J8 + J13) # AMPK
         dydt = dydt.at[4].set(-J2 + J5 + J9 - J12 - J14 + J15) #pAMPK
         dydt = dydt.at[5].set(J1 - J6 - J10) # AMP-AMPK

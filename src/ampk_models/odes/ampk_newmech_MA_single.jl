@@ -1,3 +1,24 @@
 ode = @ODEmodel( 
-    
+    x1'(t) = -(konAMP*x1(t)*x4(t)-p.KdAMP*x6(t))- (konAMP*x1(t)*x5(t)-p.KdAMP*x7(t))- (konAMP*x1(t)*x18(t)-p.KdAMP*x19(t))-(((((VforAK*x3(t)*x1(t))/(kmt*kmm))-((((VforAK*(kmd^2))/(KeqAK*kmt*kmm))*(x2(t)^2))/(kmd^2)))/(1+(x3(t)/kmt)+(x1(t)/kmm)+((x3(t)*x1(t))/(kmt*kmm))+((2*x2(t))/kmd)+((x2(t)^2)/(kmd^2))))),
+    x2'(t) = -(2*p.kGly*x2(t)*x2(t))+2*(((((VforAK*x3(t)*x1(t))/(kmt*kmm))-((((VforAK*(kmd^2))/(KeqAK*kmt*kmm))*(x2(t)^2))/(kmd^2)))/(1+(x3(t)/kmt)+(x1(t)/kmm)+((x3(t)*x1(t))/(kmt*kmm))+((2*x2(t))/kmd)+((x2(t)^2)/(kmd^2)))))+(p.kHydro*x3(t))-((p.VmaxOxPhos*((x2(t)/p.Kadp)**p.n))/(1+((x2(t)/p.Kadp)**p.n))),
+    x3'(t) = (2*p.kGly*x2(t)*x2(t))-(((((VforAK*x3(t)*x1(t))/(kmt*kmm))-((((VforAK*(kmd^2))/(KeqAK*kmt*kmm))*(x2(t)^2))/(kmd^2)))/(1+(x3(t)/kmt)+(x1(t)/kmm)+((x3(t)*x1(t))/(kmt*kmm))+((2*x2(t))/kmd)+((x2(t)^2)/(kmd^2)))))-(p.kHydro*x3(t))+((p.VmaxOxPhos*((x2(t)/p.Kadp)**p.n))/(1+((x2(t)/p.Kadp)**p.n))),
+    x4'(t) = -(konAMP*x1(t)*x4(t)-p.KdAMP*x6(t))- (p.konCaMKK*x4(t)*x8(t)-p.koffCaMKK*x9(t))- (p.konLKB1*x4(t)*x11(t)-p.koffLKB1*x12(t))+ (p.kLKB1*x15(t)),
+    x5'(t) = -(konAMP*x1(t)*x5(t)-p.KdAMP*x7(t))+ (p.kCaMKK*x9(t))+ (p.kLKB1*x12(t))- (p.konPP*x14(t)*x5(t)-p.koffPP*x15(t)) - (p.konAMPK*x5(t)*x16(t)-p.koffAMPK*x18(t)) + (p.kAMPK*x18(t)),
+    x6'(t) = (konAMP*x1(t)*x4(t)-p.KdAMP*x6(t))- (p.konCaMKK*x6(t)*x8(t)-p.koffCaMKK*x10(t))- (p.konLKB1*x6(t)*x11(t)-p.koffLKB1*x13(t)),
+    x7'(t) = (konAMP*x1(t)*x5(t)-p.KdAMP*x7(t))+ (p.kCaMKK*x10(t))+ (p.kLKB1*x13(t)) - (p.konAMPK*x7(t)*x16(t)-p.alpha*p.koffAMPK*x19(t)) + (p.beta*p.kAMPK*x19(t)),
+    x8'(t) = -(p.konCaMKK*x4(t)*x8(t)-p.koffCaMKK*x9(t))- (p.konCaMKK*x6(t)*x8(t)-p.koffCaMKK*x10(t))+ (p.kCaMKK*x9(t))+ J7,
+    x9'(t) = (p.konCaMKK*x4(t)*x8(t)-p.koffCaMKK*x9(t))- J5,
+    x10'(t) = (p.konCaMKK*x6(t)*x8(t)-p.koffCaMKK*x10(t))- J7,
+    x11'(t) = -(p.konLKB1*x4(t)*x11(t)-p.koffLKB1*x12(t))-(p.konLKB1*x6(t)*x11(t)-p.koffLKB1*x13(t)) + (p.kLKB1*x12(t))+ (p.kLKB1*x13(t)),
+    x12'(t) = (p.konLKB1*x4(t)*x11(t)-p.koffLKB1*x12(t))- J9,
+    x13'(t) = (p.konLKB1*x6(t)*x11(t)-p.koffLKB1*x13(t)) - (p.kLKB1*x13(t)),
+    x14'(t) = -(p.konPP*x14(t)*x5(t)-p.koffPP*x15(t)) + (p.kLKB1*x15(t)),
+    x15'(t) = (p.konPP*x14(t)*x5(t)-p.koffPP*x15(t)) - (p.kLKB1*x15(t)),
+    x16'(t) = -(p.konAMPK*x5(t)*x16(t)-p.koffAMPK*x18(t)) - (p.konAMPK*x7(t)*x16(t)-p.alpha*p.koffAMPK*x19(t)) + (p.kPP1*x21(t)),
+    x17'(t) = (p.kAMPK*x18(t)) + (p.beta*p.kAMPK*x19(t)) - (p.konPP1*x20(t)*x17(t)-p.koffPP1*x21(t)),
+    x18'(t) = -(konAMP*x1(t)*x18(t)-p.KdAMP*x19(t))+ (p.konAMPK*x5(t)*x16(t)-p.koffAMPK*x18(t)) - (p.kAMPK*x18(t)),
+    x19'(t) = (konAMP*x1(t)*x18(t)-p.KdAMP*x19(t))+ (p.konAMPK*x7(t)*x16(t)-p.alpha*p.koffAMPK*x19(t)) - (p.beta*p.kAMPK*x19(t)),
+    x20'(t) = -(p.konPP1*x20(t)*x17(t)-p.koffPP1*x21(t)) + (p.kPP1*x21(t)),
+    x21'(t) = (p.konPP1*x20(t)*x17(t)-p.koffPP1*x21(t)) - (p.kPP1*x21(t)),
+    y1(t) = (x17(t) + x21(t)) / (x16(t) + x17(t) + x18(t) + x21(t))
 );

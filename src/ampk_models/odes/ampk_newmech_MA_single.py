@@ -49,13 +49,17 @@ def ampk_newmech_MA_single_get_params():
         # ATP hydrolysis
         'kHydro':(),
         # Adenylate kinase
-        'kForAK':(),
-        'kRevAK':(),
+        'VforAK':(),
+        'kmm':(),
+        'kmd':(),
+        'kmt':(),
+        'KeqAK':(),
         # Oxidative phos
         'VmaxOxPhos':(),
         'Kadp':(),
         'n':(),
     }
+
 
 # Function to create dictionary for the states
 #   all states, so use key/data pairs of 'state_name': ()
@@ -122,15 +126,21 @@ def ampk_newmech_MA_single_RHS(t, y, p):
     # ATP hydrolysis
     Jhydro = p.kHydro*y.ATP
     # Adenylate Kinase
-    JAK = (p.kForAK*y.ATP*y.AMP) - (p.kRevAK*y.ADP*y.ADP)
+    # Adenylate Kinase
+    num_for = (p.VforAK*y.ATP*y.AMP)/(p.kmt*p.kmm)
+    den = (1 + (y.ATP/p.kmt) + (y.AMP/p.kmm) + ((y.ATP*y.AMP)/(p.kmt*p.kmm)) + 
+                ((2*y.ADP)/p.kmd) + ((y.ADP**2)/(p.kmd**2)))
+    VrevAK = (p.VforAK*(p.kmd**2))/(p.KeqAK*p.kmt*p.kmm)
+    num_rev = (VrevAK*(y.ADP**2))/(p.kmd**2)
+    JAK = (num_for - num_rev)/den
     # Oxidative Phos
     Joxphos = (p.VmaxOxPhos * ((y.ADP/p.Kadp)**p.n))/(1 + ((y.ADP/p.Kadp)**p.n))
 
     # now return the odes for each state variable
     return {
         'AMP':-J1 - J2 - J3 -JAK,
-        'ADP':-2*Jgly+2*JAK+Jhydro-Joxphos,
-        'ATP':2*Jgly-JAK-Jhydro+Joxphos,
+        'ADP':-Jgly+2*JAK+Jhydro-Joxphos,
+        'ATP':Jgly-JAK-Jhydro+Joxphos,
         'AMPK':-J1 - J4 - J8 + J13,
         'pAMPK':-J2 + J5 + J9 - J12 - J14 + J15,
         'AMP_AMPK':J1 - J6 - J10,

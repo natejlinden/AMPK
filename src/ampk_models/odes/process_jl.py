@@ -1,7 +1,7 @@
 # first start by reading in the file with state names
 state_names_file = "tmp.txt"
 flux_names_file = "tmp1.txt"
-ode_file = "ampk_MM_single_mech.jl"
+ode_file = "ampk_qss_single.jl"
 
 f_states = open(state_names_file, "r")
 
@@ -10,12 +10,14 @@ f_states = open(state_names_file, "r")
 for line in f_states:
     split_line = line.split(' ')
 
-    state_number = split_line[1] + "(t)" # only works because I know the ordering and spacing of things!
-    dt_state_number = split_line[1] + "'(t) = "
-    state_name = split_line[3].replace("'", "").replace("\n", "")
+    state_number = 'x' + split_line[0] + "(t)" # only works because I know the ordering and spacing of things!
+    dt_state_number = 'x' + split_line[0] + "'(t) = "
+    state_name = split_line[1].replace("'", "").replace("\n", "")
     state_reference = 'y.'+state_name.replace(":(),","")
     ode_state_reference = "'"+state_name.replace(":(),","")+"':"
     
+    print(state_number)
+    print(dt_state_number)
     print(state_reference)
     print(ode_state_reference)
 

@@ -53,8 +53,11 @@ def ampk_MA_single_mech_get_params():
         # ATP hydrolysis
         'kHydro':(),
         # Adenylate kinase
-        'kForAK':(),
-        'kRevAK':(),
+        'VforAK':(),
+        'kmm':(),
+        'kmd':(),
+        'kmt':(),
+        'KeqAK':(),
         # Oxidative phos
         'VmaxOxPhos':(),
         'Kadp':(),
@@ -152,15 +155,21 @@ def ampk_MA_single_mech_RHS(t, y, p):
     # ATP hydrolysis
     Jhydro = p.kHydro*y.ATP
     # Adenylate Kinase
-    Jak = (p.kForAK*y.ATP*y.AMP) - (p.kRevAK*y.ADP*y.ADP) # MASS ACTION KINETICS!
+    # Adenylate Kinase from Lambeth and Kushmerick 2002
+    num_for = (p.VforAK*y.ATP*y.AMP)/(p.kmt*p.kmm)
+    den = (1 + (y.ATP/p.kmt) + (y.AMP/p.kmm) + ((y.ATP*y.AMP)/(p.kmt*p.kmm)) + 
+                ((2*y.ADP)/p.kmd) + ((y.ADP**2)/(p.kmd**2)))
+    VrevAK = (p.VforAK*(p.kmd**2))/(p.KeqAK*p.kmt*p.kmm)
+    num_rev = (VrevAK*(y.ADP**2))/(p.kmd**2)
+    JAK = (num_for - num_rev)/den
     # Oxidative Phos
     Joxphos = (p.VmaxOxPhos * ((y.ADP/p.Kadp)**p.n))/(1 + ((y.ADP/p.Kadp)**p.n))
 
     # now return the odes for each state variable
     return {
-        'AMP': -J1-J4-Jak,
-        'ADP': -J2-J5-Jgly+2*Jak+Jhydro-Joxphos,
-        'ATP': -J3-J6+Jgly-Jak-Jhydro+Joxphos,
+        'AMP': -J1-J4-JAK,
+        'ADP': -J2-J5-Jgly+2*JAK+Jhydro-Joxphos,
+        'ATP': -J3-J6+Jgly-JAK-Jhydro+Joxphos,
         # free AMPK
         'AMPK': -J1-J2-J3-J7+J20,
         'pAMPK': -J4-J5-J6+J8-J19,
@@ -209,17 +218,17 @@ def ampk_MA_single_mech_RHS_sympyFluxVars():
     fluxes = sym.symbols(['J'+str(i) for i in range(1,num_fluxes+1)])
     Jgly = sym.symbols("Jgly")
     Jhydro= sym.symbols("Jhydro")
-    Jak = sym.symbols("Jak")
+    JAK = sym.symbols("JAK")
     Joxphos = sym.symbols("Joxphos")
 
-    for item in [Jgly, Jhydro, Jak, Joxphos]: # add metab fluxes to flux list
+    for item in [Jgly, Jhydro, JAK, Joxphos]: # add metab fluxes to flux list
         fluxes.append(item)
 
     
     return {
-        'AMP': -fluxes[0]-fluxes[3]-Jak,
-        'ADP': -fluxes[1]-fluxes[4]-Jgly+2*Jak+Jhydro-Joxphos,
-        'ATP': -fluxes[2]-fluxes[5]+Jgly-Jak-Jhydro+Joxphos,
+        'AMP': -fluxes[0]-fluxes[3]-JAK,
+        'ADP': -fluxes[1]-fluxes[4]-Jgly+2*JAK+Jhydro-Joxphos,
+        'ATP': -fluxes[2]-fluxes[5]+Jgly-JAK-Jhydro+Joxphos,
         # free AMPK
         'AMPK': -fluxes[0]-fluxes[1]-fluxes[2]-fluxes[6]+fluxes[19],
         'pAMPK': -fluxes[3]-fluxes[4]-fluxes[5]+fluxes[7]-fluxes[18],

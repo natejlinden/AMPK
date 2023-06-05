@@ -1,7 +1,7 @@
 ode = @ODEmodel(
-        x1'(t) =  -(kOnAMP*x1(t)*x4(t)-kOffAMP*x6(t))-(kOnAMP*x1(t)*x5(t)-kOffAMP*x9(t))-((kForAK*x3(t)*x1(t))-(kRevAK*x2(t)*x2(t))),
-        x2'(t) =  -(kOnADP*x2(t)*x4(t)-kOffADP*x7(t))-(kOnADP*x2(t)*x5(t)-kOffADP*x10(t))-(2*kGly*x2(t)*x2(t))+2*((kForAK*x3(t)*x1(t))-(kRevAK*x2(t)*x2(t)))+(kHydro*x3(t)), #-((VmaxOxPhos*((x2(t)/Kadp)**n))/(1+((x2(t)/Kadp)**p.n))),
-        x3'(t) =  -(kOnATP*x3(t)*x4(t)-kOffATP*x8(t))-(kOnATP*x3(t)*x5(t)-kOffATP*x11(t))+(2*kGly*x2(t)*x2(t))-((kForAK*x3(t)*x1(t))-(kRevAK*x2(t)*x2(t)))-(kHydro*x3(t)), #+((VmaxOxPhos*((x2(t)/Kadp)**n))/(1+((x2(t)/Kadp)**p.n))),
+        x1'(t) =  -(kOnAMP*x1(t)*x4(t)-kOffAMP*x6(t))-(kOnAMP*x1(t)*x5(t)-kOffAMP*x9(t))-Jak,
+        x2'(t) =  -(kOnADP*x2(t)*x4(t)-kOffADP*x7(t))-(kOnADP*x2(t)*x5(t)-kOffADP*x10(t))-(2*kGly*x2(t)*x2(t))+2*Jak+(kHydro*x3(t)), #-((VmaxOxPhos*((x2(t)/Kadp)^n))/(1+((x2(t)/Kadp)^n))),
+        x3'(t) =  -(kOnATP*x3(t)*x4(t)-kOffATP*x8(t))-(kOnATP*x3(t)*x5(t)-kOffATP*x11(t))+(2*kGly*x2(t)*x2(t))-Jak-(kHydro*x3(t)),#+((VmaxOxPhos*((x2(t)/Kadp)^n))/(1+((x2(t)/Kadp)^n))),
         x4'(t) =  -(kOnAMP*x1(t)*x4(t)-kOffAMP*x6(t))-(kOnADP*x2(t)*x4(t)-kOffADP*x7(t))-(kOnATP*x3(t)*x4(t)-kOffATP*x8(t))-(kOnCaMKK*x12(t)*x4(t)-kOffCaMKK*x13(t))+(kDephosPP*x21(t)),
         x5'(t) =  -(kOnAMP*x1(t)*x5(t)-kOffAMP*x9(t))-(kOnADP*x2(t)*x5(t)-kOffADP*x10(t))-(kOnATP*x3(t)*x5(t)-kOffATP*x11(t))+(kPhosCaMKK*x13(t))-(kOnPP*x20(t)*x5(t)-kOffPP*x21(t)),
         x6'(t) =  (kOnAMP*x1(t)*x4(t)-kOffAMP*x6(t))-(kOnCaMKK*x12(t)*x6(t)-kOffCaMKK*x14(t))-(kOnLKB1*x17(t)*x6(t)-kOffLKB1*x18(t)),
@@ -24,7 +24,7 @@ ode = @ODEmodel(
         x23'(t) =  -(kOnAMPK*x23(t)*x9(t)-kOffAMPK*x25(t))+(kDephosPP1*x27(t)),
         x24'(t) =  (kPhosAMPK*x25(t))-(kOnPP1*x26(t)*x24(t)-kOffPP1*x27(t)),
         x25'(t) =  (kOnAMPK*x23(t)*x9(t)-kOffAMPK*x25(t))-(kPhosAMPK*x25(t)),
-        x26'(t)= -(kOnPP1*x26(t)*x24(t)-kOffPP1*x27(t))+(kDephosPP1*x27(t)),
+        x26'(t) =  -(kOnPP1*x26(t)*x24(t)-kOffPP1*x27(t))+(kDephosPP1*x27(t)),
         x27'(t) =  (kOnPP1*x26(t)*x24(t)-kOffPP1*x27(t))-(kDephosPP1*x27(t)),
-        y1(t) = x24(t) / (x23(t) + x24(t) + x25(t) + x27(t))
+        y1(t) = ((x24(t)+x27(t)) / (x23(t) + x24(t) + x25(t) + x27(t)))
 )
