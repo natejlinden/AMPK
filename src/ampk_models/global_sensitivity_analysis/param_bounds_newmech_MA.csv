@@ -1,0 +1,16 @@
+parameter,lb,ub
+KdAMP,2.5e-7,5.0e-3
+KdADP,1.5e-7,3e-3
+KdATP,1.8e-6,0.45
+kOffCaMKK,1.32e-6,0.264
+kPhosCaMKK,8.1e-8, 0.162
+kOffLKB1,0.0001396,279.2
+kPhosLKB1,3.92e-7,7.84e-3
+kOffPP,5.6e-6,5.6
+kDephosPP,1.1e-6, 0.022
+kOffAMPK,8.49e-6,16.98
+kPhosAMPK,1.92e-9,0.384
+kOffPP1,5.6e-6,11.2
+kDephosPP1,1.1e-6,0.022
+beta,1.0,20.0
+AMPKAR_0,0.0001,200.0
