@@ -186,8 +186,8 @@ for i in range(n_traj):
     AMPKAR_tot_stress = np.sum(sol_basal.ys[:,ampkar_idxs], axis=1)
     pAMPKAR_basal = np.sum(sol_basal.ys[:,pampkar_idxs], axis=1)
     pAMPKAR_stress = np.sum(sol_stress.ys[:,pampkar_idxs], axis=1)
-    basal = pAMPKAR_basal/AMPKAR_tot_basal
-    stress = pAMPKAR_stress/AMPKAR_tot_stress
+    basal = pAMPKAR_basal/AMPKAR_tot_basal[-1]
+    stress = pAMPKAR_stress/AMPKAR_tot_stress[-1]
     qoi_stress = (pAMPKAR_stress/AMPKAR_tot_basal)-(pAMPKAR_basal[-1]/AMPKAR_tot_basal[-1])
     
     # plot the solution
