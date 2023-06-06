@@ -32,16 +32,6 @@ mpl.rcParams['figure.autolayout'] = True
 
 # construct save dir
 savedir = base_name + '/'
-
-####### PREPROCESSING #######
-# load parameter samples and simulation results
-param_vals_sobol = np.load('./' + savedir + 'param_vals_sobol_MA_corr.npy')
-sobol_sols = np.load('./' + savedir + 'sols_sobol_corr.npy')
-
-# reshape into 2D array
-sobol_sols = sobol_sols.reshape(sobol_sols.shape[0]*sobol_sols.shape[1], sobol_sols.shape[2])
-nsols, nqoi = sobol_sols.shape
-
 ############################################
 # Bounds and other info for the GSA #
 ############################################

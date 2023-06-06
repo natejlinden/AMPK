@@ -142,7 +142,6 @@ def solve_model(params, rhs, y0, t1, times):
     solver=dfrx.Kvaerno5()
     stepsize_controller = dfrx.PIDController(rtol=1e-10, atol=1e-10)
     t0 = times[0]
-    times = jnp.arange(t0, t1, 0.5)
     dt0 = 1e-8 # initial time step
     saveat=dfrx.SaveAt(ts=times)
 
@@ -175,12 +174,12 @@ for i in range(n_traj):
     sample = param_vals_sobol[idxs[i],:]
     sol = sobol_sols[idxs[i],:]
     # run the model to initial steady-state
-    times = jnp.arange(0.0, sol[2], sol[2]/1000)
-    sol_basal = solve_model(sample, rhs, y0, sol[2], times)
+    times = jnp.arange(0.0, sol[1], sol[1]/1000)
+    sol_basal = solve_model(sample, rhs, y0, sol[1], times)
     # now actually run to get a solution
     # note sol[0] will be the ic and sol[1] will be the time to steady-state
-    times = jnp.arange(0.0, sol[3], sol[3]/1000)
-    sol_stress = solve_model(sample, rhs_stress, sol_basal.ys[-1,:], sol[3], times)
+    times = jnp.arange(0.0, sol[2], sol[2]/1000)
+    sol_stress = solve_model(sample, rhs_stress, sol_basal.ys[-1,:], sol[2], times)
 
     # comput qois
     AMPKAR_tot_basal = np.sum(sol_basal.ys[:,ampkar_idxs], axis=1)
