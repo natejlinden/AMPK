@@ -62,11 +62,13 @@ if not os.path.exists(savedir):
 # Note we fix all off rates to 1.0 and dont bother sampling these or computing sensitivities
 ############################################
 MA_nominals = pd.read_csv('nominal_params_MA.csv')
-MM_nominals = pd.read_csv('nominal_params_MM.csv')
+MA_bounds = pd.read_csv('param_bounds_MA.csv')
+# MM_nominals = pd.read_csv('nominal_params_MM.csv')
 nominal_vals_MA = MA_nominals['value'].to_list()
 param_names_MA = MA_nominals['parameter'].to_list()
-nominal_vals_MM = MM_nominals['value'].to_list()
-param_names_MM = MM_nominals['parameter'].to_list()
+bounds_MA = [[lb, ub] for lb, ub in zip(MA_bounds['lb'].to_list(), MA_bounds['ub'].to_list())]
+# nominal_vals_MM = MM_nominals['value'].to_list()
+# param_names_MM = MM_nominals['parameter'].to_list()
 
 
 # metabolism_params
@@ -77,14 +79,11 @@ metab_parms_stress = {'kGly': 0.005,'kHydro':0.1,
                       'VforAK': 14.66, 'KeqAK': 2.21, 'kmm': 0.32, 'kmd': 0.35, 'kmt': 0.27,
                      'VmaxOxPhos':0.5,'Kadp': 5.8e-2,'n': 2.568,}
 
-lb_mult = 0.1
-ub_mult = 10
-bounds_MA = [[lb_mult*param, ub_mult*param] for param in nominal_vals_MA]
-bounds_MM = [[lb_mult*param, ub_mult*param] for param in nominal_vals_MM]
+
 
 # dictionary of the problem for SALib
 bounds_MA = {'num_vars':14, 'names':param_names_MA, 'bounds': bounds_MA,}
-bounds_MM = {'num_vars':14, 'names':param_names_MM, 'bounds': bounds_MM,}
+# bounds_MM = {'num_vars':14, 'names':param_names_MM, 'bounds': bounds_MM,}
 
 
 # states and initial conditions
@@ -101,7 +100,11 @@ state_names = ['AMP', 'ADP', 'ATP', 'AMPK', 'pAMPK', 'AMP_AMPK', 'ADP_AMPK',
                'PP_ATP_pAMPK', 'PP_AMP_ATP_pAMPK', 'PP_ADP_ATP_pAMPK', 
                'PP_ATP_ATP_pAMPK', 'AMPKAR', 'pAMPKAR', 'AMPKAR_AMP_pAMPK', 
                'AMPKAR_AMP_AMP_pAMPK', 'AMPKAR_AMP_ADP_pAMPK', 'PP1', 'PP1_pAMPKAR']
-
+ampkar_states = ['AMPKAR', 'pAMPKAR', 'AMPKAR_AMP_pAMPK', 'AMPKAR_AMP_AMP_pAMPK', 
+               'AMPKAR_AMP_ADP_pAMPK', 'PP1_pAMPKAR']
+pampkar_states = ['pAMPKAR', 'PP1_pAMPKAR']
+ampkar_idxs = [state_names.index(item) for item in ampkar_states]
+pampkar_idxs = [state_names.index(item) for item in pampkar_states]
 ampkar_idx = state_names.index('AMPKAR')
 pampkar_idx = state_names.index('pAMPKAR')
 
@@ -110,15 +113,15 @@ pampkar_idx = state_names.index('pAMPKAR')
 to_set = ['AMP', 'ADP', 'ATP', 'AMPK', 'CaMKK', 'LKB1', 'PP', 'AMPKAR', 'PP1']
 idxs = [state_names.index(item) for item in to_set]
 y0 = np.zeros((53,))
-y0[idxs[0]] = 2e-2   # AMP
-y0[idxs[1]] = 1.3 # ADP
+y0[idxs[0]] = 2e-2  # AMP
+y0[idxs[1]] = 1.3   # ADP
 y0[idxs[2]] = 8.2   # ATP
 y0[idxs[3]] = 0.6   # AMPK
-y0[idxs[4]] = 10.0   # CaMKK
-y0[idxs[5]] = 10.0   # LKB1
-y0[idxs[6]] = 10.0   # PP
+y0[idxs[4]] = 1.0   # CaMKK
+y0[idxs[5]] = 1.0   # LKB1
+y0[idxs[6]] = 1.0   # PP
 y0[idxs[7]] = 0.1   # AMPKAR
-y0[idxs[8]] = 10.0   # PP1
+y0[idxs[8]] = 1.0   # PP1
 
 # random seed for reproducibility
 seed = np.random.seed(seed=2048)
@@ -137,38 +140,39 @@ rhs_stress = dfrx.ODETerm(rhs_stress)
 # generate samples using the Sobol sampling method
 nsamps = 2048
 param_vals_sobol_MA = sobol_samp.sample(bounds_MA, nsamps, calc_second_order=True, seed=seed)
-param_vals_sobol_MM = sobol_samp.sample(bounds_MM, nsamps, calc_second_order=True, seed=seed)
+# param_vals_sobol_MM = sobol_samp.sample(bounds_MM, nsamps, calc_second_order=True, seed=seed)
 
-# copy MA to np arrays
-param_vals_sobol_MA_corr = np.array(param_vals_sobol_MA)
-param_vals_sobol_MM_np = np.array(param_vals_sobol_MM)
+# # copy MA to np arrays
+# param_vals_sobol_MA_corr = np.array(param_vals_sobol_MA)
+# param_vals_sobol_MM_np = np.array(param_vals_sobol_MM)
 
-# now compute all kons using samples of Km and from the MM model and Kcat from MA model
-to_set = ['kPhosCaMKK', 'kPhosLKB1','kDephosPP','kPhosAMPK', 'kDephosPP1']
-kcat_idxs_MA = [param_names_MA.index(item) for item in to_set]
-to_set = ['kOnCaMKK', 'kOnLKB1','kOnPP','kOnAMPK','kOnPP1']
-kon_idxs_MA = [param_names_MA.index(item) for item in to_set]
-to_set = ['KmCaMKK','KmLKB1', 'KmPP', 'KmAMPK', 'KmPP1']
-km_idxs_MM = [param_names_MM.index(item) for item in to_set]
+# # now compute all kons using samples of Km and from the MM model and Kcat from MA model
+# to_set = ['kPhosCaMKK', 'kPhosLKB1','kDephosPP','kPhosAMPK', 'kDephosPP1']
+# kcat_idxs_MA = [param_names_MA.index(item) for item in to_set]
+# to_set = ['kOnCaMKK', 'kOnLKB1','kOnPP','kOnAMPK','kOnPP1']
+# kon_idxs_MA = [param_names_MA.index(item) for item in to_set]
+# to_set = ['KmCaMKK','KmLKB1', 'KmPP', 'KmAMPK', 'KmPP1']
+# km_idxs_MM = [param_names_MM.index(item) for item in to_set]
 
-for kcat_i, kon_i, km_i in zip(kcat_idxs_MA, kon_idxs_MA, km_idxs_MM):
-    _, param_vals_sobol_MA_corr[:,kon_i] =  michaelis_menten_to_mass_action(None, 
-                                            param_vals_sobol_MM_np[:,km_i], 
-                                            None, k_rev=1.0, 
-                                            k_cat=+param_vals_sobol_MA_corr[:,kcat_i])
+# for kcat_i, kon_i, km_i in zip(kcat_idxs_MA, kon_idxs_MA, km_idxs_MM):
+#     _, param_vals_sobol_MA_corr[:,kon_i] =  michaelis_menten_to_mass_action(None, 
+#                                             param_vals_sobol_MM_np[:,km_i], 
+#                                             None, k_rev=1.0, 
+#                                             k_cat=+param_vals_sobol_MA_corr[:,kcat_i])
     
 # save parameter samples
-np.save(savedir + 'param_vals_sobol_MA_corr.npy', np.array(param_vals_sobol_MA_corr))
+# np.save(savedir + 'param_vals_sobol_MA_corr.npy', np.array(param_vals_sobol_MA))
+np.save(savedir + 'param_vals_sobol_MA.npy', np.array(param_vals_sobol_MA))
 
 # Convert from parameter samples to full parameter sets, because we do not sample
 # all parameters in the model
 n_params_true = 22
-temp = np.empty(shape=(param_vals_sobol_MA_corr.shape[0], n_params_true))
+temp = np.empty(shape=(param_vals_sobol_MA.shape[0], n_params_true))
 
-for i in range(param_vals_sobol_MA_corr.shape[0]):
-    temp[i,:] = np.array(compute_MA_params(param_vals_sobol_MA_corr[i,:]))
+for i in range(param_vals_sobol_MA.shape[0]):
+    temp[i,:] = np.array(compute_MA_params(param_vals_sobol_MA[i,:]))
 
-param_vals_sobol_MA_corr = temp
+param_vals_sobol_MA = temp
 
 # Run simulations
 print('Reshaping input parameters...')
@@ -176,7 +180,7 @@ print('Reshaping input parameters...')
 # qoi_fn_vmap = jax.vmap(single_model_eval, in_axes=(0,None,None,None))
 qoi_fn_pmap = jax.pmap(single_model_eval_nansafe, in_axes=(0,None,None,None,None,None))
 
-params_shape = param_vals_sobol_MA_corr.shape # get shape of parameter vectors (n_sampls, n_params)
+params_shape = param_vals_sobol_MA.shape # get shape of parameter vectors (n_sampls, n_params)
 # the parameter vector needs to be shape (n_loops, n_devices, n_params)
 # n_loops needs to be the integer which is larger than n_sampls//n_devices
 # thus we need to pad any extra entries added with nans
@@ -185,11 +189,11 @@ pad = int((np.ceil(params_shape[0]/n_devices)*n_devices)-params_shape[0]) #param
 if pad:
     pad_mat = np.empty((pad, params_shape[1]))
     pad_mat[:] = np.nan
-    param_vals_sobol_MA_corr = np.vstack((param_vals_sobol_MA_corr, pad_mat))
+    param_vals_sobol_MA = np.vstack((param_vals_sobol_MA, pad_mat))
 
 # now we can reshape the parameter vector accordingly
 n_loops = int(np.ceil(params_shape[0]/n_devices))
-new_params = jnp.array(param_vals_sobol_MA_corr).reshape((n_loops,n_devices,params_shape[1]))
+new_params = jnp.array(param_vals_sobol_MA).reshape((n_loops,n_devices,params_shape[1]))
 
 # we are now ready to run simulations
 print('Running simulations...')
@@ -203,7 +207,7 @@ tend = time.time()
 
 print('Simulations took {} seconds'.format(tend-tnow))
 print('Saving results...')
-np.save(savedir + 'sols_sobol_corr.npy', jnp.array(sols_sobol_MA))
+np.save(savedir + 'sols_sobol.npy', jnp.array(sols_sobol_MA))
 
 print('Complete!')
 quit()
