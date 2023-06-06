@@ -35,12 +35,12 @@ savedir = base_name + '/'
 
 ####### PREPROCESSING #######
 # load parameter samples and simulation results
-param_vals_sobol_corr = np.load('./' + savedir + 'param_vals_sobol_MA_corr.npy')
-sobol_sols_corr = np.load('./' + savedir + 'sols_sobol_corr.npy')
+param_vals_sobol = np.load('./' + savedir + 'param_vals_sobol_MA_corr.npy')
+sobol_sols = np.load('./' + savedir + 'sols_sobol_corr.npy')
 
 # reshape into 2D array
-sobol_sols_corr = sobol_sols_corr.reshape(sobol_sols_corr.shape[0]*sobol_sols_corr.shape[1], sobol_sols_corr.shape[2])
-nsols, nqoi = sobol_sols_corr.shape
+sobol_sols = sobol_sols.reshape(sobol_sols.shape[0]*sobol_sols.shape[1], sobol_sols.shape[2])
+nsols, nqoi = sobol_sols.shape
 
 ############################################
 # Bounds and other info for the GSA #
@@ -76,12 +76,12 @@ sobol_sols = np.load('./' + savedir + 'sols_sobol.npy')
 sobol_sols = sobol_sols.reshape(sobol_sols.shape[0]*sobol_sols.shape[1],
                                           sobol_sols.shape[2])
 nsols, nqoi = sobol_sols.shape
-
+qoi_idx = 0
 ################################################
 #  HISTOGRAM OF QOI
 ################################################
 fig, ax = plt.subplots(1,1, figsize=(2.25,3))
-ax.hist(sobol_sols_corr[:,0])
+ax.hist(sobol_sols[:,qoi_idx])
 ax.set_xlabel(r'$pAMPKAR/AMPKAR_{tot}$')
 ax.set_ylabel('count')
 fig.savefig(figpath + savedir + 'qoi_hist.pdf')
@@ -90,9 +90,9 @@ plt.show()
 ################################################
 ####### COMPUTE SENSITIVITIY INDICES #######
 ################################################
-Si_sobol = sobol_analyze.analyze(problem, sobol_sols_corr[:,2], calc_second_order=True)
+Si_sobol = sobol_analyze.analyze(problem, sobol_sols[:,qoi_idx], calc_second_order=True)
 np.save('./' + savedir + 'sobol_pampkar_final.npy', Si_sobol)
-Si_hdmr = hdmr_analyze(problem, param_vals_sobol_corr, sobol_sols_corr[:,2])
+Si_hdmr = hdmr_analyze(problem, param_vals_sobol, sobol_sols[:,qoi_idx])
 np.save('./' + savedir + 'hdmr_pampkar_final.npy', Si_hdmr)
 
 ################################################
