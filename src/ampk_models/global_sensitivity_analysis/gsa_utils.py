@@ -112,7 +112,31 @@ def compute_newmech_MA_params(params):
             params[10], #kDephosPP1 
             1.0, #alpha
             params[11], # beta
-            params[12]) # AMPKAR_0
+            params[12]  # AMPKAR_0
+        )
+
+def compute_MM_params(params):
+    return (1.0, # kOnAMP
+            params[0], # kOffAMP
+            1.0 , # kOnADP
+            params[1], # kOffADP
+            1.0, # kOnATP
+            params[2], # kOffATP
+            params[3], # kCaMKK
+            params[4],  # KmCaMKK
+            params[5], # kLKB1
+            params[6],  # KmLKB1
+            params[7], # kPP
+            params[8], # KmPP
+            params[9], # kAMPK
+            params[10], # KmAMPK
+            params[11], # kPP1
+            params[12], # KmPP1
+            1.0, # CaMKKtot
+            1.0, # LKB1tot
+            1.0, # PPtot
+            1.0, # PP1tot
+        )
 
 def mass_action_to_michaelis_menten(k_rev, k_for, k_cat, Et):
 	"""function to convert from mass action to michaelis menten parameters
