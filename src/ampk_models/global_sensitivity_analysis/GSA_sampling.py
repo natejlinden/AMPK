@@ -178,7 +178,7 @@ except ImportError:
 ######################################################
 # # generate samples using the Sobol sampling method #
 ######################################################
-nsamps = 2048
+nsamps = 4096
 param_vals_sobol = sobol_samp.sample(bounds, nsamps, calc_second_order=True, seed=seed)
 np.save(savedir + 'param_vals_sobol.npy', np.array(param_vals_sobol))
 

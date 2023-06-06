@@ -59,11 +59,11 @@ def single_model_eval(params, rhs_basal, rhs_stress, y0, ampkar_idx,
 
 @jax.jit
 def single_model_eval_nansafe(params, rhs_basal, rhs_stress, y0, ampkar_idx, 
-                              ampkar_idxs, pampkar_idxs, event_rtol=1e-12, event_atol=1e-12):
+                              ampkar_idxs, pampkar_idxs, event_rtol=1e-9, event_atol=1e-9):
     pred = jnp.sum(jnp.isnan(params))
     false_fun = lambda params: single_model_eval(params, rhs_basal, rhs_stress, 
                                                  y0, ampkar_idx, ampkar_idxs, pampkar_idxs,
-                                                 event_rtol=1e-10, event_atol=1e-10)
+                                                 event_rtol, event_atol)
     true_fun = lambda params: jnp.array([jnp.nan, jnp.nan, jnp.nan])
     return lax.cond(pred, true_fun, false_fun, params)
 
