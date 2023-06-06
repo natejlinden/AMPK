@@ -19,6 +19,6 @@ python GSA_sampling.py 4 ./ MM_single_mech ampk_MM_single_mech_diffrax \
     compute_MM_params
 
 echo "Sampling newmech_MA_single"
-python GSA_sampling.py 4 ./ newmech_MA_double ampk_newmech_MA_single_diffrax \
+python GSA_sampling.py 4 ./ newmech_MA_single ampk_newmech_MA_single_diffrax \
     newmech_MA_single.json nominal_params_newmech_MA.csv param_bounds_newmech_MA.csv \
     compute_newmech_MA_params
