@@ -123,8 +123,8 @@ except ImportError:
 ################################################
 # Load parameter samples and qois
 ################################################
-param_vals_sobol = np.load(savedir + base_name + 'param_vals_sobol.npy')
-sobol_sols = np.load(savedir + base_name + 'sols_sobol.npy')
+param_vals_sobol = np.load(savedir + base_name + '/' + 'param_vals_sobol.npy')
+sobol_sols = np.load(savedir + base_name + '/' + 'sols_sobol.npy')
 
 # reshape into 2D array
 sobol_sols = sobol_sols.reshape(sobol_sols.shape[0]*sobol_sols.shape[1],
@@ -202,9 +202,9 @@ ax_init.legend()
 ax_init.set_ylim([0, 1.1])
 ax_init.set_xlabel('time (s)')
 ax_init.set_ylabel(r'$pAMPKAR/AMPKAR_{tot}$')
-fig_init.savefig(figdir + base_name + 'stress_responses_init.pdf', bbox_inches='tight')
+fig_init.savefig(figdir + base_name + '/stress_responses_init.pdf', bbox_inches='tight')
 
 ax_stress.set_ylim([0, 1.1])
 ax_stress.set_xlabel('time (s)')
 ax_stress.set_ylabel(r'$pAMPKAR/AMPKAR_{tot}$')
-fig_stress.savefig(figdir + base_name + 'stress_responses_only.pdf', bbox_inches='tight')
+fig_stress.savefig(figdir + base_name + '/stress_responses_only.pdf', bbox_inches='tight')
