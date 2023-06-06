@@ -21,7 +21,7 @@
 import jax.numpy as jnp
 import equinox as eqx
 
-class ampk_MA_double_mech(eqx.Module):
+class vector_field(eqx.Module):
     """Right hand side of the AMPK_ma_double_mech regulation model.
 
     Written in the format required by the diffrax package
