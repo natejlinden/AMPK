@@ -25,7 +25,7 @@ if len(sys.argv) < 9:
     print("Incorrect Usage: TODO: add usage") # TODO: add usage
     sys.exit(1)
 
-cpu_mult = int(sys.argv[1])
+cpu_mult = float(sys.argv[1])
 dir = sys.argv[2]
 base_name = sys.argv[3]
 diffrax_model = sys.argv[4]

@@ -6,10 +6,10 @@ from jax import lax
 
 # jitable function to run the system to steady-state
 @jax.jit
-def solve_to_steady_state(params, rhs, y0, event_rtol=1e-12, event_atol=1e-12):
+def solve_to_steady_state(params, rhs, y0, event_rtol, event_atol):
     solver=dfrx.Kvaerno5()
-    event = dfrx.SteadyStateEvent(rtol=1e-12, atol=1e-12)
-    stepsize_controller = dfrx.PIDController(rtol=1e-10, atol=1e-10)
+    event = dfrx.SteadyStateEvent(event_rtol, event_atol)
+    stepsize_controller = dfrx.PIDController(rtol=1e-8, atol=1e-8)
     t0 = 0.0
     t1 = 5e6
     dt0 = 1e-10 # initial time step
@@ -26,8 +26,8 @@ def solve_to_steady_state(params, rhs, y0, event_rtol=1e-12, event_atol=1e-12):
         discrete_terminating_event=event,
         stepsize_controller=stepsize_controller,
         args=params,
-	    throw=False)
-	    # max_steps=None)
+	    throw=False,
+	    max_steps=None)
     
     return sol # returns the final state
 
@@ -42,7 +42,7 @@ def single_model_eval(params, rhs_basal, rhs_stress, y0, ampkar_idx,
     sol_basal = solve_to_steady_state(params, rhs_basal, y0, event_rtol=event_rtol, event_atol=event_atol)
 
     # apply stimulus and run again
-    sol_stress = solve_to_steady_state(params, rhs_stress, sol_basal.ys[-1,:])
+    sol_stress = solve_to_steady_state(params, rhs_stress, sol_basal.ys[-1,:], event_rtol=event_rtol, event_atol=event_atol)
 
     # use ratio of pAMPKAR/AMPKARtot
     # note that params[-1] is the IC of AMPKAR, which the equal to AMPKARtot
@@ -59,7 +59,7 @@ def single_model_eval(params, rhs_basal, rhs_stress, y0, ampkar_idx,
 
 @jax.jit
 def single_model_eval_nansafe(params, rhs_basal, rhs_stress, y0, ampkar_idx, 
-                              ampkar_idxs, pampkar_idxs, event_rtol=1e-9, event_atol=1e-9):
+                              ampkar_idxs, pampkar_idxs, event_rtol=1e-8, event_atol=1e-8):
     pred = jnp.sum(jnp.isnan(params))
     false_fun = lambda params: single_model_eval(params, rhs_basal, rhs_stress, 
                                                  y0, ampkar_idx, ampkar_idxs, pampkar_idxs,
