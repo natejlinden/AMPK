@@ -1,13 +1,13 @@
-echo "Running MA_double"
-python analyze_GSA.py MA_double_mech nominal_params_MA.csv param_bounds_MA.csv ../../../figures/
-python plot_trajectories.py ./ MA_double_mech ampk_MA_double_mech_diffrax \
-    MA_double.json compute_MA_params 100 ../../../figures/
-echo "done"
+# echo "Running MA_double"
+# python analyze_GSA.py MA_double_mech nominal_params_MA.csv param_bounds_MA.csv ../../../figures/
+# python plot_trajectories.py ./ MA_double_mech ampk_MA_double_mech_diffrax \
+#     MA_double.json compute_MA_params 100 ../../../figures/
+# echo "done"
 
 echo "Running MA_single"
 python analyze_GSA.py MA_single_mech nominal_params_MA.csv param_bounds_MA.csv ../../../figures/
 python plot_trajectories.py ./ MA_single_mech ampk_MA_single_mech_diffrax \
-    MA_double.json compute_MA_params 100 ../../../figures/
+    MA_single.json compute_MA_params 100 ../../../figures/
 echo "done"
 
 # echo "Running MM_double"
