@@ -53,8 +53,8 @@ def single_model_eval(params, rhs_basal, rhs_stress, y0, ampkar_idx,
     AMPKAR_tot_basal = np.sum(sol_basal.ys[:,ampkar_idxs], axis=1)
     pAMPKAR_basal = np.sum(sol_basal.ys[:,pampkar_idxs], axis=1)
     pAMPKAR_stress = np.sum(sol_stress.ys[:,pampkar_idxs], axis=1)
-    qoi = (pAMPKAR_stress/AMPKAR_tot_basal)-(pAMPKAR_basal[-1]/AMPKAR_tot_basal[-1])
-    
+    qoi = (pAMPKAR_stress[-1]/AMPKAR_tot_basal[-1])-(pAMPKAR_basal[-1]/AMPKAR_tot_basal[-1])
+
     return jnp.array([qoi, sol_basal.ts[0], sol_stress.ts[0]])
 
 @jax.jit
