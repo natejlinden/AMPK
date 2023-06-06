@@ -1,7 +1,5 @@
 parameter,lb,ub
 KdAMP,2.5e-7,5.0e-3
-KdADP,1.5e-7,3e-3
-KdATP,1.8e-6,0.45
 kOffCaMKK,1.32e-6,0.264
 kPhosCaMKK,8.1e-8, 0.162
 kOffLKB1,0.0001396,279.2
