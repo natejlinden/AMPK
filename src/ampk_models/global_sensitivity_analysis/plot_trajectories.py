@@ -193,11 +193,11 @@ for i in range(n_traj):
     # plot the solution
     ax_init.plot(sol_basal.ts, basal, 'k', alpha=0.5)
     ax_init.plot(sol_basal.ts[-1]+sol_stress.ts, stress, 'b', alpha=0.5)
-    ax_stress.plot(sol_stress.ts, qoi_stress, 'b', alpha=0.5)
+    ax_stress.plot(sol_stress.ts, qoi_stress, 'b', alpha=0.25)
 
 # format and save plots
-ax_init.plot([np.nan, np.nan], [np.nan, np.nan], 'k', alpha=0.5, label='basal')
-ax_init.plot([np.nan, np.nan], [np.nan, np.nan], 'b', alpha=0.5, label='stress')
+ax_init.plot([np.nan, np.nan], [np.nan, np.nan], 'k', label='basal')
+ax_init.plot([np.nan, np.nan], [np.nan, np.nan], 'b', label='stress')
 ax_init.legend()
 ax_init.set_ylim([0, 1.1])
 ax_init.set_xlabel('time (s)')
