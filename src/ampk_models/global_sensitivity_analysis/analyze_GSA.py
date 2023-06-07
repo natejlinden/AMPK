@@ -136,7 +136,7 @@ plt.show()
 
 # sobol second order
 fig, ax = plt.subplots(figsize=(5,5))
-cf = ax.pcolormesh(Si_sobol['S2'], vmin=-0.05, vmax=0.05, cmap='BrBG')
+cf = ax.pcolormesh(Si_sobol['S2'], cmap='BrBG')
 fig.colorbar(cf, ax=ax)
 ax.set_xticks(np.arange(0,len(param_names))+0.5, labels=param_names, rotation='vertical')
 ax.set_yticks(np.arange(0,len(param_names))+0.5, labels=param_names)
