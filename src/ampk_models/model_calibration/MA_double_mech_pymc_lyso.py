@@ -319,7 +319,7 @@ with lyso_model:
 ################################################
 # prior predictive sampling
 with lyso_model:
-    prior_checks = pm.sample_prior_predictive(samples=1000, random_seed=rng)
+    prior_checks = pm.sample_prior_predictive(samples=200, random_seed=rng)
 az.to_netcdf(prior_checks, dir + base_name + '/lyso_prior_predictive.nc')
 
 # posterior samples
@@ -334,4 +334,4 @@ with lyso_model:
     # draw 4000 posterior samples
     # numpyro NUTS
     posterior_checks = pmsj.sample_posterior_predictive(idata, idata_kwargs={'log_likelihood':True}, random_seed=rng)
-az.to_netcdf(idata, dir + base_name + '/lsyo_posterior_predictive.nc')
+az.to_netcdf(idata, dir + base_name + '/lyso_posterior_predictive.nc')
