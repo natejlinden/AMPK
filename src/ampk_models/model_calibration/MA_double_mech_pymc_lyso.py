@@ -74,6 +74,18 @@ ampkar_idx = state_names.index('AMPKAR')
 pampkar_idx = state_names.index('pAMPKAR')
 
 
+################################################
+# Nominal parameters
+################################################
+nominals_file = pd.read_csv(nominals_file)
+nominals = {}
+for key, val in zip(nominals_file['parameter'].to_list(),  nominals_file['value'].to_list()):
+     nominals[key] = val
+
+
+# fix AMPKAR_0 because it is not identifiable and it will be tricky to set in the model
+AMPKAR_0 = nominals['AMPKAR_0']
+
 # Set initial conditions
 y0 = np.zeros(n_states)
 for state, val in zip(y0_states_to_set, y0_vals_to_set):
@@ -90,13 +102,6 @@ prior_params_json = './MA_prior_params.json'
 with open(prior_params_json, 'r') as file:
         prior_params = json.load(file)
 
-################################################
-# Nominal parameters
-################################################
-nominals_file = pd.read_csv(nominals_file)
-nominals = {}
-for key, val in zip(nominals_file['parameter'].to_list(),  nominals_file['value'].to_list()):
-     nominals[key] = val
 ################################################
 #                   Model RHS                  #
 ################################################
@@ -121,8 +126,6 @@ kPhosLKB1 =  nominals['kPhosLKB1']
 kOffPP =     nominals['kOffPP']
 kDephosPP =  nominals['kDephosPP']
 kOffPP1 =   nominals['kOffPP1']
-# fix AMPKAR_0 because it is not identifiable and it will be tricky to set in the model
-AMPKAR_0 = nominals['AMPKAR_0']
 
 ################################################
 # Jax functions for the ODE solution and the gradient
@@ -222,8 +225,8 @@ class SolOp(Op):
     
     def grad(self, inputs, output_gradients):
        KdAMP, KdADP, KdATP, kOffAMPK, kPhosAMPK, kDephosPP1 = inputs
-        (gz,) = output_gradients
-        return vjp_sol_op(KdAMP, KdADP, KdATP, kOffAMPK, kPhosAMPK, kDephosPP1, gz)
+       (gz,) = output_gradients
+       return vjp_sol_op(KdAMP, KdADP, KdATP, kOffAMPK, kPhosAMPK, kDephosPP1, gz)
 
 class VJPSolOp(Op):
         def make_node(self, KdAMP, KdADP, KdATP, kOffAMPK, kPhosAMPK, kDephosPP1, output_grads):
