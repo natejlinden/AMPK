@@ -298,8 +298,8 @@ with cyto_model:
 with cyto_model:
     # draw 4000 posterior samples
     # numpyro NUTS
-    # idata = pm.sample(draws=4000, chains=4, idata_kwargs={'log_likelihood':True})
-    idata = pmsj.sample_numpyro_nuts(draws=4000, chains=4, idata_kwargs={'log_likelihood':True})
+    idata = pm.sample(draws=4000, chains=1, idata_kwargs={'log_likelihood':True})
+    # idata = pmsj.sample_numpyro_nuts(draws=4000, chains=4, idata_kwargs={'log_likelihood':True})
 az.to_netcdf(idata, dir + base_name + '/cyto_posterior.nc')
 
 # posterior predictive samples
