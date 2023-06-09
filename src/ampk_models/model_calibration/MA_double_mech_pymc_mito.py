@@ -46,7 +46,7 @@ nominals_file = '../global_sensitivity_analysis/nominal_params_MA.csv'
 ############################################
 # load data 
 data = np.load(data_file)
-times = data['times']
+times = 60*data['times']
 zero_idx = int(np.where(times==0.0)[0]) # we only want values after the 2-DG stimulus
 times = times[zero_idx:]
 mean_data = data['mean'][zero_idx:]
