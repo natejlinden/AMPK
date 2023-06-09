@@ -28,7 +28,7 @@ jax.scipy.special.erfcx = tfp.math.erfcx
 
 # use 64 bit precision
 jax.config.update("jax_enable_x64", True)
-# jax.config.update('jax_platform_name', 'cpu')
+jax.config.update('jax_platform_name', 'cpu')
 
 RANDOM_SEED = 342
 rng = np.random.default_rng(RANDOM_SEED)
@@ -311,6 +311,7 @@ with lyso_model:
 
 
 ip = lyso_model.initial_point()
+print(ip)
 logp_fn = lyso_model.compile_fn(lyso_model.logp(sum=False))
 print('Non-jax logp', logp_fn(ip))
 
