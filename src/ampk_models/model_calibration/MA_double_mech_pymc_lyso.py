@@ -285,17 +285,33 @@ with lyso_model:
 #    prior_checks = pm.sample_prior_predictive(samples=200, random_seed=rng)
 # az.to_netcdf(prior_checks, dir + base_name + '/lyso_prior_predictive.nc')
 
-# posterior samples
-with lyso_model:
-    # draw 4000 posterior samples
-    # numpyro NUTS
-    idata = pm.sample(draws=4000, chains=4, idata_kwargs={'log_likelihood':True})
-    # idata = pmsj.sample_numpyro_nuts(draws=4000, chains=4, idata_kwargs={'log_likelihood':True})
-az.to_netcdf(idata, dir + base_name + '/lyso_posterior.nc')
+# # posterior samples
+# with lyso_model:
+#     # draw 4000 posterior samples
+#     # numpyro NUTS
+#     idata = pm.sample(draws=4000, chains=4, idata_kwargs={'log_likelihood':True})
+#     # idata = pmsj.sample_numpyro_nuts(draws=4000, chains=4, idata_kwargs={'log_likelihood':True})
+# az.to_netcdf(idata, dir + base_name + '/lyso_posterior.nc')
 
-# posterior predictive samples
-with lyso_model:
-    # draw 4000 posterior samples
-    # numpyro NUTS
-    posterior_checks = pm.sample_posterior_predictive(idata, idata_kwargs={'log_likelihood':True}, random_seed=rng)
-az.to_netcdf(idata, dir + base_name + '/lyso_posterior_predictive.nc')
+# # posterior predictive samples
+# with lyso_model:
+#     # draw 4000 posterior samples
+#     # numpyro NUTS
+#     posterior_checks = pm.sample_posterior_predictive(idata, idata_kwargs={'log_likelihood':True}, random_seed=rng)
+# az.to_netcdf(idata, dir + base_name + '/lyso_posterior_predictive.nc')
+
+
+ip = lyso_model.initial_point()
+logp_fn = lyso_model.compile_fn(lyso_model.logp(sum=False))
+print('Non-jax logp', logp_fn(ip))
+
+logp_fn = lyso_model.compile_fn(lyso_model.logp(sum=False), mode="JAX")
+print('Jax logp', logp_fn(ip))
+
+dlogp_fn = lyso_model.compile_fn(lyso_model.dlogp())
+print('non-jax dlog_p', dlogp_fn(ip))
+
+dlogp_fn = lyso_model.compile_fn(lyso_model.dlogp(), mode="JAX")
+print('jax dlog_p', dlogp_fn(ip))
+
+
