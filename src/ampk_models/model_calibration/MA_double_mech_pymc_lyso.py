@@ -280,20 +280,20 @@ with lyso_model:
 # PyMC sampling with the numpyro (jax-based) NUTS sampler
 ################################################
 # prior predictive sampling
-# with lyso_model:
-#    prior_checks = pm.sample_prior_predictive(samples=200, random_seed=rng)
-# az.to_netcdf(prior_checks, dir + base_name + '/lyso_prior_predictive.nc')
+with lyso_model:
+   prior_checks = pm.sample_prior_predictive(samples=200, random_seed=rng)
+az.to_netcdf(prior_checks, dir + base_name + '/lyso_prior_predictive.nc')
 
-# # posterior samples
-# with lyso_model:
-#     # draw 4000 posterior samples
-#     # numpyro NUTS
-#     idata = pm.sample(draws=4000, chains=1, idata_kwargs={'log_likelihood':True})
-#     # idata = pmsj.sample_numpyro_nuts(draws=4000, chains=4, idata_kwargs={'log_likelihood':True})
-# az.to_netcdf(idata, dir + base_name + '/lyso_posterior.nc')
+# posterior samples
+with lyso_model:
+    # draw 4000 posterior samples
+    # numpyro NUTS
+    idata = pm.sample(draws=4000, chains=1, idata_kwargs={'log_likelihood':True})
+    # idata = pmsj.sample_numpyro_nuts(draws=4000, chains=4, idata_kwargs={'log_likelihood':True})
+az.to_netcdf(idata, dir + base_name + '/lyso_posterior.nc')
 
 # posterior predictive samples
-idata = az.from_netcdf(dir + base_name + '/lyso_posterior.nc')
+# idata = az.from_netcdf(dir + base_name + '/lyso_posterior.nc')
 with lyso_model:
     # draw 4000 posterior samples
     # numpyro NUTS
