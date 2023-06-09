@@ -308,4 +308,4 @@ with cyto_model:
     # draw 4000 posterior samples
     # numpyro NUTS
     posterior_checks = pm.sample_posterior_predictive(idata, idata_kwargs={'log_likelihood':True}, random_seed=rng)
-az.to_netcdf(idata, dir + base_name + '/cyto_posterior_predictive.nc')
+az.to_netcdf(posterior_checks, dir + base_name + '/cyto_posterior_predictive.nc')
