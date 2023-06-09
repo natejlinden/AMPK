@@ -171,7 +171,7 @@ def sol_op_jax(KdAMP, KdADP, KdATP, kOffAMPK, kPhosAMPK, kDephosPP1):
 jitted_sol_op_jax = jax.jit(sol_op_jax)
 
 # vector jacobian product (vjp)
-def vjp_sol_op_jax(KdAMP, KdADP, KdATP, kOffAMPK, kPhosAMPK, kDephosPP1):
+def vjp_sol_op_jax(KdAMP, KdADP, KdATP, kOffAMPK, kPhosAMPK, kDephosPP1, output_grads):
     _, vjp_fn = jax.vjp(sol_op_jax, KdAMP, KdADP, KdATP, kOffAMPK, kPhosAMPK, kDephosPP1)
     return vjp_fn(output_grads)
 
@@ -289,9 +289,9 @@ with lyso_model:
 # PyMC sampling with the numpyro (jax-based) NUTS sampler
 ################################################
 # prior predictive sampling
-with lyso_model:
-   prior_checks = pm.sample_prior_predictive(samples=200, random_seed=rng)
-az.to_netcdf(prior_checks, dir + base_name + '/lyso_prior_predictive.nc')
+# with lyso_model:
+#    prior_checks = pm.sample_prior_predictive(samples=200, random_seed=rng)
+# az.to_netcdf(prior_checks, dir + base_name + '/lyso_prior_predictive.nc')
 
 # posterior samples
 with lyso_model:
