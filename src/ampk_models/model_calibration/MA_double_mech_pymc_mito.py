@@ -35,7 +35,7 @@ rng = np.random.default_rng(RANDOM_SEED)
 ###########################################
 # get user inputs
 ############################################
-data_file = '../../../Schmitt_et_al_2022_data/fig_2b_mito.npz'
+data_file = '../../../Schmitt_et_al_2022_data/fig_2c_mito.npz'
 dir = './'
 base_name = 'MA_double_mech'
 model_info_json = '../global_sensitivity_analysis/MA_double.json'
