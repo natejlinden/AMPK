@@ -84,6 +84,15 @@ for key, val in zip(nominals_file['parameter'].to_list(),  nominals_file['value'
 # fix AMPKAR_0 because it is not identifiable and it will be tricky to set in the model
 AMPKAR_0 = nominals['AMPKAR_0']
 
+# fixed parameters
+kOffCaMKK =  nominals['kOffCaMKK']
+kPhosCaMKK = nominals['kPhosCaMKK']
+kOffLKB1 =   nominals['kOffLKB1']
+kPhosLKB1 =  nominals['kPhosLKB1']
+kOffPP =     nominals['kOffPP']
+kDephosPP =  nominals['kDephosPP']
+kOffPP1 =   nominals['kOffPP1']
+
 # Set initial conditions
 y0 = np.zeros(n_states)
 for state, val in zip(y0_states_to_set, y0_vals_to_set):
