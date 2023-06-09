@@ -1,5 +1,3 @@
-#!/home/nlinden/.conda/envs/stan/bin/python3
-
 import numpy as np
 import jax
 import jax.numpy as jnp
@@ -37,7 +35,7 @@ rng = np.random.default_rng(RANDOM_SEED)
 ###########################################
 # get user inputs
 ############################################
-data_file = '../../../Schmitt_et_al_2022_data/fig_2c_mito.npz'
+data_file = '../../../Schmitt_et_al_2022_data/fig_2b_mito.npz'
 dir = './'
 base_name = 'MA_double_mech'
 model_info_json = '../global_sensitivity_analysis/MA_double.json'
@@ -75,8 +73,26 @@ pampkar_idxs = [state_names.index(item) for item in pampkar_states]
 ampkar_idx = state_names.index('AMPKAR')
 pampkar_idx = state_names.index('pAMPKAR')
 
+
+################################################
+# Nominal parameters
+################################################
+nominals_file = pd.read_csv(nominals_file)
+nominals = {}
+for key, val in zip(nominals_file['parameter'].to_list(),  nominals_file['value'].to_list()):
+     nominals[key] = val
+
 # fix AMPKAR_0 because it is not identifiable and it will be tricky to set in the model
-AMPKAR_0 = 1.0
+AMPKAR_0 = nominals['AMPKAR_0']
+
+# fixed parameters
+kOffCaMKK =  nominals['kOffCaMKK']
+kPhosCaMKK = nominals['kPhosCaMKK']
+kOffLKB1 =   nominals['kOffLKB1']
+kPhosLKB1 =  nominals['kPhosLKB1']
+kOffPP =     nominals['kOffPP']
+kDephosPP =  nominals['kDephosPP']
+kOffPP1 =   nominals['kOffPP1']
 
 # Set initial conditions
 y0 = np.zeros(n_states)
@@ -94,13 +110,6 @@ prior_params_json = './MA_prior_params.json'
 with open(prior_params_json, 'r') as file:
         prior_params = json.load(file)
 
-################################################
-# Nominal parameters
-################################################
-nominals_file = pd.read_csv(nominals_file)
-nominals = {}
-for key, val in zip(nominals_file['parameter'].to_list(),  nominals_file['value'].to_list()):
-     nominals[key] = val
 ################################################
 #                   Model RHS                  #
 ################################################
@@ -290,19 +299,19 @@ mito_model = pm.Model()
 
 with mito_model:
     # priors
-    KdAMP =- pm.LogNormal("KdAMP", mu=prior_params["KdAMP"]["mu"], tau=prior_params["KdAMP"]["tau"])
-    KdADP =- pm.LogNormal("KdADP", mu=prior_params["KdADP"]["mu"], tau=prior_params["KdADP"]["tau"])
-    KdATP =- pm.LogNormal("KdATP", mu=prior_params["KdATP"]["mu"], tau=prior_params["KdATP"]["tau"])
-    kOffCaMKK = pm.Deterministic("kOffCaMKK", pt.constant(nominals['kOffCaMKK'])) # fixed
-    kPhosCaMKK = pm.Deterministic("kPhosCaMKK", pt.constant(nominals['kPhosCaMKK'])) # fixed
-    kOffLKB1 = pm.Deterministic("kOffLKB1", pt.constant(nominals['kOffLKB1'])) # fixed
-    kPhosLKB1 = pm.Deterministic("kPhosLKB1", pt.constant(nominals['kPhosLKB1'])) # fixed
-    kOffPP = pm.Deterministic("kOffPP", pt.constant(nominals['kOffPP'])) # fixed
-    kDephosPP = pm.Deterministic("kDephosPP", pt.constant(nominals['kDephosPP'])) # fixed
-    kOffAMPK =- pm.LogNormal("kOffAMPK", mu=prior_params["kOffAMPK"]["mu"], tau=prior_params["kOffAMPK"]["tau"])
-    kPhosAMPK =- pm.LogNormal("kPhosAMPK", mu=prior_params["kPhosAMPK"]["mu"], tau=prior_params["kPhosAMPK"]["tau"])
-    kOffPP1 = pm.Deterministic("kOffPP1", pt.constant(nominals['kOffPP1'])) # fixed
-    kDephosPP1 =- pm.LogNormal("kDephosPP1", mu=prior_params["kDephosPP1"]["mu"], tau=prior_params["kDephosPP1"]["tau"])
+    KdAMP = pm.LogNormal("KdAMP", mu=prior_params["KdAMP"]["mu"], tau=prior_params["KdAMP"]["tau"])
+    KdADP = pm.LogNormal("KdADP", mu=prior_params["KdADP"]["mu"], tau=prior_params["KdADP"]["tau"])
+    KdATP = pm.LogNormal("KdATP", mu=prior_params["KdATP"]["mu"], tau=prior_params["KdATP"]["tau"])
+    # kOffCaMKK = pm.("kOffCaMKK", pt.constant(nominals['kOffCaMKK'])) # fixed
+    # kPhosCaMKK = pm.Deterministic("kPhosCaMKK", pt.constant(nominals['kPhosCaMKK'])) # fixed
+    # kOffLKB1 = pm.Deterministic("kOffLKB1", pt.constant(nominals['kOffLKB1'])) # fixed
+    # kPhosLKB1 = pm.Deterministic("kPhosLKB1", pt.constant(nominals['kPhosLKB1'])) # fixed
+    # kOffPP = pm.Deterministic("kOffPP", pt.constant(nominals['kOffPP'])) # fixed
+    # kDephosPP = pm.Deterministic("kDephosPP", pt.constant(nominals['kDephosPP'])) # fixed
+    kOffAMPK = pm.LogNormal("kOffAMPK", mu=prior_params["kOffAMPK"]["mu"], tau=prior_params["kOffAMPK"]["tau"])
+    kPhosAMPK = pm.LogNormal("kPhosAMPK", mu=prior_params["kPhosAMPK"]["mu"], tau=prior_params["kPhosAMPK"]["tau"])
+    # kOffPP1 = pm.Deterministic("kOffPP1", pt.constant(nominals['kOffPP1'])) # fixed
+    kDephosPP1 = pm.LogNormal("kDephosPP1", mu=prior_params["kDephosPP1"]["mu"], tau=prior_params["kDephosPP1"]["tau"])
 
     
     # evaluate the model at the parameters
@@ -319,19 +328,20 @@ with mito_model:
 ################################################
 # prior predictive sampling
 with mito_model:
-    prior_checks = pm.sample_prior_predictive(samples=200, random_seed=rng)
+   prior_checks = pm.sample_prior_predictive(samples=200, random_seed=rng)
 az.to_netcdf(prior_checks, dir + base_name + '/mito_prior_predictive.nc')
 
 # posterior samples
 with mito_model:
     # draw 4000 posterior samples
     # numpyro NUTS
-    idata = pmsj.sample_numpyro_nuts(draws=4000, chains=4, idata_kwargs={'log_likelihood':True})
+    idata = pm.sample(draws=4000, chains=1, idata_kwargs={'log_likelihood':True})
+    # idata = pmsj.sample_numpyro_nuts(draws=4000, chains=4, idata_kwargs={'log_likelihood':True})
 az.to_netcdf(idata, dir + base_name + '/mito_posterior.nc')
 
 # posterior predictive samples
 with mito_model:
     # draw 4000 posterior samples
     # numpyro NUTS
-    posterior_checks = pmsj.sample_posterior_predictive(idata, idata_kwargs={'log_likelihood':True}, random_seed=rng)
+    posterior_checks = pm.sample_posterior_predictive(idata, idata_kwargs={'log_likelihood':True}, random_seed=rng)
 az.to_netcdf(idata, dir + base_name + '/mito_posterior_predictive.nc')

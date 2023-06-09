@@ -179,20 +179,20 @@ def vjp_sol_op_jax(KdAMP, KdADP, KdATP, kOffAMPK, kPhosAMPK, kDephosPP1, output_
 # get a jitted (compiled) version of the function
 jitted_vjp_sol_op_jax = jax.jit(vjp_sol_op_jax)
 
-# # Uncomment below to check the jitted functions
-KdAMP = 2.5e-3
-KdADP = 1.5e-3
-KdATP = 1.8e-2
-kOffAMPK = 8.49e-2
-kPhosAMPK = 1.92e-5
-kDephosPP1 = 1.1e-2
-sol = jitted_sol_op_jax(KdAMP, KdADP, KdATP, kOffAMPK, kPhosAMPK, kDephosPP1)
-grad = jitted_vjp_sol_op_jax(KdAMP, KdADP, KdATP, kOffAMPK, kPhosAMPK, kDephosPP1, sol)
+# # # Uncomment below to check the jitted functions
+# KdAMP = 2.5e-3
+# KdADP = 1.5e-3
+# KdATP = 1.8e-2
+# kOffAMPK = 8.49e-2
+# kPhosAMPK = 1.92e-5
+# kDephosPP1 = 1.1e-2
+# sol = jitted_sol_op_jax(KdAMP, KdADP, KdATP, kOffAMPK, kPhosAMPK, kDephosPP1)
+# grad = jitted_vjp_sol_op_jax(KdAMP, KdADP, KdATP, kOffAMPK, kPhosAMPK, kDephosPP1, sol)
 
-print('The ODE solution is:')
-print(sol)
-print('The gradients evaluated at the solution are:')
-print(grad)
+# print('The ODE solution is:')
+# print(sol)
+# print('The gradients evaluated at the solution are:')
+# print(grad)
 
 ################################################
 # PyTensor Ops
@@ -239,12 +239,12 @@ class VJPSolOp(Op):
 sol_op = SolOp()
 vjp_sol_op = VJPSolOp()
 
-try:
-    pytensor.gradient.verify_grad(sol_op, (KdAMP, KdADP, KdATP, kOffAMPK, kPhosAMPK, kDephosPP1,), 
-                                  rng=np.random.default_rng(), eps=1e-10, n_tests=4)
-except pytensor.gradient.GradientError as err:
-    print('Did not pass unit test! Investigate more! \nThe stack trace was: \n')
-    print(Exception, err)
+# try:
+#     pytensor.gradient.verify_grad(sol_op, (KdAMP, KdADP, KdATP, kOffAMPK, kPhosAMPK, kDephosPP1,), 
+#                                   rng=np.random.default_rng(), eps=1e-10, n_tests=4)
+# except pytensor.gradient.GradientError as err:
+#     print('Did not pass unit test! Investigate more! \nThe stack trace was: \n')
+#     print(Exception, err)
 
 @jax_funcify.register(SolOp)
 def sol_op_jax_funcify(op, **kwargs):
@@ -268,7 +268,6 @@ with lyso_model:
     kPhosAMPK = pm.LogNormal("kPhosAMPK", mu=prior_params["kPhosAMPK"]["mu"], tau=prior_params["kPhosAMPK"]["tau"])
     kDephosPP1 = pm.LogNormal("kDephosPP1", mu=prior_params["kDephosPP1"]["mu"], tau=prior_params["kDephosPP1"]["tau"])
 
-    
     # evaluate the model at the parameters
     # computes the ampkar signal after 2-DG stimulus
     ampkar_signal = sol_op(KdAMP, KdADP, KdATP, kOffAMPK, kPhosAMPK, kDephosPP1)
@@ -285,34 +284,34 @@ with lyso_model:
 #    prior_checks = pm.sample_prior_predictive(samples=200, random_seed=rng)
 # az.to_netcdf(prior_checks, dir + base_name + '/lyso_prior_predictive.nc')
 
-# # posterior samples
-# with lyso_model:
-#     # draw 4000 posterior samples
-#     # numpyro NUTS
-#     idata = pm.sample(draws=4000, chains=4, idata_kwargs={'log_likelihood':True})
-#     # idata = pmsj.sample_numpyro_nuts(draws=4000, chains=4, idata_kwargs={'log_likelihood':True})
-# az.to_netcdf(idata, dir + base_name + '/lyso_posterior.nc')
+# posterior samples
+with lyso_model:
+    # draw 4000 posterior samples
+    # numpyro NUTS
+    idata = pm.sample(draws=4000, chains=1, idata_kwargs={'log_likelihood':True})
+    # idata = pmsj.sample_numpyro_nuts(draws=4000, chains=4, idata_kwargs={'log_likelihood':True})
+az.to_netcdf(idata, dir + base_name + '/lyso_posterior.nc')
 
-# # posterior predictive samples
-# with lyso_model:
-#     # draw 4000 posterior samples
-#     # numpyro NUTS
-#     posterior_checks = pm.sample_posterior_predictive(idata, idata_kwargs={'log_likelihood':True}, random_seed=rng)
-# az.to_netcdf(idata, dir + base_name + '/lyso_posterior_predictive.nc')
+# posterior predictive samples
+with lyso_model:
+    # draw 4000 posterior samples
+    # numpyro NUTS
+    posterior_checks = pm.sample_posterior_predictive(idata, idata_kwargs={'log_likelihood':True}, random_seed=rng)
+az.to_netcdf(idata, dir + base_name + '/lyso_posterior_predictive.nc')
 
 
-ip = lyso_model.initial_point()
-print(ip)
-logp_fn = lyso_model.compile_fn(lyso_model.logp(sum=False))
-print('Non-jax logp', logp_fn(ip))
+# ip = lyso_model.initial_point()
+# print(ip)
+# logp_fn = lyso_model.compile_fn(lyso_model.logp(sum=False))
+# print('Non-jax logp', logp_fn(ip))
 
-logp_fn = lyso_model.compile_fn(lyso_model.logp(sum=False), mode="JAX")
-print('Jax logp', logp_fn(ip))
+# logp_fn = lyso_model.compile_fn(lyso_model.logp(sum=False), mode="JAX")
+# print('Jax logp', logp_fn(ip))
 
-dlogp_fn = lyso_model.compile_fn(lyso_model.dlogp())
-print('non-jax dlog_p', dlogp_fn(ip))
+# dlogp_fn = lyso_model.compile_fn(lyso_model.dlogp())
+# print('non-jax dlog_p', dlogp_fn(ip))
 
-dlogp_fn = lyso_model.compile_fn(lyso_model.dlogp(), mode="JAX")
-print('jax dlog_p', dlogp_fn(ip))
+# dlogp_fn = lyso_model.compile_fn(lyso_model.dlogp(), mode="JAX")
+# print('jax dlog_p', dlogp_fn(ip))
 
 
