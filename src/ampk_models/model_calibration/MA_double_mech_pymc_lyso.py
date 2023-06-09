@@ -297,19 +297,19 @@ kOffPP1 =   nominals['kOffPP1']
 
 with lyso_model:
     # priors
-    KdAMP =- pm.LogNormal("KdAMP", mu=prior_params["KdAMP"]["mu"], tau=prior_params["KdAMP"]["tau"])
-    KdADP =- pm.LogNormal("KdADP", mu=prior_params["KdADP"]["mu"], tau=prior_params["KdADP"]["tau"])
-    KdATP =- pm.LogNormal("KdATP", mu=prior_params["KdATP"]["mu"], tau=prior_params["KdATP"]["tau"])
+    KdAMP = pm.LogNormal("KdAMP", mu=prior_params["KdAMP"]["mu"], tau=prior_params["KdAMP"]["tau"])
+    KdADP = pm.LogNormal("KdADP", mu=prior_params["KdADP"]["mu"], tau=prior_params["KdADP"]["tau"])
+    KdATP = pm.LogNormal("KdATP", mu=prior_params["KdATP"]["mu"], tau=prior_params["KdATP"]["tau"])
     # kOffCaMKK = pm.("kOffCaMKK", pt.constant(nominals['kOffCaMKK'])) # fixed
     # kPhosCaMKK = pm.Deterministic("kPhosCaMKK", pt.constant(nominals['kPhosCaMKK'])) # fixed
     # kOffLKB1 = pm.Deterministic("kOffLKB1", pt.constant(nominals['kOffLKB1'])) # fixed
     # kPhosLKB1 = pm.Deterministic("kPhosLKB1", pt.constant(nominals['kPhosLKB1'])) # fixed
     # kOffPP = pm.Deterministic("kOffPP", pt.constant(nominals['kOffPP'])) # fixed
     # kDephosPP = pm.Deterministic("kDephosPP", pt.constant(nominals['kDephosPP'])) # fixed
-    kOffAMPK =- pm.LogNormal("kOffAMPK", mu=prior_params["kOffAMPK"]["mu"], tau=prior_params["kOffAMPK"]["tau"])
-    kPhosAMPK =- pm.LogNormal("kPhosAMPK", mu=prior_params["kPhosAMPK"]["mu"], tau=prior_params["kPhosAMPK"]["tau"])
+    kOffAMPK = pm.LogNormal("kOffAMPK", mu=prior_params["kOffAMPK"]["mu"], tau=prior_params["kOffAMPK"]["tau"])
+    kPhosAMPK = pm.LogNormal("kPhosAMPK", mu=prior_params["kPhosAMPK"]["mu"], tau=prior_params["kPhosAMPK"]["tau"])
     # kOffPP1 = pm.Deterministic("kOffPP1", pt.constant(nominals['kOffPP1'])) # fixed
-    kDephosPP1 =- pm.LogNormal("kDephosPP1", mu=prior_params["kDephosPP1"]["mu"], tau=prior_params["kDephosPP1"]["tau"])
+    kDephosPP1 = pm.LogNormal("kDephosPP1", mu=prior_params["kDephosPP1"]["mu"], tau=prior_params["kDephosPP1"]["tau"])
 
     
     # evaluate the model at the parameters
@@ -333,7 +333,7 @@ with lyso_model:
 with lyso_model:
     # draw 4000 posterior samples
     # numpyro NUTS
-    idata = pm.sample(draws=4000, chains=4, idata_kwargs={'log_likelihood':True})
+    # idata = pm.sample(draws=4000, chains=4, idata_kwargs={'log_likelihood':True})
     idata = pmsj.sample_numpyro_nuts(draws=4000, chains=4, idata_kwargs={'log_likelihood':True})
 az.to_netcdf(idata, dir + base_name + '/lyso_posterior.nc')
 
