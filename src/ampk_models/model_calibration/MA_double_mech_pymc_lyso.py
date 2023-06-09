@@ -222,15 +222,9 @@ class SolOp(Op):
         outputs[0][0] = np.asarray(result, dtype="float64")
     
     def grad(self, inputs, output_gradients):
-<<<<<<< HEAD
-       KdAMP, KdADP, KdATP, kOffAMPK, kPhosAMPK, kDephosPP1 = inputs
-       (gz,) = output_gradients
-       return vjp_sol_op(KdAMP, KdADP, KdATP, kOffAMPK, kPhosAMPK, kDephosPP1, gz)
-=======
         KdAMP, KdADP, KdATP, kOffAMPK, kPhosAMPK, kDephosPP1 = inputs
         (gz,) = output_gradients
         return vjp_sol_op(KdAMP, KdADP, KdATP, kOffAMPK, kPhosAMPK, kDephosPP1, gz)
->>>>>>> 90ab5b12a2ce04f6fc2e1323662e90929ea69e2e
 
 class VJPSolOp(Op):
         def make_node(self, KdAMP, KdADP, KdATP, kOffAMPK, kPhosAMPK, kDephosPP1, output_grads):
