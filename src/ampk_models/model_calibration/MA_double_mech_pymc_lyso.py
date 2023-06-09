@@ -240,8 +240,8 @@ sol_op = SolOp()
 vjp_sol_op = VJPSolOp()
 
 try:
-    pytensor.gradient.verify_grad(sol_op, (KdAMP, KdADP, KdATP, kOffAMPK, kPhosAMPK, kDephosPP1,), r
-                                  ng=np.random.default_rng(), eps=1e-10, n_tests=4)
+    pytensor.gradient.verify_grad(sol_op, (KdAMP, KdADP, KdATP, kOffAMPK, kPhosAMPK, kDephosPP1,), 
+                                  rng=np.random.default_rng(), eps=1e-10, n_tests=4)
 except pytensor.gradient.GradientError as err:
     print('Did not pass unit test! Investigate more! \nThe stack trace was: \n')
     print(Exception, err)
