@@ -186,10 +186,8 @@ KdATP = 1.8e-2
 kOffAMPK = 8.49e-2
 kPhosAMPK = 1.92e-5
 kDephosPP1 = 1.1e-2
-sol = jitted_sol_op_jax(KdAMP, KdADP, KdATP, kOffCaMKK, kPhosCaMKK, kOffLKB1, kPhosLKB1, kOffPP,
-               kDephosPP, kOffAMPK, kPhosAMPK, kOffPP1, kDephosPP1)
-grad = jitted_vjp_sol_op_jax(KdAMP, KdADP, KdATP, kOffCaMKK, kPhosCaMKK, kOffLKB1, kPhosLKB1, kOffPP,
-               kDephosPP, kOffAMPK, kPhosAMPK, kOffPP1, kDephosPP1, sol)
+sol = jitted_sol_op_jax(KdAMP, KdADP, KdATP, kOffAMPK, kPhosAMPK, kDephosPP1)
+grad = jitted_vjp_sol_op_jax(KdAMP, KdADP, KdATP, kOffAMPK, kPhosAMPK, kDephosPP1, sol)
 
 print('The ODE solution is:')
 print(sol)
@@ -242,8 +240,8 @@ sol_op = SolOp()
 vjp_sol_op = VJPSolOp()
 
 try:
-    pytensor.gradient.verify_grad(sol_op, (KdAMP, KdADP, KdATP, kOffCaMKK, kPhosCaMKK, kOffLKB1, kPhosLKB1, kOffPP, \
-                kDephosPP, kOffAMPK, kPhosAMPK, kOffPP1, kDephosPP1,), rng=np.random.default_rng(), eps=1e-10, n_tests=4)
+    pytensor.gradient.verify_grad(sol_op, (KdAMP, KdADP, KdATP, kOffAMPK, kPhosAMPK, kDephosPP1,), r
+                                  ng=np.random.default_rng(), eps=1e-10, n_tests=4)
 except pytensor.gradient.GradientError as err:
     print('Did not pass unit test! Investigate more! \nThe stack trace was: \n')
     print(Exception, err)
