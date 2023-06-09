@@ -1,5 +1,3 @@
-#!/home/nlinden/.conda/envs/stan/bin/python3
-
 import numpy as np
 import jax
 import jax.numpy as jnp
@@ -37,7 +35,7 @@ rng = np.random.default_rng(RANDOM_SEED)
 ###########################################
 # get user inputs
 ############################################
-data_file = '../../../Schmitt_et_al_2022_data/fig_2e_cyto.npz'
+data_file = '../../../Schmitt_et_al_2022_data/fig_2b_cyto.npz'
 dir = './'
 base_name = 'MA_double_mech'
 model_info_json = '../global_sensitivity_analysis/MA_double.json'
@@ -75,8 +73,6 @@ pampkar_idxs = [state_names.index(item) for item in pampkar_states]
 ampkar_idx = state_names.index('AMPKAR')
 pampkar_idx = state_names.index('pAMPKAR')
 
-# fix AMPKAR_0 because it is not identifiable and it will be tricky to set in the model
-AMPKAR_0 = 1.0
 
 # Set initial conditions
 y0 = np.zeros(n_states)
@@ -117,6 +113,17 @@ rhs_stress = model.vector_field(**metab_parms_stress)
 rhs = dfrx.ODETerm(rhs)
 rhs_stress = dfrx.ODETerm(rhs_stress)
 
+# fixed parameters
+kOffCaMKK =  nominals['kOffCaMKK']
+kPhosCaMKK = nominals['kPhosCaMKK']
+kOffLKB1 =   nominals['kOffLKB1']
+kPhosLKB1 =  nominals['kPhosLKB1']
+kOffPP =     nominals['kOffPP']
+kDephosPP =  nominals['kDephosPP']
+kOffPP1 =   nominals['kOffPP1']
+# fix AMPKAR_0 because it is not identifiable and it will be tricky to set in the model
+AMPKAR_0 = nominals['AMPKAR_0']
+
 ################################################
 # Jax functions for the ODE solution and the gradient
 ################################################
@@ -129,8 +136,7 @@ event_atol = 1e-8
 event = dfrx.SteadyStateEvent(event_rtol, event_atol)
 stepsize_controller = dfrx.PIDController(rtol=1e-8, atol=1e-8)
 
-def sol_op_jax(KdAMP, KdADP, KdATP, kOffCaMKK, kPhosCaMKK, kOffLKB1, kPhosLKB1, kOffPP,
-               kDephosPP, kOffAMPK, kPhosAMPK, kOffPP1, kDephosPP1):
+def sol_op_jax(KdAMP, KdADP, KdATP, kOffAMPK, kPhosAMPK, kDephosPP1):
     args = compute_MA_params([KdAMP, KdADP, KdATP, kOffCaMKK, kPhosCaMKK, kOffLKB1, kPhosLKB1, kOffPP,
                kDephosPP, kOffAMPK, kPhosAMPK, kOffPP1, kDephosPP1, AMPKAR_0]) # tuple to pass to the solver!
     # first run the system to the estimates basal steady state
@@ -165,10 +171,8 @@ def sol_op_jax(KdAMP, KdADP, KdATP, kOffCaMKK, kPhosCaMKK, kOffLKB1, kPhosLKB1, 
 jitted_sol_op_jax = jax.jit(sol_op_jax)
 
 # vector jacobian product (vjp)
-def vjp_sol_op_jax(KdAMP, KdADP, KdATP, kOffCaMKK, kPhosCaMKK, kOffLKB1, kPhosLKB1, kOffPP,
-               kDephosPP, kOffAMPK, kPhosAMPK, kOffPP1, kDephosPP1, output_grads):
-    _, vjp_fn = jax.vjp(sol_op_jax, KdAMP, KdADP, KdATP, kOffCaMKK, kPhosCaMKK, kOffLKB1, kPhosLKB1, kOffPP,
-               kDephosPP, kOffAMPK, kPhosAMPK, kOffPP1, kDephosPP1)
+def vjp_sol_op_jax(KdAMP, KdADP, KdATP, kOffAMPK, kPhosAMPK, kDephosPP1, output_grads):
+    _, vjp_fn = jax.vjp(sol_op_jax, KdAMP, KdADP, KdATP, kOffAMPK, kPhosAMPK, kDephosPP1)
     return vjp_fn(output_grads)
 
 # get a jitted (compiled) version of the function
@@ -202,68 +206,43 @@ jitted_vjp_sol_op_jax = jax.jit(vjp_sol_op_jax)
 # PyTensor Ops
 ################################################
 class SolOp(Op):
-    def make_node(self, KdAMP, KdADP, KdATP, kOffCaMKK, kPhosCaMKK, kOffLKB1, kPhosLKB1, kOffPP,
-               kDephosPP, kOffAMPK, kPhosAMPK, kOffPP1, kDephosPP1):
+    def make_node(self, KdAMP, KdADP, KdATP, kOffAMPK, kPhosAMPK, kDephosPP1):
         # Convert our inputs to symbolic variables
         inputs = [pt.as_tensor_variable(KdAMP), pt.as_tensor_variable(KdADP), pt.as_tensor_variable(KdATP),
-                  pt.as_tensor_variable(kOffCaMKK), pt.as_tensor_variable(kPhosCaMKK),
-                  pt.as_tensor_variable(kOffLKB1), pt.as_tensor_variable(kPhosLKB1),
-                  pt.as_tensor_variable(kOffPP), pt.as_tensor_variable(kDephosPP),
                   pt.as_tensor_variable(kOffAMPK), pt.as_tensor_variable(kPhosAMPK),
-                  pt.as_tensor_variable(kOffPP1), pt.as_tensor_variable(kDephosPP1)]
+                  pt.as_tensor_variable(kDephosPP1)]
         # assume output is always a float64
         outputs = [pt.dvector()]
         return Apply(self, inputs, outputs)
 
     def perform(self, node, inputs, outputs):
-        KdAMP, KdADP, KdATP, kOffCaMKK, kPhosCaMKK, kOffLKB1, kPhosLKB1, kOffPP, \
-            kDephosPP, kOffAMPK, kPhosAMPK, kOffPP1, kDephosPP1 = inputs
-        result = jitted_sol_op_jax(KdAMP, KdADP, KdATP, kOffCaMKK, kPhosCaMKK, kOffLKB1, kPhosLKB1, kOffPP,
-               kDephosPP, kOffAMPK, kPhosAMPK, kOffPP1, kDephosPP1)
+        KdAMP, KdADP, KdATP, kOffAMPK, kPhosAMPK, kDephosPP1 = inputs
+        result = jitted_sol_op_jax(KdAMP, KdADP, KdATP, kOffAMPK, kPhosAMPK, kDephosPP1)
         outputs[0][0] = np.asarray(result, dtype="float64")
     
     def grad(self, inputs, output_gradients):
-        KdAMP, KdADP, KdATP, kOffCaMKK, kPhosCaMKK, kOffLKB1, kPhosLKB1, kOffPP, \
-            kDephosPP, kOffAMPK, kPhosAMPK, kOffPP1, kDephosPP1 = inputs
+       KdAMP, KdADP, KdATP, kOffAMPK, kPhosAMPK, kDephosPP1 = inputs
         (gz,) = output_gradients
-        return vjp_sol_op(KdAMP, KdADP, KdATP, kOffCaMKK, kPhosCaMKK, kOffLKB1, kPhosLKB1, kOffPP,
-               kDephosPP, kOffAMPK, kPhosAMPK, kOffPP1, kDephosPP1, gz)
+        return vjp_sol_op(KdAMP, KdADP, KdATP, kOffAMPK, kPhosAMPK, kDephosPP1, gz)
 
 class VJPSolOp(Op):
-        def make_node(self, KdAMP, KdADP, KdATP, kOffCaMKK, kPhosCaMKK, kOffLKB1, kPhosLKB1, kOffPP,
-               kDephosPP, kOffAMPK, kPhosAMPK, kOffPP1, kDephosPP1, output_grads):
+        def make_node(self, KdAMP, KdADP, KdATP, kOffAMPK, kPhosAMPK, kDephosPP1, output_grads):
             inputs = [pt.as_tensor_variable(KdAMP), pt.as_tensor_variable(KdADP), pt.as_tensor_variable(KdATP),
-                      pt.as_tensor_variable(kOffCaMKK), pt.as_tensor_variable(kPhosCaMKK),
-                      pt.as_tensor_variable(kOffLKB1), pt.as_tensor_variable(kPhosLKB1),
-                      pt.as_tensor_variable(kOffPP), pt.as_tensor_variable(kDephosPP),
-                      pt.as_tensor_variable(kOffAMPK), pt.as_tensor_variable(kPhosAMPK),
-                      pt.as_tensor_variable(kOffPP1), pt.as_tensor_variable(kDephosPP1),
-                      pt.as_tensor_variable(output_grads)]
+                        pt.as_tensor_variable(kOffAMPK), pt.as_tensor_variable(kPhosAMPK),
+                        pt.as_tensor_variable(kDephosPP1), pt.as_tensor_variable(output_grads)]
             outputs = [inputs[0].type(), inputs[1].type(), inputs[2].type(), inputs[3].type(),
-                       inputs[4].type(), inputs[5].type(), inputs[6].type(), inputs[7].type(),
-                          inputs[8].type(), inputs[9].type(), inputs[10].type(), inputs[11].type(),
-                          inputs[12].type()] # grad wrt to each input parameter
+                       inputs[4].type(), inputs[5].type()] # grad wrt to each input parameter
             return Apply(self, inputs, outputs)
         
         def perform(self, node, inputs, outputs):
-            KdAMP, KdADP, KdATP, kOffCaMKK, kPhosCaMKK, kOffLKB1, kPhosLKB1, kOffPP, \
-                kDephosPP, kOffAMPK, kPhosAMPK, kOffPP1, kDephosPP1, output_grads = inputs
-            result = jitted_vjp_sol_op_jax(KdAMP, KdADP, KdATP, kOffCaMKK, kPhosCaMKK, kOffLKB1, 
-                                           kPhosLKB1, kOffPP, kDephosPP, kOffAMPK, kPhosAMPK, 
-                                           kOffPP1, kDephosPP1, output_grads)
+            KdAMP, KdADP, KdATP, kOffAMPK, kPhosAMPK, kDephosPP1, output_grads = inputs
+            result = jitted_vjp_sol_op_jax(KdAMP, KdADP, KdATP, kOffAMPK, kPhosAMPK, kDephosPP1, output_grads)
             outputs[0][0] = np.asarray(result[0], dtype="float64") 
             outputs[1][0] = np.asarray(result[1], dtype="float64") 
             outputs[2][0] = np.asarray(result[2], dtype="float64") 
             outputs[3][0] = np.asarray(result[3], dtype="float64") 
             outputs[4][0] = np.asarray(result[4], dtype="float64") 
             outputs[5][0] = np.asarray(result[5], dtype="float64")
-            outputs[6][0] = np.asarray(result[6], dtype="float64")
-            outputs[7][0] = np.asarray(result[7], dtype="float64")
-            outputs[8][0] = np.asarray(result[8], dtype="float64")
-            outputs[9][0] = np.asarray(result[9], dtype="float64")
-            outputs[10][0] = np.asarray(result[10], dtype="float64")
-            outputs[11][0] = np.asarray(result[11], dtype="float64")
-            outputs[12][0] = np.asarray(result[12], dtype="float64")
 
 sol_op = SolOp()
 vjp_sol_op = VJPSolOp()
@@ -290,25 +269,17 @@ cyto_model = pm.Model()
 
 with cyto_model:
     # priors
-    KdAMP =- pm.LogNormal("KdAMP", mu=prior_params["KdAMP"]["mu"], tau=prior_params["KdAMP"]["tau"])
-    KdADP =- pm.LogNormal("KdADP", mu=prior_params["KdADP"]["mu"], tau=prior_params["KdADP"]["tau"])
-    KdATP =- pm.LogNormal("KdATP", mu=prior_params["KdATP"]["mu"], tau=prior_params["KdATP"]["tau"])
-    kOffCaMKK = pm.Deterministic("kOffCaMKK", pt.constant(nominals['kOffCaMKK'])) # fixed
-    kPhosCaMKK = pm.Deterministic("kPhosCaMKK", pt.constant(nominals['kPhosCaMKK'])) # fixed
-    kOffLKB1 = pm.Deterministic("kOffLKB1", pt.constant(nominals['kOffLKB1'])) # fixed
-    kPhosLKB1 = pm.Deterministic("kPhosLKB1", pt.constant(nominals['kPhosLKB1'])) # fixed
-    kOffPP = pm.Deterministic("kOffPP", pt.constant(nominals['kOffPP'])) # fixed
-    kDephosPP = pm.Deterministic("kDephosPP", pt.constant(nominals['kDephosPP'])) # fixed
-    kOffAMPK =- pm.LogNormal("kOffAMPK", mu=prior_params["kOffAMPK"]["mu"], tau=prior_params["kOffAMPK"]["tau"])
-    kPhosAMPK =- pm.LogNormal("kPhosAMPK", mu=prior_params["kPhosAMPK"]["mu"], tau=prior_params["kPhosAMPK"]["tau"])
-    kOffPP1 = pm.Deterministic("kOffPP1", pt.constant(nominals['kOffPP1'])) # fixed
-    kDephosPP1 =- pm.LogNormal("kDephosPP1", mu=prior_params["kDephosPP1"]["mu"], tau=prior_params["kDephosPP1"]["tau"])
+    KdAMP = pm.LogNormal("KdAMP", mu=prior_params["KdAMP"]["mu"], tau=prior_params["KdAMP"]["tau"])
+    KdADP = pm.LogNormal("KdADP", mu=prior_params["KdADP"]["mu"], tau=prior_params["KdADP"]["tau"])
+    KdATP = pm.LogNormal("KdATP", mu=prior_params["KdATP"]["mu"], tau=prior_params["KdATP"]["tau"])
+    kOffAMPK = pm.LogNormal("kOffAMPK", mu=prior_params["kOffAMPK"]["mu"], tau=prior_params["kOffAMPK"]["tau"])
+    kPhosAMPK = pm.LogNormal("kPhosAMPK", mu=prior_params["kPhosAMPK"]["mu"], tau=prior_params["kPhosAMPK"]["tau"])
+    kDephosPP1 = pm.LogNormal("kDephosPP1", mu=prior_params["kDephosPP1"]["mu"], tau=prior_params["kDephosPP1"]["tau"])
 
     
     # evaluate the model at the parameters
     # computes the ampkar signal after 2-DG stimulus
-    ampkar_signal = sol_op(KdAMP, KdADP, KdATP, kOffCaMKK, kPhosCaMKK, kOffLKB1, kPhosLKB1, kOffPP,
-               kDephosPP, kOffAMPK, kPhosAMPK, kOffPP1, kDephosPP1)
+    ampkar_signal = sol_op(KdAMP, KdADP, KdATP, kOffAMPK, kPhosAMPK, kDephosPP1)
 
     # loglikelihood
     # note that sigma comes from the data!
@@ -318,14 +289,15 @@ with cyto_model:
 # PyMC sampling with the numpyro (jax-based) NUTS sampler
 ################################################
 # prior predictive sampling
-with cyto_model:
-    prior_checks = pm.sample_prior_predictive(samples=200, random_seed=rng)
-az.to_netcdf(prior_checks, dir + base_name + '/cyto_prior_predictive.nc')
+# with cyto_model:
+#    prior_checks = pm.sample_prior_predictive(samples=200, random_seed=rng)
+# az.to_netcdf(prior_checks, dir + base_name + '/cyto_prior_predictive.nc')
 
 # posterior samples
 with cyto_model:
     # draw 4000 posterior samples
     # numpyro NUTS
+    # idata = pm.sample(draws=4000, chains=4, idata_kwargs={'log_likelihood':True})
     idata = pmsj.sample_numpyro_nuts(draws=4000, chains=4, idata_kwargs={'log_likelihood':True})
 az.to_netcdf(idata, dir + base_name + '/cyto_posterior.nc')
 
@@ -333,5 +305,5 @@ az.to_netcdf(idata, dir + base_name + '/cyto_posterior.nc')
 with cyto_model:
     # draw 4000 posterior samples
     # numpyro NUTS
-    posterior_checks = pmsj.sample_posterior_predictive(idata, idata_kwargs={'log_likelihood':True}, random_seed=rng)
+    posterior_checks = pm.sample_posterior_predictive(idata, idata_kwargs={'log_likelihood':True}, random_seed=rng)
 az.to_netcdf(idata, dir + base_name + '/cyto_posterior_predictive.nc')
