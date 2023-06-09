@@ -73,6 +73,16 @@ pampkar_idxs = [state_names.index(item) for item in pampkar_states]
 ampkar_idx = state_names.index('AMPKAR')
 pampkar_idx = state_names.index('pAMPKAR')
 
+################################################
+# Nominal parameters
+################################################
+nominals_file = pd.read_csv(nominals_file)
+nominals = {}
+for key, val in zip(nominals_file['parameter'].to_list(),  nominals_file['value'].to_list()):
+     nominals[key] = val
+
+# fix AMPKAR_0 because it is not identifiable and it will be tricky to set in the model
+AMPKAR_0 = nominals['AMPKAR_0']
 
 # Set initial conditions
 y0 = np.zeros(n_states)
@@ -91,13 +101,6 @@ with open(prior_params_json, 'r') as file:
         prior_params = json.load(file)
 
 ################################################
-# Nominal parameters
-################################################
-nominals_file = pd.read_csv(nominals_file)
-nominals = {}
-for key, val in zip(nominals_file['parameter'].to_list(),  nominals_file['value'].to_list()):
-     nominals[key] = val
-################################################
 #                   Model RHS                  #
 ################################################
 # metabolism_params
@@ -112,17 +115,6 @@ rhs = model.vector_field(**metab_parms_basal)
 rhs_stress = model.vector_field(**metab_parms_stress)
 rhs = dfrx.ODETerm(rhs)
 rhs_stress = dfrx.ODETerm(rhs_stress)
-
-# fixed parameters
-kOffCaMKK =  nominals['kOffCaMKK']
-kPhosCaMKK = nominals['kPhosCaMKK']
-kOffLKB1 =   nominals['kOffLKB1']
-kPhosLKB1 =  nominals['kPhosLKB1']
-kOffPP =     nominals['kOffPP']
-kDephosPP =  nominals['kDephosPP']
-kOffPP1 =   nominals['kOffPP1']
-# fix AMPKAR_0 because it is not identifiable and it will be tricky to set in the model
-AMPKAR_0 = nominals['AMPKAR_0']
 
 ################################################
 # Jax functions for the ODE solution and the gradient
