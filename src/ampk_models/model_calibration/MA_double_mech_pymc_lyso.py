@@ -73,7 +73,6 @@ pampkar_idxs = [state_names.index(item) for item in pampkar_states]
 ampkar_idx = state_names.index('AMPKAR')
 pampkar_idx = state_names.index('pAMPKAR')
 
-
 ################################################
 # Nominal parameters
 ################################################
@@ -82,9 +81,17 @@ nominals = {}
 for key, val in zip(nominals_file['parameter'].to_list(),  nominals_file['value'].to_list()):
      nominals[key] = val
 
-
 # fix AMPKAR_0 because it is not identifiable and it will be tricky to set in the model
 AMPKAR_0 = nominals['AMPKAR_0']
+
+# fixed parameters
+kOffCaMKK =  nominals['kOffCaMKK']
+kPhosCaMKK = nominals['kPhosCaMKK']
+kOffLKB1 =   nominals['kOffLKB1']
+kPhosLKB1 =  nominals['kPhosLKB1']
+kOffPP =     nominals['kOffPP']
+kDephosPP =  nominals['kDephosPP']
+kOffPP1 =   nominals['kOffPP1']
 
 # Set initial conditions
 y0 = np.zeros(n_states)
@@ -117,15 +124,6 @@ rhs = model.vector_field(**metab_parms_basal)
 rhs_stress = model.vector_field(**metab_parms_stress)
 rhs = dfrx.ODETerm(rhs)
 rhs_stress = dfrx.ODETerm(rhs_stress)
-
-# fixed parameters
-kOffCaMKK =  nominals['kOffCaMKK']
-kPhosCaMKK = nominals['kPhosCaMKK']
-kOffLKB1 =   nominals['kOffLKB1']
-kPhosLKB1 =  nominals['kPhosLKB1']
-kOffPP =     nominals['kOffPP']
-kDephosPP =  nominals['kDephosPP']
-kOffPP1 =   nominals['kOffPP1']
 
 ################################################
 # Jax functions for the ODE solution and the gradient
@@ -224,9 +222,15 @@ class SolOp(Op):
         outputs[0][0] = np.asarray(result, dtype="float64")
     
     def grad(self, inputs, output_gradients):
+<<<<<<< HEAD
        KdAMP, KdADP, KdATP, kOffAMPK, kPhosAMPK, kDephosPP1 = inputs
        (gz,) = output_gradients
        return vjp_sol_op(KdAMP, KdADP, KdATP, kOffAMPK, kPhosAMPK, kDephosPP1, gz)
+=======
+        KdAMP, KdADP, KdATP, kOffAMPK, kPhosAMPK, kDephosPP1 = inputs
+        (gz,) = output_gradients
+        return vjp_sol_op(KdAMP, KdADP, KdATP, kOffAMPK, kPhosAMPK, kDephosPP1, gz)
+>>>>>>> 90ab5b12a2ce04f6fc2e1323662e90929ea69e2e
 
 class VJPSolOp(Op):
         def make_node(self, KdAMP, KdADP, KdATP, kOffAMPK, kPhosAMPK, kDephosPP1, output_grads):
