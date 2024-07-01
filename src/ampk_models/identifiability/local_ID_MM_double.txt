@@ -1,0 +1,4 @@
+Locally Identifiable parameters:
+K, KeqAK, kOffATP, kOffADP, kHydro, kOffAMP, 
+Nonidentifiable parameters:
+x6, VforAK, x7, x5, kOnATP, KmLKB1, x19, x14, x15, kmt, kAMPK, x22, kOnAMP, VmaxCaMKK, x1, x9, kmd, x2, x13, kGly, x11, VmaxLKB1, VmaxPP, x25, x21, x16, kmm, KmPP1, kOnADP, KmAMPK, x23, x17, x24, KmPP, x10, KmCaMKK, VmaxPP1, x4, x12, x3, x20, x8, x18, 

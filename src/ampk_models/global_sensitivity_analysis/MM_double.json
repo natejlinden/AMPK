@@ -1,0 +1,11 @@
+{"state_names": ["AMP", "ADP", "ATP", "AMPK", "pAMPK", "AMP_AMPK", "ADP_AMPK", "ATP_AMPK", 
+                "AMP_pAMPK", "ADP_pAMPK", "ATP_pAMPK", "AMP_AMP_AMPK", "AMP_ADP_AMPK", 
+                "AMP_ATP_AMPK", "ADP_ADP_AMPK", "ADP_ATP_AMPK", "ATP_ATP_AMPK", 
+                "AMP_AMP_pAMPK", "AMP_ADP_pAMPK", "AMP_ATP_pAMPK", "ADP_ADP_pAMPK", 
+                "ADP_ATP_pAMPK", "ATP_ATP_pAMPK", "AMPKAR", "pAMPKAR"],
+"ampkar_states": [ "AMPKAR", "pAMPKAR"],
+"pampkar_states": ["pAMPKAR"],
+"y0": {
+    "set_states":["AMP", "ADP", "ATP", "AMPK", "AMPKAR"],
+    "set_ics":[2e-2, 1.3, 8.2, 0.6, 0.1]}
+}

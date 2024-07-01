@@ -1,0 +1,14 @@
+parameter,value
+KdAMP,2.5e-3
+kOffCaMKK,1.32e-2
+kPhosCaMKK,8.1e-4
+kOffLKB1,1.396
+kPhosLKB1,3.92e-3
+kOffPP,5.6e-2
+kDephosPP,1.1e-2
+kOffAMPK,8.49e-2
+kPhosAMPK,1.92e-5
+kOffPP1,5.6e-2
+kDephosPP1,1.1e-2
+beta,2.0
+AMPKAR_0,1.0
