@@ -7,225 +7,186 @@ from SALib.sample import morris as morris_samp
 from SALib.analyze import sobol as sobol_analyze
 from SALib.analyze import morris as morris_analyze
 from SALib.analyze.hdmr import analyze as hdmr_analyze
-from tqdm import tqdm
-import os
-import sys
-import importlib
-import multiprocessing as mp
-import time
-import math
-import json
+import os, sys, time, json, argparse
 import pandas as pd
+import argparse
 from gsa_utils import * # GSA utility functions
-
-############################################
-# get user inputs
-############################################
-if len(sys.argv) < 9:
-    print("Incorrect Usage: TODO: add usage") # TODO: add usage
-    sys.exit(1)
-
-cpu_mult = float(sys.argv[1])
-dir = sys.argv[2]
-base_name = sys.argv[3]
-diffrax_model = sys.argv[4]
-model_info_json = sys.argv[5]
-nominals_file = sys.argv[6]
-bounds_file = sys.argv[7]
-param_comp_function = sys.argv[8]
-
-############################################
-# jax loading
-############################################
-# use all available cores (do before loading jax)
-# required for parallel cpu runs
-n_cores = mp.cpu_count()
-print('Using {} cores'.format(n_cores))
-n_devices = int(2**np.ceil(math.log(cpu_mult*n_cores, 2))) # sets n_devices to the next largest power of 2
-print('Set {} XLA devices'.format(n_devices))
-
-xla_flag = '--xla_force_host_platform_device_count={}'.format(n_devices)
-environ['XLA_FLAGS']=xla_flag
-
 import jax
 import jax.numpy as jnp
 from jax import lax
 import equinox as eqx
 import diffrax as dfrx
 
+# import models
+sys.path.append("../odes/")
+from ampk_MA_double_mech_diffrax import *
+from ampk_MA_single_mech_diffrax import *
+from ampk_MM_double_mech_diffrax import *
+from ampk_MM_single_mech_diffrax import *
+from ampk_newmech_MA_single_diffrax import *
+
+# import utils functions
+sys.path.append("../")
+from utils import *
+
+# use 64 bit precision for Jax
 jax.config.update('jax_enable_x64', True)
-jax.config.update('jax_platform_name', 'cpu')
-print('Using', len(jax.devices()), "'devices'")
-############################################
-# load diffrax model
-############################################
-sys.path.insert(0, '../odes')
-try:
-    model = importlib.import_module(diffrax_model)
-except ImportError:
-    print("Module '{}' not found.".format(diffrax_model))
-    sys.exit(1)
 
-############################################
-# Setup output directory #
-############################################
-try:
-    if os.path.exists(dir):
-        print('Saving to: ', dir)
-    else:
-        print(dir,'does not exist.')
-except:
-    print("An error occurred while checking the path.")
+#############################
+# def arg parsers to take inputs from the command line
+##############################
+def parse_args(raw_args=None):
+    """ function to parse command line arguments
+    """
+    parser=argparse.ArgumentParser(description="Run GSA sampling and compute GSA indices.")
+    parser.add_argument("-model", type=str, help="model to process.")
+    parser.add_argument("-free_params", type=str, help="parameters to test")
+    parser.add_argument("-model_info_file", type=str, help="JSON file with relevant info. Model params, initial conditions, and AMPKAR states.") # TODO add description of the file format
+    parser.add_argument("-upper_mult", type=float, default=1e2, help="Multiplier for upper bound in GSA sampling. Defaults to 100")
+    parser.add_argument("-lower_mult", type=float, default=1e-2, help="Multiplier for lower bound in GSA sampling. Defaults to 0.01.")
+    parser.add_argument("-metab_params_file", type=str, help="Metabolism model parameters. Should be a JSON")
+    parser.add_argument("-nsamples", type=int, default=256, help="Number of samples to draw in each parameter direction. Defaults to 256")
+    parser.add_argument("-gsa_method", type=str, default="sobol", help="GSA method to use. Defaults to sobol. Options are sobol, morris, and hdmr.")
+    parser.add_argument("-savedir", type=str, help="Path to save results. Defaults to current directory.", default="./")
+    parser.add_argument("-tmax", type=float, default=1e3, help="Maximum time to run the simulation. Defaults to 1e3.")
+    parser.add_argument("-rtol", type=float,default=1e-6)
+    parser.add_argument("-atol", type=float,default=1e-6)
+    parser.add_argument("-evnt_rtol", type=float,default=1e-12)
+    parser.add_argument("-evnt_atol", type=float,default=1e-12)
+    parser.add_argument('-pcoeff', type=float, default=0, help='pcoeff for PID time stepper')
+    parser.add_argument('-dcoeff', type=float, default=0, help='dcoeff for PID time stepper')
+    parser.add_argument('-icoeff', type=float, default=1.0, help='icoeff for PID time stepper')
+    args=parser.parse_args(raw_args)
+    return args
 
-fname = base_name + '/' # TODO: add check to make sure base_name is a string
-savedir = dir+fname
-if not os.path.exists(savedir):
-    os.makedirs(savedir)
-    print('Created directory: ', savedir)
+def main(raw_args=None):
+    """ Main function to execute command line script functionality. See the args parser for arguments
+    """
+    args = parse_args(raw_args) # parse the arguments
+    print('Processing model {}.'.format(args.model))
+    
+    # random seed for reproducibility
+    seed = np.random.default_rng(12345)
 
-############################################
-# Bounds and other info for the GSA #
-############################################
-# define the bounds for the AMPK parameters
-# we use plus or minus on order of magnitude of any known values and then make reasonable assumptions for unknowns
-# Note we fix all off rates to 1.0 and dont bother sampling these or computing sensitivities
-############################################
-try:
-    nominals_file = pd.read_csv(nominals_file)
-except:
-    print("An error occurred while reading the nominal values.")
+    # add savedir if it does not exist
+    if not os.path.isdir(args.savedir):
+        os.makedirs(args.savedir)
 
-try:
-    bounds = pd.read_csv(bounds_file)
-except:
-    print("An error occurred while reading the nominal values.")
+    ####################################################
+    # set up model info and nominal parameters #
+    ####################################################
+    # Load JSON files with param, state, and initial condition info
+    # states and initial conditions
+    with open(args.model_info_file, 'r') as file:
+           model_info = json.load(file)
 
-nominals = nominals_file['value'].to_list()
-param_names = nominals_file['parameter'].to_list()
-nparam = len(param_names)
-bounds = [[lb, ub] for lb, ub in zip(bounds['lb'].to_list(), bounds['ub'].to_list())]
+    # unpack loaded model data dictionary
+    state_names = list(model_info["init_conds"].keys())
+    ampkar_states = model_info['ampkar_states']
+    pampkar_states = model_info['pampkar_states']
+    n_states = len(state_names)
+    y0 = jnp.array(list(model_info["init_conds"].values()))
 
-# metabolism_params
-metab_parms_basal = {'kGly': 0.5,'kHydro':0.1,
-                     'VforAK': 14.66, 'KeqAK': 2.21, 'kmm': 0.32, 'kmd': 0.35, 'kmt': 0.27,
-                     'VmaxOxPhos':0.5,'Kadp': 5.8e-2,'n': 2.568,}
-metab_parms_stress = {'kGly': 0.005,'kHydro':0.1,
-                      'VforAK': 14.66, 'KeqAK': 2.21, 'kmm': 0.32, 'kmd': 0.35, 'kmt': 0.27,
-                     'VmaxOxPhos':0.5,'Kadp': 5.8e-2,'n': 2.568,}
+    # get the indices of the states
+    ampkar_idxs = [state_names.index(item) for item in ampkar_states]
+    pampkar_idxs = [state_names.index(item) for item in pampkar_states]
+    ampkar_idx = state_names.index('AMPKAR')
+    pampkar_idx = state_names.index('pAMPKAR')
 
-# dictionary of the problem for SALib
-bounds = {'num_vars':nparam, 'names':param_names, 'bounds': bounds,}
+    # get the names of the fixed parameters
+    free_params = args.free_params.split(',')
+    param_names = model_info['nominal_params'].keys()
+    nominal_params = model_info['nominal_params']
+    fixed_params = list(set(param_names)  - set(free_params))
 
-############################################
-# states and initial conditions
-############################################
-try:
-    with open(model_info_json, 'r') as file:
-        model_data = json.load(file)
-        print("JSON file loaded successfully.")
-        print("Data:", model_data)
-except FileNotFoundError:
-    print("File not found.")
-except json.JSONDecodeError:
-    print("Invalid JSON format.")
-except Exception as e:
-    print("An error occurred while loading the JSON file:", str(e))
+    # parameters for the metabolic model
+    with open(args.metab_params_file, 'r') as file:
+           metab_params = json.load(file)
 
-# unpack loaded model data dictionary
-state_names = model_data['state_names']
-ampkar_states = model_data['ampkar_states']
-pampkar_states = model_data['pampkar_states']
-n_states = len(state_names)
-y0_states_to_set = model_data['y0']['set_states']
-y0_vals_to_set = model_data['y0']['set_ics']
+    basal_params = list(metab_params["metab_params_basal"].values())
+    stress_params = list(metab_params["metab_params_stress"].values())
 
-# get the indices of the states
-ampkar_idxs = [state_names.index(item) for item in ampkar_states]
-pampkar_idxs = [state_names.index(item) for item in pampkar_states]
-ampkar_idx = state_names.index('AMPKAR')
-pampkar_idx = state_names.index('pAMPKAR')
+    ###############################################
+    #                   Model RHS                  #
+    ################################################
+    try:
+        rhs = eval(args.model + '(' + ','.join(str(elm) for elm in basal_params) \
+            + ')')
+        rhs_stress = eval(args.model + '(' + ','.join(str(elm) for elm in stress_params) \
+             + ')')
+        rhs = dfrx.ODETerm(rhs)
+        rhs_stress = dfrx.ODETerm(rhs_stress)
+    except:
+        print('Warning Model {} not found. Quitting.'.format(args.model))
+        quit()
+
+    ############################################
+    # Bounds and other info for the GSA #
+    ############################################
+    # define the bounds for the AMPK parameters
+    bound_mults = np.array((args.lower_mult, args.upper_mult))
+    bounds = [bound_mults*nominal_params[param] for param in free_params]
+
+    # dictionary of the problem for SALib
+    bounds = {'num_vars':len(free_params), 'names':free_params, 'bounds': bounds}
 
 
-# Set initial conditions
-y0 = np.zeros(n_states)
-for state, val in zip(y0_states_to_set, y0_vals_to_set):
-    y0[state_names.index(state)] = val
+    ######################################################
+    # # generate samples using specified method #
+    ######################################################
+    # use sobol sampling for hdmr since it is sampling agnostic
+    if args.gsa_method in ['sobol', 'hdmr']:
+        param_vals = sobol_samp.sample(bounds, args.nsamples, \
+                                       calc_second_order=False, seed=seed)
+    elif args.gsa_method == "morris":
+        pass
+        # TODO implement morris sampling
 
-# random seed for reproducibility
-seed = np.random.seed(seed=2048)
+    np.save(args.savedir + args.model + '_param_vals_GSA.npy', np.array(param_vals))
 
-################################################
-#                   Model RHS                  #
-################################################
-rhs = model.vector_field(**metab_parms_basal)
-rhs_stress = model.vector_field(**metab_parms_stress)
-rhs = dfrx.ODETerm(rhs)
-rhs_stress = dfrx.ODETerm(rhs_stress)
+    # Convert from parameter samples to full parameter sets, because we do not sample
+    # all parameters in the model
+    # ASSUME:
+    # - all parameters are included in the nominals json
+    # - the order of parameters in the nominals json is the order in 
+    #       which parameters are expected by the RHS of the model
+    # temp is a n_sample x n_params (free + fixed) matrix
+    temp = np.empty(shape=(param_vals.shape[0], len(param_names))) # TODO check dims of paravals
 
-################################################
-# param comp function
-################################################
-try:
-    module = importlib.import_module('gsa_utils')
-    if hasattr(module, param_comp_function):
-        compute_params = getattr(module, param_comp_function)
-    else:
-        print("Function '{}' not found in module '{}'.".format(param_comp_function, 'gsa_utils'))
-except ImportError:
-    print("'gsa_utils.{}' not found.".format(param_comp_function))
-    sys.exit(1)
+    for i in range(param_vals.shape[0]):
+        # copy the nominals dict
+        temp_dict = nominal_params.copy()
 
-######################################################
-# # generate samples using the Sobol sampling method #
-######################################################
-nsamps = 4096
-param_vals_sobol = sobol_samp.sample(bounds, nsamps, calc_second_order=True, seed=seed)
-np.save(savedir + 'param_vals_sobol.npy', np.array(param_vals_sobol))
+        # loop over free params and get the ith sample of them
+        # this should leave un-sampled params fixed in the dictionary
+        for j, param in enumerate(free_params):
+            temp_dict[param] = param_vals[i, j]
 
-# Convert from parameter samples to full parameter sets, because we do not sample
-# all parameters in the model
-n_params_true = len(compute_params(param_vals_sobol[0,:])) # get true length of parameter vector
-temp = np.empty(shape=(param_vals_sobol.shape[0], n_params_true))
+        # replace the ith row of temp with the values of the dictionary
+        for j, key in enumerate(temp_dict.keys()):
+            temp[i, j] = temp_dict[key]
 
-for i in range(param_vals_sobol.shape[0]):
-    temp[i,:] = np.array(compute_params(param_vals_sobol[i,:]))
+    ######################################################
+    # Set up solver
+    ######################################################
+    solve = jax.vmap(lambda params: solve_SS(rhs, rhs_stress, y0, params, tmax = args.tmax,
+                                      rtol=args.rtol, atol=args.atol, 
+                                      evnt_rtol=args.evnt_rtol, evnt_atol=args.evnt_atol, 
+                                      pcoeff=args.pcoeff, icoeff=args.icoeff, dcoeff=args.dcoeff))
 
-param_vals_sobol = temp
 
-######################################################
-# Run simulations
-######################################################
-print('Reshaping input parameters...')
-qoi_fn_pmap = jax.pmap(single_model_eval_nansafe, in_axes=(0,None,None,None,None,None,None))
+    # test single solve
+    print(solve_SS(rhs, rhs_stress, y0, temp[0,:], tmax = args.tmax,
+                                      rtol=args.rtol, atol=args.atol, 
+                                      evnt_rtol=args.evnt_rtol, evnt_atol=args.evnt_atol, 
+                                      pcoeff=args.pcoeff, icoeff=args.icoeff, dcoeff=args.dcoeff))
+    # run the vmapped simulations
+    tnow = time.time()
+    sols = solve(temp)
+    tend = time.time()
 
-params_shape = param_vals_sobol.shape # get shape of parameter vectors (n_sampls, n_params)
-# the parameter vector needs to be shape (n_loops, n_devices, n_params)
-# n_loops needs to be the integer which is larger than n_sampls//n_devices
-# thus we need to pad any extra entries added with nans
-# for example if we have 120 parameter set, then we need to add 8 row of nans
-pad = int((np.ceil(params_shape[0]/n_devices)*n_devices)-params_shape[0]) #params_shape[0] % n_devices
-if pad:
-    padt = np.empty((pad, params_shape[1]))
-    padt[:] = np.nan
-    param_vals_sobol = np.vstack((param_vals_sobol, padt))
+    print('Simulations took {} seconds'.format(tend-tnow))
+    print('Completed {}'.format(args.model))
 
-# now we can reshape the parameter vector accordingly
-n_loops = int(np.ceil(params_shape[0]/n_devices))
-new_params = jnp.array(param_vals_sobol).reshape((n_loops,n_devices,params_shape[1]))
-
-# we are now ready to run simulations
-print('Running simulations...')
-sols_sobol =[]
-tnow = time.time()
-for i in tqdm(range(n_loops)):
-    sol = qoi_fn_pmap(new_params[i,:,:], rhs, rhs_stress, y0, ampkar_idx, ampkar_idxs, pampkar_idxs)
-    sols_sobol.append(sol)
-    # print('loop', i, 'of', n_loops, 'complete')
-tend = time.time()
-
-print('Simulations took {} seconds'.format(tend-tnow))
-print('Saving results...')
-np.save(savedir + 'sols_sobol.npy', jnp.array(sols_sobol))
-
-print('Complete!')
-quit()
+if __name__ == '__main__':
+    main()
