@@ -175,11 +175,6 @@ def main(raw_args=None):
                                       pcoeff=args.pcoeff, icoeff=args.icoeff, dcoeff=args.dcoeff))
 
 
-    # test single solve
-    print(solve_SS(rhs, rhs_stress, y0, temp[0,:], tmax = args.tmax,
-                                      rtol=args.rtol, atol=args.atol, 
-                                      evnt_rtol=args.evnt_rtol, evnt_atol=args.evnt_atol, 
-                                      pcoeff=args.pcoeff, icoeff=args.icoeff, dcoeff=args.dcoeff))
     # run the vmapped simulations
     tnow = time.time()
     sols = solve(temp)
