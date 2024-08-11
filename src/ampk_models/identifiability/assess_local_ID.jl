@@ -10,7 +10,7 @@ for (file, model) in zip(file_list, model_list)
     println("Running: $model...")
     include(file)
 
-    local_id = assess_local_identifiability(ode, 0.99)
+    local_id = assess_local_identifiability(ode)
 
     # save to file for this model
     # create file to save results
