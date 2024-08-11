@@ -39,47 +39,47 @@ class newmech_MA_single(eqx.Module):
         """
         # unpack parameters
         KdAMP      = args[0] # AMP binding
-        konCaMKK   = args[1] # CaMKK
-        koffCaMKK  = args[2]
-        kCaMKK     = args[3] 
-        konLKB1    = args[4] # LKB1
-        koffLKB1   = args[5]
-        kLKB1      = args[6]
-        konPP      = args[7] # AMPK Phosphatase
-        koffPP     = args[8]
-        kPP        = args[9]
-        konAMPK    = args[10] # AMPK kinase
-        koffAMPK   = args[11]
-        kAMPK      = args[12]
-        konPP1     = args[13] # pAMPKAR Phosphatase
-        koffPP1    = args[14]
-        kPP1       = args[15]
+        kOnCaMKK   = args[1] # CaMKK
+        kOffCaMKK  = args[2]
+        kPhosCaMKK     = args[3] 
+        kOnLKB1    = args[4] # LKB1
+        kOffLKB1   = args[5]
+        kPhosLKB1      = args[6]
+        kOnPP      = args[7] # AMPK Phosphatase
+        kOffPP     = args[8]
+        kDephosPP        = args[9]
+        kOnAMPK    = args[10] # AMPK kinase
+        kOffAMPK   = args[11]
+        kPhosAMPK      = args[12]
+        kOnPP1     = args[13] # pAMPKAR Phosphatase
+        kOffPP1    = args[14]
+        kDephosPP1       = args[15]
         alpha      = args[16]
         beta       = args[17]
         
-        konAMP = 1.0
+        kOnAMP = 1.0
         
         # FLUXES
         # single AXP complexing
-        J1  = konAMP*y[0]*y[3]  - KdAMP*y[5] 
-        J2  = konAMP*y[0]*y[4]  - KdAMP*y[6] 
-        J3  = konAMP*y[0]*y[17]  - KdAMP*y[18]
-        J4  = konCaMKK*y[3]*y[7] - koffCaMKK*y[8] 
-        J5  = kCaMKK*y[8] 
-        J6  = konCaMKK*y[5]*y[7] - koffCaMKK*y[9] 
-        J7  = kCaMKK*y[9] 
-        J8  = konLKB1*y[3]*y[10] - koffLKB1*y[11] 
-        J9  = kLKB1*y[11] 
-        J10 = konLKB1*y[5]*y[10] - koffLKB1*y[12] 
-        J11 = kLKB1*y[12] 
-        J12 = konPP*y[13]*y[4] - koffPP*y[14] 
-        J13 = kPP*y[14] 
-        J14 = konAMPK*y[4]*y[15] - koffAMPK*y[17] 
-        J15 = kAMPK*y[17] 
-        J16 = konAMPK*y[6]*y[15] - alpha*koffAMPK*y[18] 
-        J17 = beta*kAMPK*y[18] 
-        J18 = konPP1*y[19]*y[16] - koffPP1*y[20] 
-        J19 = kPP1*y[20]
+        J1  = kOnAMP*y[0]*y[3]  - KdAMP*y[5] 
+        J2  = kOnAMP*y[0]*y[4]  - KdAMP*y[6] 
+        J3  = kOnAMP*y[0]*y[17]  - KdAMP*y[18]
+        J4  = kOnCaMKK*y[3]*y[7] - kOffCaMKK*y[8] 
+        J5  = kPhosCaMKK*y[8] 
+        J6  = kOnCaMKK*y[5]*y[7] - kOffCaMKK*y[9] 
+        J7  = kPhosCaMKK*y[9] 
+        J8  = kOnLKB1*y[3]*y[10] - kOffLKB1*y[11] 
+        J9  = kPhosLKB1*y[11] 
+        J10 = kOnLKB1*y[5]*y[10] - kOffLKB1*y[12] 
+        J11 = kPhosLKB1*y[12] 
+        J12 = kOnPP*y[13]*y[4] - kOffPP*y[14] 
+        J13 = kDephosPP*y[14] 
+        J14 = kOnAMPK*y[4]*y[15] - kOffAMPK*y[17] 
+        J15 = kPhosAMPK*y[17] 
+        J16 = kOnAMPK*y[6]*y[15] - alpha*kOffAMPK*y[18] 
+        J17 = beta*kPhosAMPK*y[18] 
+        J18 = kOnPP1*y[19]*y[16] - kOffPP1*y[20] 
+        J19 = kDephosPP1*y[20]
         
         # Metabolic fluxes
         # glycolysis
@@ -99,8 +99,8 @@ class newmech_MA_single(eqx.Module):
         # now return the odes for each state variable
         dydt = jnp.zeros_like(y)
         dydt = dydt.at[0].set(-J1 - J2 - J3 -JAK) # AMP
-        dydt = dydt.at[1].set(-Jgly+2*JAK+Jhydro-Joxphos) # ADP
-        dydt = dydt.at[2].set(Jgly-JAK-Jhydro+Joxphos) # ATP
+        dydt = dydt.at[1].set(-Jgly + 2*JAK + Jhydro - Joxphos) # ADP
+        dydt = dydt.at[2].set(Jgly - JAK - Jhydro + Joxphos) # ATP
         dydt = dydt.at[3].set(-J1 - J4 - J8 + J13) # AMPK
         dydt = dydt.at[4].set(-J2 + J5 + J9 - J12 - J14 + J15) #pAMPK
         dydt = dydt.at[5].set(J1 - J6 - J10) # AMP-AMPK
