@@ -20,7 +20,7 @@ import preliz as pz
 import diffrax as dfrx
 from optimistix import root_find, Newton, two_norm
 import lineax as lx
-from tqdm import tqdm
+#from tqdm import tqdm
 import time
 
 jax.config.update("jax_enable_x64", True)
