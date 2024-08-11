@@ -180,6 +180,9 @@ def main(raw_args=None):
     sols = solve(temp)
     tend = time.time()
 
+    # save model evals
+    np.save(args.savedir + args.model + '_sols_GSA.npy', np.array(sols))
+
     print('Simulations took {} seconds'.format(tend-tnow))
     print('Completed {}'.format(args.model))
 
