@@ -134,7 +134,7 @@ def solve_SS(rhs, rhs_stress, y0, params, rtol=1e-6, atol=1e-6,
         discrete_terminating_event=event,
         max_steps=60000, throw=True)
     
-    return jnp.squeeze(sol_stressed.ys)
+    return jnp.squeeze(sol_stressed.ys), jnp.squeeze(sol.ys)
 
 # def predict_traj_response(model, posterior_idata, inputs, times, input_state, 
 #                           ERK_states, time_conversion_factor=1, 
