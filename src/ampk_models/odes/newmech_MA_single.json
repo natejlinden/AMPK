@@ -1,7 +1,7 @@
 {
     "nominal_params": {
         "KdAMP": 2.5e-3,  
-        "konCaMKK": 1.0,
+        "kOnCaMKK": 1.0,
         "kOffCaMKK": 1.32e-2,
         "kPhosCaMKK": 8.1e-4,
         "kOnLKB1": 1.0,
@@ -13,8 +13,8 @@
         "kOnAMPK": 1.0, 
         "kOffAMPK": 8.49e-2,
         "kPhosAMPK": 1.92e-5, 
-        "konPP1": 1.0, 
-        "koffPP1": 5.6e-2,
+        "kOnPP1": 1.0, 
+        "kOffPP1": 5.6e-2,
         "kDephosPP1": 1.1e-2,  
         "alpha": 1.0, 
         "beta": 2.0
