@@ -1,6 +1,7 @@
 {
     "nominal_params": {
-        "KdAMP": 2.5e-3,  
+        "kOffAMP": 2.5e-3,
+        "kOnAMP": 1.0, 
         "kOnCaMKK": 1.0,
         "kOffCaMKK": 1.32e-2,
         "kPhosCaMKK": 8.1e-4,
