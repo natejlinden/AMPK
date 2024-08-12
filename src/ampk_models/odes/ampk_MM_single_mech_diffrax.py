@@ -33,18 +33,6 @@ class MM_single_mech(eqx.Module):
     n: float
 
 
-    def __init__(self, kGly, kHydro, kForAK, kRevAK, VmaxOxPhos, Kadp, n):
-        """Initialize the model. Set fixed parameters."""
-        # TODO: expand docstring
-        # TODO: add default values
-        self.kGly = kGly
-        self.kHydro = kHydro
-        self.kForAK = kForAK
-        self.kRevAK = kRevAK
-        self.VmaxOxPhos = VmaxOxPhos
-        self.Kadp = Kadp
-        self.n = n
-
     def __call__(self, t, y, args):
         """Right hand side of the AMPK_ma_double_mech regulation model.
 
