@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name  gsa-ma-double   
+#SBATCH --job-name  gsa-ma-single   
 #SBATCH --output slurm-%j.out-%N            # Standard output file
 #SBATCH --output slurm-%j.err-%N        # Optional, for separating standard error
 #SBATCH --partition rtx3090                                   # Partition name
@@ -14,4 +14,4 @@
 #SBATCH --mail-user nlinden@ucsd.edu                #Optional, Send mail to this address
 
 # run sampling
-/tscc/nfs/home/nlinden/miniforge3/envs/pymc/bin/python GSA_sampling.py -model MA_double_mech -free_params kOffAMP,kOffADP,kOffATP,kOffCaMKK,kPhosCaMKK,kOffLKB1,kPhosLKB1,kOffPP,kDephosPP,kOffAMPK,kPhosAMPK,kOffPP1,kDephosPP1 -model_info_file ../odes/MA_double.json -upper_mult 1e2 -lower_mult 1e-2 -metab_params_file ../odes/metabolism_params.json -nsamples 1024 -gsa_method sobol -savedir /tscc/lustre/ddn/scratch/nlinden/ampk/
+/tscc/nfs/home/nlinden/miniforge3/envs/pymc/bin/python GSA_sampling.py -model MA_single_mech -free_params kOffAMP,kOffADP,kOffATP,kOffCaMKK,kPhosCaMKK,kOffLKB1,kPhosLKB1,kOffPP,kDephosPP,kOffAMPK,kPhosAMPK,kOffPP1,kDephosPP1 -model_info_file ../odes/MA_single.json -upper_mult 1e2 -lower_mult 1e-2 -metab_params_file ../odes/metabolism_params.json -nsamples 1024 -gsa_method sobol -savedir /tscc/lustre/ddn/scratch/nlinden/ampk
