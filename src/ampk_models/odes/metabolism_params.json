@@ -12,7 +12,7 @@
         "n": 2.568
     },
     "metab_params_stress": {
-        "kGly": 0.005,
+        "kGly": 0.001,
         "kHydro": 0.1,
         "VforAK": 14.66,
         "KeqAK": 2.21,
