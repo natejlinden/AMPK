@@ -10,16 +10,16 @@
         "KmCaMKK": 1.5e-2,
         "kPhosLKB1": 3.92e-3,
         "KmLKB1": 1.4,
-        "kDephosPP": 1.1e-2,
-        "KmPP": 6.7e-2,
+        "kDephosPP": 1.1e-4,
+        "KmPP": 6.7e-1,
         "kPhosAMPK": 1.92e-5,
         "KmAMPK": 8.49e-2,
-        "kDephosPP1": 1.1e-2,
-        "KmPP1": 6.7e-2,
+        "kDephosPP1": 1.1e-4,
+        "KmPP1": 6.7e-1,
         "CaMKKtot": 1.0,
         "LKB1tot": 1.0,
-        "PPtot": 1.0,
-        "PP1tot": 1.0
+        "PPtot": 0.1,
+        "PP1tot": 0.1
     },
     "init_conds": {
         "AMP": 2e-2,
