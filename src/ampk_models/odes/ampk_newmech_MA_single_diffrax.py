@@ -38,32 +38,31 @@ class newmech_MA_single(eqx.Module):
         Written in the format required by the diffrax package
         """
         # unpack parameters
-        KdAMP      = args[0] # AMP binding
-        kOnCaMKK   = args[1] # CaMKK
-        kOffCaMKK  = args[2]
-        kPhosCaMKK     = args[3] 
-        kOnLKB1    = args[4] # LKB1
-        kOffLKB1   = args[5]
-        kPhosLKB1      = args[6]
-        kOnPP      = args[7] # AMPK Phosphatase
-        kOffPP     = args[8]
-        kDephosPP        = args[9]
-        kOnAMPK    = args[10] # AMPK kinase
-        kOffAMPK   = args[11]
-        kPhosAMPK      = args[12]
-        kOnPP1     = args[13] # pAMPKAR Phosphatase
-        kOffPP1    = args[14]
-        kDephosPP1       = args[15]
-        alpha      = args[16]
-        beta       = args[17]
-        
-        kOnAMP = 1.0
+        kOffAMP    = args[0] # AMP binding
+        kOnAMP     = args[1]
+        kOnCaMKK   = args[2] # CaMKK
+        kOffCaMKK  = args[3]
+        kPhosCaMKK = args[4] 
+        kOnLKB1    = args[5] # LKB1
+        kOffLKB1   = args[6]
+        kPhosLKB1  = args[7]
+        kOnPP      = args[8] # AMPK Phosphatase
+        kOffPP     = args[9]
+        kDephosPP  = args[10]
+        kOnAMPK    = args[11] # AMPK kinase
+        kOffAMPK   = args[12]
+        kPhosAMPK  = args[13]
+        kOnPP1     = args[14] # pAMPKAR Phosphatase
+        kOffPP1    = args[15]
+        kDephosPP1 = args[16]
+        alpha      = args[17]
+        beta       = args[18]
         
         # FLUXES
         # single AXP complexing
-        J1  = kOnAMP*y[0]*y[3]  - KdAMP*y[5] 
-        J2  = kOnAMP*y[0]*y[4]  - KdAMP*y[6] 
-        J3  = kOnAMP*y[0]*y[17]  - KdAMP*y[18]
+        J1  = kOnAMP*y[0]*y[3]  - kOffAMP*y[5] 
+        J2  = kOnAMP*y[0]*y[4]  - kOffAMP*y[6] 
+        J3  = kOnAMP*y[0]*y[17]  - kOffAMP*y[18]
         J4  = kOnCaMKK*y[3]*y[7] - kOffCaMKK*y[8] 
         J5  = kPhosCaMKK*y[8] 
         J6  = kOnCaMKK*y[5]*y[7] - kOffCaMKK*y[9] 
