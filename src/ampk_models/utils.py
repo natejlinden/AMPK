@@ -128,7 +128,7 @@ def solve_traj(rhs, rhs_stress, y0, params, times, rtol=1e-6, atol=1e-6,
         stepsize_controller=stepsize_controller,
         max_steps=60000, throw=True)
     
-    return jnp.squeeze(sol_stressed.ys), jnp.squeeze(sol)
+    return jnp.squeeze(sol_stressed.ys), jnp.squeeze(sol.ys)
 
 @jax.jit
 def solve_SS(rhs, rhs_stress, y0, params, rtol=1e-6, atol=1e-6, 
