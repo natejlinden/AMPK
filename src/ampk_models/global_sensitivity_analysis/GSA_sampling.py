@@ -41,7 +41,7 @@ def parse_args(raw_args=None):
     parser=argparse.ArgumentParser(description="Run GSA sampling and compute GSA indices.")
     parser.add_argument("-model", type=str, help="model to process.")
     parser.add_argument("-free_params", type=str, help="parameters to test")
-    parser.add_argument("-model_info_file", type=str, help="JSON file with relevant info. Model params, initial conditions, and AMPKAR states.") # TODO add description of the file format
+    parser.add_argument("-model_info_file", type=str, help="JSON file with relevant info. Model params, initial conditions, and AMPKAR states.")
     parser.add_argument("-upper_mult", type=float, default=1e2, help="Multiplier for upper bound in GSA sampling. Defaults to 100")
     parser.add_argument("-lower_mult", type=float, default=1e-2, help="Multiplier for lower bound in GSA sampling. Defaults to 0.01.")
     parser.add_argument("-metab_params_file", type=str, help="Metabolism model parameters. Should be a JSON")
@@ -81,23 +81,12 @@ def main(raw_args=None):
            model_info = json.load(file)
 
     # unpack loaded model data dictionary
-    state_names = list(model_info["init_conds"].keys())
-    ampkar_states = model_info['ampkar_states']
-    pampkar_states = model_info['pampkar_states']
-    n_states = len(state_names)
     y0 = jnp.array(list(model_info["init_conds"].values()))
-
-    # get the indices of the states
-    ampkar_idxs = [state_names.index(item) for item in ampkar_states]
-    pampkar_idxs = [state_names.index(item) for item in pampkar_states]
-    ampkar_idx = state_names.index('AMPKAR')
-    pampkar_idx = state_names.index('pAMPKAR')
 
     # get the names of the fixed parameters
     free_params = args.free_params.split(',')
     param_names = model_info['nominal_params'].keys()
     nominal_params = model_info['nominal_params']
-    fixed_params = list(set(param_names)  - set(free_params))
 
     # parameters for the metabolic model
     with open(args.metab_params_file, 'r') as file:
