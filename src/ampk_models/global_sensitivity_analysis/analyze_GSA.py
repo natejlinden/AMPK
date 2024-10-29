@@ -33,19 +33,18 @@ def main():
 
     # list of models 
     models_free_params = {
+        "MA_double_mech": {'free':["kOffAMP","kOffADP","kOffATP","kOffCaMKK","kPhosCaMKK","kOffLKB1","kPhosLKB1","kOffPP","kDephosPP","kOffAMPK","kPhosAMPK","kOffPP1","kDephosPP1"],
+                           'names':[r'$k_{\text{OffAMP}}$',r'$k_{\text{OffADP}}$',r'$k_{\text{OffATP}}$',r'$k_{\text{OffCaMKK}}$',r'$k_{\text{PhosCaMKK}}$',r'$k_{\text{OffLKB1}}$',r'$k_{\text{PhosLKB1}}$',r'$k_{\text{OffPP}}$',r'$k_{\text{DephosPP}}$',r'$k_{\text{OffAMPK}}$',r'$k_{\text{PhosAMPK}}$',r'$k_{OffPP1}}$',r'$k_{\text{Dephos,PP1}}$']}, 
         "MA_single_mech": {'free':["kOffAMP","kOffADP","kOffATP","kOffCaMKK","kPhosCaMKK","kOffLKB1","kPhosLKB1","kOffPP","kDephosPP","kOffAMPK","kPhosAMPK","kOffPP1","kDephosPP1"],
                            'names':[r'$k_{\text{OffAMP}}$',r'$k_{\text{OffADP}}$',r'$k_{\text{OffATP}}$',r'$k_{\text{OffCaMKK}}$',r'$k_{\text{PhosCaMKK}}$',r'$k_{\text{OffLKB1}}$',r'$k_{\text{PhosLKB1}}$',r'$k_{\text{OffPP}}$',r'$k_{\text{DephosPP}}$',r'$k_{\text{OffAMPK}}$',r'$k_{\text{PhosAMPK}}$',r'$k_{OffPP1}}$',r'$k_{\text{Dephos,PP1}}$']}, 
-        "MM_single_mech": ["kOffAMP","kOffADP","kOffATP","kPhosCaMKK","KmCaMKK","kPhosLKB1","KmLKB1","kDephosPP","KmPP"], 
-        "newmech_MA_single": ["kOffAMP","kOffCaMKK","kPhosCaMKK","kOffLKB1","kPhosLKB1","kOffPP","kDephosPP","kOffAMPK","kPhosAMPK","kOffPP1","kDephosPP1","alpha","beta"]}
+        "MM_single_mech":  {'free':["kOffAMP","kOffADP","kOffATP","kPhosCaMKK","KmCaMKK","kPhosLKB1","KmLKB1","kDephosPP","KmPP"],
+                           'names':[r'$k_{\text{OffAMP}}$',r'$k_{\text{OffADP}}$',r'$k_{\text{OffATP}}$',r'$k_{\text{PhosCaMKK}}$',r'$K_{m,\text{CaMKK}}$',r'$k_{\text{PhosLKB1}}$',r'$K_{\text{m,LKB1}}$',r'$k_{\text{DephosPP}}$',r'$K_{\text{M,PP}}$']},
+        "MM_double_mech":  {'free':["kOffAMP","kOffADP","kOffATP","kPhosCaMKK","KmCaMKK","kPhosLKB1","KmLKB1","kDephosPP","KmPP"],
+                           'names':[r'$k_{\text{OffAMP}}$',r'$k_{\text{OffADP}}$',r'$k_{\text{OffATP}}$',r'$k_{\text{PhosCaMKK}}$',r'$K_{m,\text{CaMKK}}$',r'$k_{\text{PhosLKB1}}$',r'$K_{\text{m,LKB1}}$',r'$k_{\text{DephosPP}}$',r'$K_{\text{M,PP}}$']},
+        "newmech_MA_single": {'free':["kOffAMP","kOffCaMKK","kPhosCaMKK","kOffLKB1","kPhosLKB1","kOffPP","kDephosPP","kOffAMPK","kPhosAMPK","kOffPP1","kDephosPP1","alpha","beta"],
+                           'names':[r'$k_{\text{OffAMP}}$',r'$k_{\text{OffCaMKK}}$',r'$k_{\text{PhosCaMKK}}$',r'$k_{\text{OffLKB1}}$',r'$k_{\text{PhosLKB1}}$',r'$k_{\text{OffPP}}$',r'$k_{\text{DephosPP}}$',r'$k_{\text{OffAMPK}}$',r'$k_{\text{PhosAMPK}}$',r'$k_{OffPP1}}$',r'$k_{\text{Dephos,PP1}}$',r'$\alpha$',r'$\beta$']}
+        }
     
-    # models_free_params = {
-    #     "MA_double_mech": ["kOffAMP","kOffADP","kOffATP","kOffCaMKK","kPhosCaMKK","kOffLKB1","kPhosLKB1","kOffPP","kDephosPP","kOffAMPK","kPhosAMPK","kOffPP1","kDephosPP1"], 
-    #     "MA_single_mech": ["kOffAMP","kOffADP","kOffATP","kOffCaMKK","kPhosCaMKK","kOffLKB1","kPhosLKB1","kOffPP","kDephosPP","kOffAMPK","kPhosAMPK","kOffPP1","kDephosPP1"], 
-    #     "MM_double_mech": ["kOffAMP","kOffADP","kOffATP","kPhosCaMKK","KmCaMKK","kPhosLKB1","KmLKB1","kDephosPP","KmPP"], 
-    #     "MM_single_mech": ["kOffAMP","kOffADP","kOffATP","kPhosCaMKK","KmCaMKK","kPhosLKB1","KmLKB1","kDephosPP","KmPP"], 
-    #     "newmech_MA_single": ["kOffAMP","kOffCaMKK","kPhosCaMKK","kOffLKB1","kPhosLKB1","kOffPP","kDephosPP","kOffAMPK","kPhosAMPK","kOffPP1","kDephosPP1","alpha","beta"]}
-    
-
     # loop through each model and analyze GSA results
     for i, model in enumerate(models_free_params.keys()):
         m_name = model.split('_mech')[0] # get the model name w/o _mech
