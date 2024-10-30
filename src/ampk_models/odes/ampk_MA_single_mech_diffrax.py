@@ -23,7 +23,7 @@ import equinox as eqx
 import numpyro
 import numpyro.distributions as dist
 
-class MA_single_mech(eqx.Module):
+class MA_single(eqx.Module):
     """Right hand side of the AMPK_ma_double_mech regulation model.
 
     Written in the format required by the diffrax package
@@ -210,7 +210,7 @@ class MA_single_mech(eqx.Module):
             """Set the glycolysis rate parameter."""
             self.kGly = kGly
 
-def MA_single_mech_numpyro_model(data=None, data_std=None, solver=None):
+def MA_single_numpyro_model(data=None, data_std=None, solver=None):
     """Returns a numpyro model for the MAPK activation model.
 
     Args:

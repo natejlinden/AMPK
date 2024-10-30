@@ -1,6 +1,6 @@
 # Julia representation of the model for identifiability analysis
 
-ode = @ODEmodel(
+MA_single = @ODEmodel(
         x1'(t) =  -(x1(t)*x4(t)-kOffAMP*x6(t))-(x1(t)*x5(t)-kOffAMP*x9(t))-Jak,
         x2'(t) =  -(x2(t)*x4(t)-kOffADP*x7(t))-(x2(t)*x5(t)-kOffADP*x10(t))-(2*kGly*x2(t)*x2(t))+2*Jak+(kHydro*x3(t))-((VmaxOxPhos*((x2(t)/Kadp)^2))/(1+((x2(t)/Kadp)^2))),
         x3'(t) =  -(x3(t)*x4(t)-kOffATP*x8(t))-(x3(t)*x5(t)-kOffATP*x11(t))+(2*kGly*x2(t)*x2(t))-Jak-(kHydro*x3(t))+((VmaxOxPhos*((x2(t)/Kadp)^2))/(1+((x2(t)/Kadp)^2))),
