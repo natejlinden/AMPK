@@ -1,4 +1,4 @@
-ode = @ODEmodel(
+MM_single = @ODEmodel(
     x1'(t) =  -(x1(t)*x4(t)-kOffAMP*x6(t))-(x1(t)*x5(t)-kOffAMP*x9(t))-(((((VforAK*x3(t)*x1(t))/(kmt*kmm))-((((VforAK*(kmd^2))/(KeqAK*kmt*kmm))*(x2(t)^2))/(kmd^2)))/(1+(x3(t)/kmt)+(x1(t)/kmm)+((x3(t)*x1(t))/(kmt*kmm))+((2*x2(t))/kmd)+((x2(t)^2)/(kmd^2))))),
     x2'(t) =  -(x2(t)*x4(t)-kOffADP*x7(t))-(x2(t)*x5(t)-kOffADP*x10(t))-(2*kGly*x2(t)*x2(t))+2*(((((VforAK*x3(t)*x1(t))/(kmt*kmm))-((((VforAK*(kmd^2))/(KeqAK*kmt*kmm))*(x2(t)^2))/(kmd^2)))/(1+(x3(t)/kmt)+(x1(t)/kmm)+((x3(t)*x1(t))/(kmt*kmm))+((2*x2(t))/kmd)+((x2(t)^2)/(kmd^2)))))+(kHydro*x3(t))-((VmaxOxPhos*((x2(t)/Kadp)^2))/(1+((x2(t)/Kadp)^2))),
     x3'(t) =  -(x3(t)*x4(t)-kOffATP*x8(t))-(x3(t)*x5(t)-kOffATP*x11(t))+(2*kGly*x2(t)*x2(t))-(((((VforAK*x3(t)*x1(t))/(kmt*kmm))-((((VforAK*(kmd^2))/(KeqAK*kmt*kmm))*(x2(t)^2))/(kmd^2)))/(1+(x3(t)/kmt)+(x1(t)/kmm)+((x3(t)*x1(t))/(kmt*kmm))+((2*x2(t))/kmd)+((x2(t)^2)/(kmd^2)))))-(kHydro*x3(t))+((VmaxOxPhos*((x2(t)/Kadp)^2))/(1+((x2(t)/Kadp)^2))),

@@ -13,14 +13,13 @@
 import jax.numpy as jnp
 import equinox as eqx
 
-class MM_single_mech(eqx.Module):
+class MM_single(eqx.Module):
     """Right hand side of the AMPK_ma_double_mech regulation model.
 
     Written in the format required by the diffrax package
     """
 
-    # fixed parameters
-    # metabolic params
+    # fixed metabolism parameters
     kGly: float
     kHydro: float
     VforAK: float
@@ -31,6 +30,14 @@ class MM_single_mech(eqx.Module):
     VmaxOxPhos: float
     Kadp: float
     n: float
+    VforCK: float
+    Kb: float
+    Kia: float
+    Kib: float
+    Kiq: float
+    Kp: float
+    KeqCK: float
+    TCr: float
 
 
     def __call__(self, t, y, args):
@@ -61,64 +68,136 @@ class MM_single_mech(eqx.Module):
         PPtot       = args[18]
         PP1tot      = args[19]
 
+        # unpack state variables
+        AMP = y[0]
+        ADP = y[1]
+        ATP = y[2]
+        PCr = y[3]
+        AMPK = y[4]
+        pAMPK = y[5]
+        AMP_AMPK = y[6]
+        ADP_AMPK = y[7]
+        ATP_AMPK = y[8]
+        AMP_pAMPK = y[9]
+        ADP_pAMPK = y[10]
+        ATP_pAMPK = y[11]
+        AMPKAR = y[12]
+        pAMPKAR = y[13]
+
         # FLUXES
         # single AXP complexing
-        J1 = kOnAMP*y[0]*y[3] - kOffAMP*y[5]# AMPK
-        J2 = kOnADP*y[1]*y[3] - kOffADP*y[6]
-        J3 = kOnATP*y[2]*y[3] - kOffATP*y[7]
-        J4 = kOnAMP*y[0]*y[4] - kOffAMP*y[8]# pAMPK
-        J5 = kOnADP*y[1]*y[4] - kOffADP*y[9]
-        J6 = kOnATP*y[2]*y[4] - kOffATP*y[10]
-        J7 = (kCaMKK*CaMKKtot*y[3])/(KmCaMKK + y[3]) # CaMKK phosphorylation
-        J8 = (kCaMKK*CaMKKtot*y[5])/(KmCaMKK + y[5])
-        J9 = (kCaMKK*CaMKKtot*y[6])/(KmCaMKK + y[6])
-        J10 = (kCaMKK*CaMKKtot*y[7])/(KmCaMKK + y[7])
-        J11 = (kLKB1*LKB1tot*y[5])/(KmLKB1 + y[5])
-        J12 = (kLKB1*LKB1tot*y[6])/(KmLKB1 + y[6])
-        J13 = (kPP*PPtot*y[4])/(KmPP + y[4])
-        J14 = (kPP*PPtot*y[10])/(KmPP + y[10])
-        J15 = (kAMPK*y[8]*y[11])/(KmAMPK + y[11])
-        J16 = (kPP1*PP1tot*y[12])/(KmPP1 + y[12])
+        J1 = kOnAMP*AMP*AMPK - kOffAMP*AMP_AMPK # AMPK
+        J2 = kOnADP*ADP*AMPK - kOffADP*ADP_AMPK
+        J3 = kOnATP*ATP*AMPK - kOffATP*ATP_AMPK
+        J4 = kOnAMP*AMP*pAMPK - kOffAMP*AMP_pAMPK # pAMPK
+        J5 = kOnADP*ADP*pAMPK - kOffADP*ADP_pAMPK
+        J6 = kOnATP*ATP*pAMPK - kOffATP*ATP_pAMPK
+        J7 = (kCaMKK*CaMKKtot*AMPK)/(KmCaMKK + AMPK) # CaMKK phosphorylation
+        J8 = (kCaMKK*CaMKKtot*AMP_AMPK)/(KmCaMKK + AMP_AMPK)
+        J9 = (kCaMKK*CaMKKtot*ADP_AMPK)/(KmCaMKK + ADP_AMPK)
+        J10 = (kCaMKK*CaMKKtot*ADP_AMPK)/(KmCaMKK + ADP_AMPK)
+        J11 = (kLKB1*LKB1tot*AMP_AMPK)/(KmLKB1 + AMP_AMPK) # LKB1 phos
+        J12 = (kLKB1*LKB1tot*ADP_AMPK)/(KmLKB1 + ADP_AMPK)
+        J13 = (kPP*PPtot*pAMPK)/(KmPP + pAMPK) # PP dephos
+        J14 = (kPP*PPtot*ATP_pAMPK)/(KmPP + ATP_pAMPK) # PP dephos
+        J15 = (kAMPK*AMP_pAMPK*AMPKAR)/(KmAMPK + AMPKAR) # AMPKAR phos
+        J16 = (kPP1*PP1tot*pAMPKAR)/(KmPP1 + pAMPKAR) # PP1 dephos
+        
         # Metabolic fluxes
         # glycolysis
-        Jgly = 2*self.kGly*y[1]*y[1]
+        Jgly = kGly*ADP #2*kGly*ADP*ADP
         # ATP hydrolysis
-        Jhydro = self.kHydro*y[2]
-        num_for = (self.VforAK*y[2]*y[0])/(self.kmt*self.kmm)
-        den = (1 + (y[2]/self.kmt) + (y[0]/self.kmm) + ((y[2]*y[0])/(self.kmt*self.kmm)) + 
-                    ((2*y[1])/self.kmd) + ((y[1]**2)/(self.kmd**2)))
-        VrevAK = (self.VforAK*(self.kmd**2))/(self.KeqAK*self.kmt*self.kmm)
-        num_rev = (VrevAK*(y[1]**2))/(self.kmd**2)
-        JAK = (num_for - num_rev)/den
+        Jhydro = kHydro*ATP
+        # Adenylate Kinase
+        # written as (VforAK*ATP)/(kmt*kmm) in cocci, but units dont make sense
+        num_for = (VforAK*ATP*AMP)/(kmt*kmm)
+        den_ak = (1 + (ATP/kmt) + (AMP/kmm) + ((ATP*AMP)/(kmt*kmm)) + 
+                    ((2*ADP)/kmd) + ((ADP**2)/(kmd**2)))
+        VrevAK = (VforAK*(kmd**2))/(KeqAK*kmt*kmm)
+        num_rev = (VrevAK*(ADP**2))/(kmd**2)
+        JAK = (num_for - num_rev)/den_ak # ADP forming direction 
         # Oxidative Phos
-        Joxphos = (self.VmaxOxPhos * ((y[1]/self.Kadp)**self.n))/(1 + ((y[1]/self.Kadp)**self.n))
+        Joxphos = (VmaxOxPhos * ((ADP/Kadp)**n))/(1 + ((ADP/Kadp)**n))
+        # Creatine kinase
+        den_ck = 1 + (ADP/Kia) + (PCr/Kib) + (ATP/Kiq) + ((ADP*PCr)/(Kia*Kb)) + (((TCr - PCr)*ATP)/(Kiq*Kp))
+        num_forCK = ((VforCK*ADP*PCr)/(Kia*Kb))
+        VrevCK = (VforCK*Kiq*Kp)/(KeqCK*Kia*Kb)
+        num_revCK = ((VrevCK*ATP*(TCr - PCr))/(Kiq*Kp))
+        JCK = (num_revCK - num_forCK)/den_ck # Pi forming direction
 
 
         # now return the odes for each state variable
-        dydt = jnp.zeros((13,)) # 53 state variables jax array
-        dydt = dydt.at[0].set(-J1-J4-JAK) # AMP
-        dydt = dydt.at[1].set(-J2-J5-Jgly+2*JAK+Jhydro-Joxphos) # ADP
-        dydt = dydt.at[2].set(-J3-J6+Jgly-JAK-Jhydro+Joxphos) # ATP
+        d_AMP = -J1-J4-JAK # AMP
+        d_ADP = -J2-J5-Jgly+2*JAK+Jhydro-Joxphos+JCK # ADP
+        d_ATP = -J3-J6+Jgly-JAK-Jhydro+Joxphos-JCK # ATP
+        d_PCr = JCK
         # free AMPK
-        dydt = dydt.at[3].set(-J1-J2-J3-J7+J13) # AMPK
-        dydt = dydt.at[4].set(-J4-J5-J6+J7-J13) # pAMPK
+        d_AMPK = -J1-J2-J3-J7+J13 # AMPK
+        d_pAMPK = -J4-J5-J6+J7-J13 # pAMPK
         # single AXP-AMPK complexes
-        dydt = dydt.at[5].set(J1-J8-J11) # AMP_AMPK
-        dydt = dydt.at[6].set(J2-J9-J12) # ADP_AMPK
-        dydt = dydt.at[7].set(J3-J10+J14) # ATP_AMPK
+        d_AMP_AMPK = J1-J8-J11 # AMP_AMPK
+        d_ADP_AMPK = J2-J9-J12 # ADP_AMPK
+        d_ATP_AMPK = J3-J10+J14 # ATP_AMPK
         # single AXP-pAMPK complexes
-        dydt = dydt.at[8].set(J4+J8+J11) # AMP_pAMPK
-        dydt = dydt.at[9].set(J5+J9+J12) # ADP_pAMPK
-        dydt = dydt.at[10].set(J6+J10-J14) # ATP_pAMPK
+        d_AMP_pAMPK = J4+J8+J11 # AMP_pAMPK
+        d_ADP_pAMPK = J5+J9+J12 # ADP_pAMPK
+        d_ATP_pAMPK = J6+J10-J14 # ATP_pAMPK
         # AMPKAR
-        dydt = dydt.at[11].set(-J15+J16) # AMPKAR
-        dydt = dydt.at[12].set(J15-J16) # pAMPKAR
+        d_AMPKAR = -J15+J16 # AMPKAR
+        d_pAMPKAR = J15-J16 # pAMPKAR
 
-        return dydt
-    
-    
-
+        return jnp.array([d_AMP, d_ADP, d_ATP, d_PCr, d_AMPK, d_pAMPK, d_AMP_AMPK, d_ADP_AMPK, d_ATP_AMPK, d_AMP_pAMPK, d_ADP_pAMPK, d_ATP_pAMPK, d_AMPKAR, d_pAMPKAR])
 
     def set_kGly(self, kGly):
             """Set the glycolysis rate parameter."""
             self.kGly = kGly
+
+
+def MM_single_numpyro_model(data=None, data_std=None, solver=None):
+
+    """Returns a numpyro model for the AMPK activation model.
+
+    Args:
+        data (np.ndarray): The data to fit the model to.
+        data_std (np.ndarray): The standard deviation of the data.
+        solver (wrapper around a dfrx.Solver): The solver to use for the model.
+    """
+    # TODO: update params to match the model and identifiability results
+    # fixed parameters
+    kOnAMP = numpyro.deterministic('kOnAMP', 1.0)
+    kOnADP = numpyro.deterministic('kOnADP', 1.0)
+    kOnATP = numpyro.deterministic('kOnATP', 1.0)
+    kOnCaMKK = numpyro.deterministic('kOnCaMKK', 1.0)
+    kOnLKB1 = numpyro.deterministic('kOnLKB1', 1.0)
+    kOnPP = numpyro.deterministic('kOnPP', 1.0)
+    kOnAMPK = numpyro.deterministic('kOnAMPK', 1.0)
+    kOnPP1 = numpyro.deterministic('kOnPP1', 1.0)
+    
+    # PRIORS
+    kOffAMP = numpyro.sample('kOffAMP', dist.Gamma(2.301, rate=209.419))
+    kOffADP = numpyro.sample('kOffADP', dist.Gamma(3.781, rate=496.016))
+    kOffATP = numpyro.sample('kOffATP', dist.Gamma(2.302, 29.088))
+    kOffCaMKK = numpyro.sample('kOffCaMKK', dist.Gamma(2.302, 39.669))
+    kPhosCaMKK = numpyro.sample('kPhosCaMKK', dist.Gamma(3.781, 918.55))
+    kOffLKB1 = numpyro.sample('kOffLKB1', dist.Gamma(2.302, 0.375))
+    kPhosLKB1 = numpyro.sample('kPhosLKB1', dist.Gamma(2.302, 133.573))
+    kOffPP = numpyro.sample('kOffPP', dist.Gamma(2.302, 0.935))
+    kDephosPP = numpyro.sample('kDephosPP', dist.Gamma(3.781, 6763.874))
+    kOffAMPK = numpyro.sample('kOffAMPK', dist.Gamma(2.302, 6.167))
+    kPhosAMPK = numpyro.sample('kPhosAMPK', dist.Gamma(3.781, 38751.36))
+    kOffPP1 = numpyro.sample('kOffPP1', dist.Gamma(2.302, 0.935))
+    kDephosPP1 = numpyro.sample('kDephosPP1', dist.Gamma(3.781, 6763.874))
+
+    # std of likelihood
+    if data_std is None:
+        data_std = numpyro.sample('data_sigma', dist.LogNormal(0, 0.01))
+
+    # run solver
+    params = (kOnAMP, kOffAMP, kOnADP, kOffADP, kOnATP, kOffATP, kOnCaMKK, kOffCaMKK, kPhosCaMKK, kOnLKB1, kOffLKB1, kPhosLKB1, kOnPP, kOffPP, kDephosPP, kOnAMPK, kOffAMPK, kPhosAMPK, kOnPP1, kOffPP1, kDephosPP1)
+    if solver is not None:
+        predict = solver(params)
+    else:
+        raise Exception("Solver is not defined")
+
+    # likelihood conditioned on the observations
+    numpyro.sample('obs', dist.Normal(data, data_std), obs=data)
