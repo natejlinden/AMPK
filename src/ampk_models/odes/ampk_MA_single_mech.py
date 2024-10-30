@@ -2,21 +2,10 @@
     Nathaniel Linden (UCSD MAE)
     Created: February 24, 2023
 
-    This file contains the functions for a model of MAPK activation. That model makes the 
-    following high-level assumptions:
-        - allow single adenine nucleotide AMPK binding
-        - use only mass action kinetics
-        - the reaction mechanism reflects specific activation and inhibition of
-            AMPK and phos/dephos by AXPs
+Contains a function to return the sympy representation of the right hand side of the
+AMPK_ma_single_mech model. This function is used to analyze the right null space of
+the Jacobian matrix of the model to determine is mass is conserved in the model.
 
-    The get_params functions returns a dictionary of the parameters in the correct
-    format.
-
-    The get_states function returns a dictionary od the parameters in the correct
-    format.
-
-    The RHS function is written following the syntax specified for the pymc/sunode
-    package. See docs here https://sunode.readthedocs.io/en/latest/without_pymc.html
 """
 import sympy as sym
 import numpy as np
@@ -106,103 +95,6 @@ def ampk_MA_single_mech_get_states():
         # AMPKAR phosphatase complexes
         'PP1':(),
         'PP1_pAMPKAR':(),
-    }
-
-def ampk_MA_single_mech_RHS(t, y, p):
-    """Right hand side of the AMPK_ma_single_mech regulation model.
-
-    WARNING! This is different than the syntax for scipy.integrate!!
-    Note from sunode syntax: "All inputs are dataclasses of sympy vars, or numpy
-        arrays of sympy vars"
-    """
-    
-    # FLUXES
-    # single AXP complexing
-    J1 = p.kOnAMP*y.AMP*y.AMPK - p.kOffAMP*y.AMP_AMPK # AMPK
-    J2 = p.kOnADP*y.ADP*y.AMPK - p.kOffADP*y.ADP_AMPK
-    J3 = p.kOnATP*y.ATP*y.AMPK - p.kOffATP*y.ATP_AMPK
-    J4 = p.kOnAMP*y.AMP*y.pAMPK - p.kOffAMP*y.AMP_pAMPK # pAMPK
-    J5 = p.kOnADP*y.ADP*y.pAMPK - p.kOffADP*y.ADP_pAMPK
-    J6 = p.kOnATP*y.ATP*y.pAMPK - p.kOffATP*y.ATP_pAMPK
-    # CaMKK complexing and phosphorylation
-    J7 = p.kOnCaMKK*y.CaMKK*y.AMPK - p.kOffCaMKK*y.CaMKK_AMPK
-    J8 = p.kPhosCaMKK*y.CaMKK_AMPK
-    J9 = p.kOnCaMKK*y.CaMKK*y.AMP_AMPK - p.kOffCaMKK*y.CaMKK_AMP_AMPK  
-    J10 = p.kPhosCaMKK*y.CaMKK_AMP_AMPK 
-    J11 = p.kOnCaMKK*y.CaMKK*y.ADP_AMPK - p.kOffCaMKK*y.CaMKK_ADP_AMPK
-    J12 = p.kPhosCaMKK*y.CaMKK_ADP_AMPK
-    J13 = p.kOnCaMKK*y.CaMKK*y.ATP_AMPK - p.kOffCaMKK*y.CaMKK_ATP_AMPK
-    J14 = p.kPhosCaMKK*y.CaMKK_ATP_AMPK
-    # LKB1 complexing and phosphorylation
-    J15 = p.kOnLKB1*y.LKB1*y.AMP_AMPK - p.kOffLKB1*y.LKB1_AMP_AMPK
-    J16 = p.kPhosLKB1*y.LKB1_AMP_AMPK
-    J17 = p.kOnLKB1*y.LKB1*y.ADP_AMPK -  p.kOffLKB1*y.LKB1_ADP_AMPK
-    J18 = p.kPhosLKB1*y.LKB1_ADP_AMPK
-    # phosphatase binding and dephosphorylation
-    J19 = p.kOnPP*y.PP*y.pAMPK - p.kOffPP*y.PP_pAMPK
-    J20 = p. kDephosPP*y.PP_pAMPK
-    J21 = p.kOnPP*y.PP*y.ATP_pAMPK - p.kOffPP*y.PP_ATP_pAMPK
-    J22 = p. kDephosPP*y.PP_ATP_pAMPK
-    # AMPK binding to AMPAKAR and phosphorylation
-    J23 = p.kOnAMPK*y.AMPKAR*y.AMP_pAMPK - p.kOffAMPK*y.AMPKAR_AMP_pAMPK
-    J24 = p.kPhosAMPK*y.AMPKAR_AMP_pAMPK
-    # PP1 binding to AMPKAR and dephosphorylation  
-    J25 = p.kOnPP1*y.PP1*y.pAMPKAR - p.kOffPP1*y.PP1_pAMPKAR
-    J26 = p.kDephosPP1*y.PP1_pAMPKAR
-    # Metabolic fluxes
-    # glycolysis
-    Jgly = 2*p.kGly*y.ADP*y.ADP
-    # ATP hydrolysis
-    Jhydro = p.kHydro*y.ATP
-    # Adenylate Kinase
-    # Adenylate Kinase from Lambeth and Kushmerick 2002
-    num_for = (p.VforAK*y.ATP*y.AMP)/(p.kmt*p.kmm)
-    den = (1 + (y.ATP/p.kmt) + (y.AMP/p.kmm) + ((y.ATP*y.AMP)/(p.kmt*p.kmm)) + 
-                ((2*y.ADP)/p.kmd) + ((y.ADP**2)/(p.kmd**2)))
-    VrevAK = (p.VforAK*(p.kmd**2))/(p.KeqAK*p.kmt*p.kmm)
-    num_rev = (VrevAK*(y.ADP**2))/(p.kmd**2)
-    JAK = (num_for - num_rev)/den
-    # Oxidative Phos
-    Joxphos = (p.VmaxOxPhos * ((y.ADP/p.Kadp)**p.n))/(1 + ((y.ADP/p.Kadp)**p.n))
-
-    # now return the odes for each state variable
-    return {
-        'AMP': -J1-J4-JAK,
-        'ADP': -J2-J5-Jgly+2*JAK+Jhydro-Joxphos,
-        'ATP': -J3-J6+Jgly-JAK-Jhydro+Joxphos,
-        # free AMPK
-        'AMPK': -J1-J2-J3-J7+J20,
-        'pAMPK': -J4-J5-J6+J8-J19,
-        # single AXP-AMPK complexes
-        'AMP_AMPK': J1-J9-J15,
-        'ADP_AMPK': J2-J11-J17,
-        'ATP_AMPK': J3-J13+J22,
-        # single AXP-pAMPK complexes
-        'AMP_pAMPK': J4+J10+J16-J23+J24,
-        'ADP_pAMPK': J5+J12+J18,
-        'ATP_pAMPK': J6+J14-J21,
-        # CaMKK complexes
-        'CaMKK': -J7+J8-J9+J10-J11+J12-J13+J14,
-        'CaMKK_AMPK': J7-J8,
-        'CaMKK_AMP_AMPK': J9-J10,
-        'CaMKK_ADP_AMPK': J11-J12,
-        'CaMKK_ATP_AMPK': J13-J14,
-        # LKB1 complexes
-        'LKB1': -J15+J16-J17+J18,
-        'LKB1_AMP_AMPK': J15-J16,
-        'LKB1_ADP_AMPK': J17-J18,
-        # AMPK phosphatase complexes
-        'PP': -J19+J20-J21+J22,
-        'PP_pAMPK': J19-J20,
-        'PP_ATP_pAMPK': J21-J22,
-        # free AMPKAR
-        'AMPKAR': -J23+J26,
-        'pAMPKAR': J24-J25,
-        # AMPKAR-pAMPK complexes
-        'AMPKAR_AMP_pAMPK': J23-J24,
-        # AMPKAR phosphatase complexes
-        'PP1': -J25+J26,
-        'PP1_pAMPKAR': J25-J26
     }
 
 def ampk_MA_single_mech_RHS_sympyFluxVars():
