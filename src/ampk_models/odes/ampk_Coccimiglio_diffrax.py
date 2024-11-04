@@ -63,6 +63,17 @@ class AMPK_coccimiglio(eqx.Module):
         VmaxppaseATP  = args[25]
         VmaxppaseADP  = args[26]
         VmaxppaseAMP  = args[27]
+        # added parameters for AMPK phos of AMPKAR
+        Km_pAMPK        = args[28]
+        k_pAMPK      = args[29]
+        Km_AMP_pAMPK    = args[30]
+        k_AMP_pAMPK  = args[31]
+        Km_ADP_pAMPK    = args[32]
+        k_ADP_pAMPK  = args[33]
+        Km_ATP_pAMPK    = args[34]
+        k_ATP_pAMPK  = args[35]
+        Km_AMPKAR_PP    = args[36]
+        Vmax_AMPKAR_PP  = args[37]
 
         # state variables
         ATP = y[0]
@@ -78,6 +89,9 @@ class AMPK_coccimiglio(eqx.Module):
         AMP_p_AMPK = y[10]
         AMPK = y[11]
         p_AMPK = y[12]
+        # added state variables for AMPK phos of AMPKAR
+        AMPKAR = y[13]
+        p_AMPKAR = y[14]
         
         # FLUXES
         r6  = k6f*ATP*AMPK              - k6r*ATP_AMPK # ATP binding to AMPK
@@ -94,6 +108,12 @@ class AMPK_coccimiglio(eqx.Module):
         r17 = (VmaxppaseADP*ADP_p_AMPK) / (Km17 + ADP_p_AMPK) # ADP_p_AMPK dephosphorylation
         r18 = (VmaxkinaseAMP*AMP_AMPK)  / (Km18 + AMP_AMPK) # AMP_AMPK phosphorylation
         r19 = (VmaxppaseAMP*AMP_p_AMPK) / (Km19 + AMP_p_AMPK) # AMP_p_AMPK dephosphorylation
+        # added fluxes for AMPK phos of AMPKAR
+        r20 = (k_pAMPK*AMPKAR*p_AMPK)             / (Km_pAMPK + p_AMPK)
+        r21 = (k_AMP_pAMPK*AMPKAR*AMP_p_AMPK)     / (Km_AMP_pAMPK + AMP_p_AMPK)
+        r22 = (k_ADP_pAMPK*AMPKAR*ADP_p_AMPK)     / (Km_ADP_pAMPK + ADP_p_AMPK)
+        r23 = (k_ATP_pAMPK*AMPKAR*ATP_p_AMPK)     / (Km_ATP_pAMPK + ATP_p_AMPK)
+        r24 = (Vmax_AMPKAR_PP*p_AMPKAR)           / (Km_AMPKAR_PP + p_AMPKAR)
         
         # Metabolic fluxes
         # glycolysis
@@ -131,10 +151,12 @@ class AMPK_coccimiglio(eqx.Module):
         d_AMP_p_AMPK = r11 - r18 + r19
         d_AMPK = -r6 - r7 - r8 - r12 + r13
         d_p_AMPK = -r9 - r10 - r11 + r12 - r13
+        d_AMPKAR = -r20 - r21 - r22 - r23 + r24
+        d_p_AMPKAR = r20 + r21 + r22 + r23 - r24
 
         return jnp.array([d_ATP, d_ADP, d_AMP, d_PCr, d_Pi, d_ATP_AMPK, 
                           d_ADP_AMPK, d_AMP_AMPK, d_ATP_p_AMPK, d_ADP_p_AMPK, 
-                          d_AMP_p_AMPK, d_AMPK, d_p_AMPK])
+                          d_AMP_p_AMPK, d_AMPK, d_p_AMPK, d_AMPKAR, d_p_AMPKAR])
 
     def set_kGly(self, kGly):
             """Set the glycolysis rate parameter."""
