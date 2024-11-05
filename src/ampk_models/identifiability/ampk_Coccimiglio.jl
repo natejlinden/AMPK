@@ -19,4 +19,27 @@ ampk_Coccimiglio=@ODEmodel(
     y1(t) = x15(t)/x14(t)
 )
 
-assess_local_identifiability(ampk_Coccimiglio, funcs_to_check = [k6f,k6r,k7f,k7r,k8f,k8r,k9f,k9r,k10f,k10r,k11f,k11r,Km12,Km13,Km14,Km15,Km16,Km17,Km18,Km19,Vmaxkinase,VmaxkinaseATP,VmaxkinaseADP,VmaxkinaseAMP,Vmaxppase,VmaxppaseATP,VmaxppaseADP,VmaxppaseAMP,Km_pAMPK,k_pAMPK,Km_AMP_pAMPK,k_AMP_pAMPK,Km_ADP_pAMPK,k_ADP_pAMPK,Km_ATP_pAMPK,k_ATP_pAMPK,Km_AMPKAR_PP,Vmax_AMPKAR_PP])
+local_id = assess_local_identifiability(ampk_Coccimiglio, funcs_to_check = [k6f,k6r,k7f,k7r,k8f,k8r,k9f,k9r,k10f,k10r,k11f,k11r,Km12,Km13,Km14,Km15,Km16,Km17,Km18,Km19,Vmaxkinase,VmaxkinaseATP,VmaxkinaseADP,VmaxkinaseAMP,Vmaxppase,VmaxppaseATP,VmaxppaseADP,VmaxppaseAMP,Km_pAMPK,k_pAMPK,Km_AMP_pAMPK,k_AMP_pAMPK,Km_ADP_pAMPK,k_ADP_pAMPK,Km_ATP_pAMPK,k_ATP_pAMPK,Km_AMPKAR_PP,Vmax_AMPKAR_PP])
+
+# save to file for this model
+# if the file exists, delete it
+fname = "./local_ID_ampk_Coccimiglio.txt"
+if isfile(fname)
+    rm(fname)
+end
+# create file to save results
+file = open(fname, "w")
+println(file, "Locally Identifiable parameters:")
+for (key, value) in local_id
+    if value == 1
+        print(file, "$key, ")
+    end
+end
+println(file, "")
+println(file, "Nonidentifiable parameters:")
+for (key, value) in local_id
+    if value == 0
+        print(file, "$key, ")
+    end
+end
+close(file)
