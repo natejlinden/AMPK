@@ -95,7 +95,7 @@ class MM_single(eqx.Module):
         J7 = (kCaMKK*CaMKKtot*AMPK)/(KmCaMKK + AMPK) # CaMKK phosphorylation
         J8 = (kCaMKK*CaMKKtot*AMP_AMPK)/(KmCaMKK + AMP_AMPK)
         J9 = (kCaMKK*CaMKKtot*ADP_AMPK)/(KmCaMKK + ADP_AMPK)
-        J10 = (kCaMKK*CaMKKtot*ADP_AMPK)/(KmCaMKK + ADP_AMPK)
+        J10 = (kCaMKK*CaMKKtot*ATP_AMPK)/(KmCaMKK + ATP_AMPK)
         J11 = (kLKB1*LKB1tot*AMP_AMPK)/(KmLKB1 + AMP_AMPK) # LKB1 phos
         J12 = (kLKB1*LKB1tot*ADP_AMPK)/(KmLKB1 + ADP_AMPK)
         J13 = (kPP*PPtot*pAMPK)/(KmPP + pAMPK) # PP dephos
