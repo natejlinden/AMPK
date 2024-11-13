@@ -20,7 +20,7 @@ id_MA = assess_identifiability(MA)
 id_MA_known_ic = assess_identifiability(MA, known_ic = [x1,x2,x3,x4])
 
 # write everything to a file 
-fname = "../../results/results_MA.txt"
+fname = "../../results/MA_v_MM/results_MA.txt"
 if isfile(fname)
     rm(fname)
 end
