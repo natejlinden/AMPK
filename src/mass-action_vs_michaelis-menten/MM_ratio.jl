@@ -18,7 +18,7 @@ id_MM = assess_identifiability(MM)
 id_MM_known_ic = assess_identifiability(MM, known_ic = [x1,x2])
 
 # write everything to a file 
-fname = "./results_MM_ratio.txt"
+fname = "../../results/MA_v_MM/results_MM_ratio.txt"
 if isfile(fname)
     rm(fname)
 end
