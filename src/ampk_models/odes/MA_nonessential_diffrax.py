@@ -191,7 +191,7 @@ class MA_nonessential(eqx.Module):
         d_ADP =-J2-J5-J13-J24-J32-J43-Jgly+2*JAK+Jhydro-Joxphos + JCK 
         d_ATP =-J3-J6-J16-J35+Jgly-JAK-Jhydro+Joxphos - JCK
         d_PCr = JCK 
-        d_AMPK = -J1-J2-J3-J7-J18+J27+J30
+        d_AMPK = -J1-J2-J3-J7-J18+J27
         d_pAMPK =  -J4-J5-J6+J8+J19-J26-J37+J38
         d_AMP_AMPK = J1-J9-J20-J28+J30
         d_ADP_AMPK = J2-J12-J23+J33
@@ -218,7 +218,7 @@ class MA_nonessential(eqx.Module):
         d_AMPKAR_pAMPK = J37-J38-J40-J43
         d_AMPKAR_AMP_pAMPK = J39+J40-J41
         d_AMPKAR_ADP_pAMPK = J42+J43-J44
-        d_PP1 &= -J45+J46
+        d_PP1 = -J45+J46
         d_PP1_pAMPKAR = J45-J46
 
         return [d_AMP,d_ADP,d_ATP,d_PCr,d_AMPK,d_pAMPK,d_AMP_AMPK,d_ADP_AMPK,d_ATP_AMPK,d_AMP_pAMPK,d_ADP_pAMPK,d_ATP_pAMPK,d_CaMKK,d_CaMKK_AMPK,d_CaMKK_AMP_AMPK,d_CaMKK_ADP_AMPK,d_CaMKK_ATP_AMPK,d_LKB1,d_LKB1_AMPK,d_LKB1_AMP_AMPK,d_LKB1_ADP_AMPK,d_PP,d_PP_pAMPK,d_PP_AMP_pAMPK,d_PP_ADP_pAMPK,d_PP_ATP_pAMPK,d_AMPKAR,d_pAMPKAR,d_AMPKAR_pAMPK,d_AMPKAR_AMP_pAMPK,d_AMPKAR_ADP_pAMPK,d_PP1,d_PP1_pAMPKAR]

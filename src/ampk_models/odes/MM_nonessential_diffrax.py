@@ -149,7 +149,7 @@ class MM_nonessential(eqx.Module):
         JCK = (num_revCK - num_forCK)/den_ck # Pi forming direction
 
         # now return the odes for each state variable
-        d_AMP = -JAK-J1-J3
+        d_AMP = -JAK-J1-J4
         d_ADP = -Jgly+2*JAK+Jhydro-Joxphos + JCK-J2-J5
         d_ATP = Jgly-JAK-Jhydro+Joxphos-JCK-J3-J6
         d_PCr = JCK

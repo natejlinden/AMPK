@@ -76,17 +76,17 @@ class ampk_Coccimiglio(eqx.Module):
         Vmax_AMPKAR_PP  = args[37]
 
         # state variables
-        ATP = y[0]
+        AMP = y[0]
         ADP = y[1]
-        AMP = y[2]
+        ATP = y[2]
         PCr = y[3]
         Pi = y[4]
-        ATP_AMPK = y[5]
+        AMP_AMPK = y[5]
         ADP_AMPK = y[6]
-        AMP_AMPK = y[7]
-        ATP_p_AMPK = y[8]
+        ATP_AMPK = y[7]
+        AMP_p_AMPK = y[8]
         ADP_p_AMPK = y[9]
-        AMP_p_AMPK = y[10]
+        ATP_p_AMPK = y[10]
         AMPK = y[11]
         p_AMPK = y[12]
         # added state variables for AMPK phos of AMPKAR
@@ -138,25 +138,25 @@ class ampk_Coccimiglio(eqx.Module):
         JCK = (num_revCK - num_forCK)/den_ck # Pi forming direction
 
         # now return the odes for each state variable
-        d_ATP = Jgly - JAK - Jhydro + Joxphos - JCK - r6 - r9
-        d_ADP = -Jgly + 2*JAK + Jhydro - Joxphos + JCK - r7 - r10
         d_AMP = -JAK -r8 - r11
+        d_ADP = -Jgly + 2*JAK + Jhydro - Joxphos + JCK - r7 - r10
+        d_ATP = Jgly - JAK - Jhydro + Joxphos - JCK - r6 - r9
         d_PCr = JCK
         d_Pi = -Jgly + Joxphos
         d_ATP_AMPK = r6 - r14 + r15
         d_ADP_AMPK = r7 - r16 + r17
         d_AMP_AMPK = r8 - r18 + r19
-        d_ATP_p_AMPK = r9 - r14 + r15
-        d_ADP_p_AMPK = r10 - r16 + r17
-        d_AMP_p_AMPK = r11 - r18 + r19
+        d_ATP_p_AMPK = r9 + r14 - r15
+        d_ADP_p_AMPK = r10 + r16 - r17
+        d_AMP_p_AMPK = r11 + r18 - r19
         d_AMPK = -r6 - r7 - r8 - r12 + r13
         d_p_AMPK = -r9 - r10 - r11 + r12 - r13
         d_AMPKAR = -r20 - r21 - r22 - r23 + r24
         d_p_AMPKAR = r20 + r21 + r22 + r23 - r24
 
-        return [d_ATP, d_ADP, d_AMP, d_PCr, d_Pi, d_ATP_AMPK, 
-                          d_ADP_AMPK, d_AMP_AMPK, d_ATP_p_AMPK, d_ADP_p_AMPK, 
-                          d_AMP_p_AMPK, d_AMPK, d_p_AMPK, d_AMPKAR, d_p_AMPKAR]
+        return [d_AMP, d_ADP, d_ATP, d_PCr, d_Pi, d_AMP_AMPK, 
+                          d_ADP_AMPK, d_ATP_AMPK, d_AMP_p_AMPK, d_ADP_p_AMPK, 
+                          d_ATP_p_AMPK, d_AMPK, d_p_AMPK, d_AMPKAR, d_p_AMPKAR]
 
     def set_kGly(self, kGly):
             """Set the glycolysis rate parameter."""
