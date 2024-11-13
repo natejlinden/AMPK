@@ -1,0 +1,50 @@
+{
+    "nominal_params": {
+        "kOnAMP": 1.0,
+        "kOffAMP": 2.5e-3,
+        "kOnADP": 1.0,
+        "kOffADP": 1.5e-3,
+        "kOnATP": 1.0,
+        "kOffATP": 1.8e-2,
+        "kCaMKK": 8.1e-4,
+        "KmCaMKK": 1.5e-2,
+        "kLKB1": 3.92e-3,
+        "KmLKB1": 1.4,
+        "alphaLKB1": 1.0,
+        "kPP": 1.1e-4,
+        "KmPP": 6.7e-1,
+        "alphaPP": 1.0,
+        "kAMPK": 1.92e-5,
+        "KmAMPK": 8.49e-2,
+        "betaAMP": 1.0,
+        "kPP1": 1.1e-4,
+        "KmPP1": 6.7e-1,
+        "CaMKKtot": 1.0,
+        "LKB1tot": 1.0,
+        "PPtot": 0.1,
+        "PP1tot": 0.1
+    },
+    "init_conds": {
+        "AMP": 2e-2,
+        "ADP": 1.3,
+        "ATP": 8.2,
+        "PCr": 22.1,
+        "AMPK": 0.6,
+        "pAMPK": 0.0,
+        "AMP_AMPK": 0.0,
+        "ADP_AMPK": 0.0,
+        "ATP_AMPK": 0.0,
+        "AMP_pAMPK": 0.0,
+        "ADP_pAMPK": 0.0,
+        "ATP_pAMPK": 0.0,
+        "AMPKAR": 0.1,
+        "pAMPKAR": 0.0
+    },
+    "ampkar_states": [
+        "AMPKAR",
+        "pAMPKAR"
+    ],
+    "pampkar_states": [
+        "pAMPKAR"
+    ]
+}
