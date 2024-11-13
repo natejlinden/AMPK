@@ -20,6 +20,7 @@ import preliz as pz
 import diffrax as dfrx
 from optimistix import root_find, Newton, two_norm
 import lineax as lx
+import equinox as eqx
 #from tqdm import tqdm
 import time
 
@@ -93,7 +94,7 @@ def load_data(data_file, to_seconds=False, constant_std=False):
 ###############################################################################
 #### Solving ODEs ####
 ###############################################################################
-@jax.jit
+@eqx.filter_jit
 def solve_traj(rhs, rhs_stress, y0, params, times, rtol=1e-6, atol=1e-6, 
                evnt_rtol = 1e-12, evnt_atol = 1e-12, tmax_init = 1e3, 
                pcoeff=0, icoeff=1, dcoeff=0, solver = dfrx.Kvaerno5()):
@@ -102,9 +103,10 @@ def solve_traj(rhs, rhs_stress, y0, params, times, rtol=1e-6, atol=1e-6,
     Returns an array of shape (n_species, 1) 
     TODO add way to specify autodiff method
     """
-    dt0=1e-3
+    dt0=1e-5
     stepsize_controller=dfrx.PIDController(rtol, atol, pcoeff=pcoeff, icoeff=icoeff, dcoeff=dcoeff)
-    event = dfrx.SteadyStateEvent(rtol=evnt_rtol, atol=evnt_atol)
+    cond_fn=dfrx.steady_state_event(rtol=evnt_rtol, atol=evnt_atol)
+    event = dfrx.Event(cond_fn=cond_fn)
     t0 = 0.0
     t1 = times[-1]
     saveat=dfrx.SaveAt(ts=times)
@@ -116,21 +118,21 @@ def solve_traj(rhs, rhs_stress, y0, params, times, rtol=1e-6, atol=1e-6,
         y0, 
         args=params,
         stepsize_controller=stepsize_controller,
-        discrete_terminating_event=event,
-        max_steps=60000, throw=True)
+        event=event,
+        max_steps=100000, throw=True)
     
     # then use that solution as the initial condition for the stressed setting
     sol_stressed = dfrx.diffeqsolve(
         rhs_stress, solver, 
         t0, t1, dt0, 
-        jnp.squeeze(sol.ys), # use basal SS at IC
+        sol.ys, # use basal SS at IC
         args=params, saveat=saveat,
         stepsize_controller=stepsize_controller,
-        max_steps=60000, throw=True)
+        max_steps=100000, throw=True)
     
-    return jnp.squeeze(sol_stressed.ys), jnp.squeeze(sol.ys)
+    return jnp.squeeze(jnp.array(sol_stressed.ys)), jnp.squeeze(jnp.array(sol.ys))
 
-@jax.jit
+@eqx.filter_jit
 def solve_SS(rhs, rhs_stress, y0, params, rtol=1e-6, atol=1e-6, 
              evnt_rtol = 1e-12, evnt_atol = 1e-12, tmax = 1e3,
              pcoeff=0, icoeff=1, dcoeff=0, solver = dfrx.Kvaerno5()):
@@ -139,9 +141,10 @@ def solve_SS(rhs, rhs_stress, y0, params, rtol=1e-6, atol=1e-6,
     Returns an array of shape (n_species, 1) 
     TODO add way to specify autodiff method
     """
-    dt0=1e-3
+    dt0=1e-5
     solver = dfrx.Kvaerno5()
-    event = dfrx.SteadyStateEvent(rtol=evnt_rtol, atol=evnt_atol)
+    cond_fn=dfrx.steady_state_event(rtol=evnt_rtol, atol=evnt_atol)
+    event = dfrx.Event(cond_fn=cond_fn)
     stepsize_controller=dfrx.PIDController(rtol, atol, pcoeff=pcoeff, icoeff=icoeff, dcoeff=dcoeff)
     t0 = 0.0
 
@@ -151,19 +154,19 @@ def solve_SS(rhs, rhs_stress, y0, params, rtol=1e-6, atol=1e-6,
         t0, tmax, dt0, 
         y0, args=params,
         stepsize_controller=stepsize_controller,
-        discrete_terminating_event=event,
-        max_steps=60000, throw=True)
+        event=event,
+        max_steps=100000, throw=True)
     
     # then use that solution as the initial condition for the stressed setting
     sol_stressed = dfrx.diffeqsolve(
         rhs_stress, solver, 
         t0, tmax, dt0, 
-        jnp.squeeze(sol.ys), args=params,
+        sol.ys, args=params,
         stepsize_controller=stepsize_controller,
-        discrete_terminating_event=event,
-        max_steps=60000, throw=True)
+        event=event,
+        max_steps=100000, throw=True)
     
-    return jnp.squeeze(sol_stressed.ys), jnp.squeeze(sol.ys)
+    return jnp.squeeze(jnp.array(sol_stressed.ys)), jnp.squeeze(jnp.array(sol.ys))
 
 
 ###############################################################################
