@@ -25,7 +25,8 @@
     "init_conds": {
         "AMP": 2e-2, 
         "ADP": 1.3, 
-        "ATP": 8.2, 
+        "ATP": 8.2,
+        "PCr": 22.1, 
         "AMPK": 0.6, 
         "pAMPK": 0.0, 
         "AMP_AMPK": 0.0, 

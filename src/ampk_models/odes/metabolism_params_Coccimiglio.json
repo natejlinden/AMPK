@@ -20,7 +20,7 @@
         "TCr":39.0
     },
     "metab_params_stress": {
-        "kGly": 0.001,
+        "kGly": 0.005,
         "kHydro": 0.15,
         "VforAK": 14.66,
         "KeqAK": 2.221,

@@ -141,33 +141,43 @@ class MA_single(eqx.Module):
         # PP1 binding to AMPKAR and dephosphorylation  
         J25 = kOnPP1*PP1*pAMPKAR - kOffPP1*PP1_pAMPKAR
         J26 = kDephosPP1*PP1_pAMPKAR
-        
+
+        # additional fluxes to allow AXP to bind/unbind enzyme--AMPK complexes
+        Ja = kOnAMP*AMP*CaMKK_AMPK - kOffADP*CaMKK_AMP_AMPK
+        Jb = kOnADP*ADP*CaMKK_AMPK - kOffADP*CaMKK_ADP_AMPK
+        Jc = kOnATP*ATP*CaMKK_AMPK - kOffATP*CaMKK_ATP_AMPK
+        Jd = kOnATP*ATP*PP_pAMPK - kOffATP*PP_ATP_pAMPK
+        # Ja = 0
+        # Jb = 0
+        # Jc = 0
+        # Jd = 0
+
         # Metabolic fluxes
         # glycolysis
-        Jgly = kGly*ADP #2*kGly*ADP*ADP
+        Jgly = self.kGly*ADP #2*kGly*ADP*ADP
         # ATP hydrolysis
-        Jhydro = kHydro*ATP
+        Jhydro = self.kHydro*ATP
         # Adenylate Kinase
         # written as (VforAK*ATP)/(kmt*kmm) in cocci, but units dont make sense
-        num_for = (VforAK*ATP*AMP)/(kmt*kmm)
-        den_ak = (1 + (ATP/kmt) + (AMP/kmm) + ((ATP*AMP)/(kmt*kmm)) + 
-                    ((2*ADP)/kmd) + ((ADP**2)/(kmd**2)))
-        VrevAK = (VforAK*(kmd**2))/(KeqAK*kmt*kmm)
-        num_rev = (VrevAK*(ADP**2))/(kmd**2)
+        num_for = (self.VforAK*ATP*AMP)/(self.kmt*self.kmm)
+        den_ak = (1 + (ATP/self.kmt) + (AMP/self.kmm) + ((ATP*AMP)/(self.kmt*self.kmm)) + 
+                    ((2*ADP)/self.kmd) + ((ADP**2)/(self.kmd**2)))
+        VrevAK = (self.VforAK*(self.kmd**2))/(self.KeqAK*self.kmt*self.kmm)
+        num_rev = (VrevAK*(ADP**2))/(self.kmd**2)
         JAK = (num_for - num_rev)/den_ak # ADP forming direction 
         # Oxidative Phos
-        Joxphos = (VmaxOxPhos * ((ADP/Kadp)**n))/(1 + ((ADP/Kadp)**n))
+        Joxphos = (self.VmaxOxPhos * ((ADP/self.Kadp)**self.n))/(1 + ((ADP/self.Kadp)**self.n))
         # Creatine kinase
-        den_ck = 1 + (ADP/Kia) + (PCr/Kib) + (ATP/Kiq) + ((ADP*PCr)/(Kia*Kb)) + (((TCr - PCr)*ATP)/(Kiq*Kp))
-        num_forCK = ((VforCK*ADP*PCr)/(Kia*Kb))
-        VrevCK = (VforCK*Kiq*Kp)/(KeqCK*Kia*Kb)
-        num_revCK = ((VrevCK*ATP*(TCr - PCr))/(Kiq*Kp))
+        den_ck = 1 + (ADP/self.Kia) + (PCr/self.Kib) + (ATP/self.Kiq) + ((ADP*PCr)/(self.Kia*self.Kb)) + (((self.TCr - PCr)*ATP)/(self.Kiq*self.Kp))
+        num_forCK = ((self.VforCK*ADP*PCr)/(self.Kia*self.Kb))
+        VrevCK = (self.VforCK*self.Kiq*self.Kp)/(self.KeqCK*self.Kia*self.Kb)
+        num_revCK = ((VrevCK*ATP*(self.TCr - PCr))/(self.Kiq*self.Kp))
         JCK = (num_revCK - num_forCK)/den_ck # Pi forming direction
 
         # now return the odes for each state variable
-        d_AMP = -J1-J4-JAK # AMP
-        d_ADP = -J2-J5-Jgly+2*JAK+Jhydro-Joxphos+JCK # ADP
-        d_ATP = -J3-J6+Jgly-JAK-Jhydro+Joxphos-JCK # ATP
+        d_AMP = -J1-J4-JAK-Ja # AMP
+        d_ADP = -J2-J5-Jgly+2*JAK+Jhydro-Joxphos+JCK-Jb # ADP
+        d_ATP = -J3-J6+Jgly-JAK-Jhydro+Joxphos-JCK-Jc-Jd # ATP
         d_PCr = JCK
         # free AMPK
         d_AMPK = -J1-J2-J3-J7+J20 # AMPK
@@ -182,18 +192,18 @@ class MA_single(eqx.Module):
         d_ATP_pAMPK = J6+J14-J21 #  ATP_pAMPK
         # CaMKK complexes
         d_CaMKK = -J7+J8-J9+J10-J11+J12-J13+J14 # CaMKK
-        d_CaMKK_AMPK = J7-J8 # CaMKK_AMPK
-        d_CaMKK_AMP_AMPK = J9-J10 # CaMKK_AMP_AMPK
-        d_CaMKK_ADP_AMPK = J11-J12 # CaMKK_ADP_AMPK
-        d_CaMKK_ATP_AMPK = J13-J14 # CaMKK_ATP_AMPK
+        d_CaMKK_AMPK = J7-J8-Ja-Jb-Jc # CaMKK_AMPK
+        d_CaMKK_AMP_AMPK = J9-J10+Ja # CaMKK_AMP_AMPK
+        d_CaMKK_ADP_AMPK = J11-J12+Jb # CaMKK_ADP_AMPK
+        d_CaMKK_ATP_AMPK = J13-J14+Jc # CaMKK_ATP_AMPK
         # LKB1 complexes
         d_LKB1 = -J15+J16-J17+J18 # LKB1
         d_LKB1_AMP_AMPK = J15-J16 # LKB1_AMP_AMPK
         d_LKB1_ADP_AMPK = J17-J18 # LKB1_ADP_AMPK
         # AMPK phosphatase complexes
         d_PP = -J19+J20-J21+J22 # PP
-        d_PP_pAMPK = J19-J20 # PP_pAMPK
-        d_PP_ATP_pAMPK = J21-J22 # PP_ATP_pAMPK
+        d_PP_pAMPK = J19-J20-Jd # PP_pAMPK
+        d_PP_ATP_pAMPK = J21-J22+Jd # PP_ATP_pAMPK
         # free AMPKAR
         d_AMPKAR = -J23+J26 # AMPKAR
         d_pAMPKAR = J24-J25 # pAMPKAR
@@ -203,7 +213,7 @@ class MA_single(eqx.Module):
         d_PP1 = -J25+J26 # PP1
         d_PP1_pAMPKAR = J25-J26 # PP1_pAMPKAR
 
-        return jnp.array([d_AMP, d_ADP, d_ATP, d_PCr, d_AMPK, d_pAMPK, d_AMP_AMPK, d_ADP_AMPK, d_ATP_AMPK, d_AMP_pAMPK, d_ADP_pAMPK, d_ATP_pAMPK, d_CaMKK, d_CaMKK_AMPK, d_CaMKK_AMP_AMPK, d_CaMKK_ADP_AMPK, d_CaMKK_ATP_AMPK, d_LKB1, d_LKB1_AMP_AMPK, d_LKB1_ADP_AMPK, d_PP, d_PP_pAMPK, d_PP_ATP_pAMPK, d_AMPKAR, d_pAMPKAR, d_AMPKAR_AMP_pAMPK, d_PP1, d_PP1_pAMPKAR])
+        return [d_AMP, d_ADP, d_ATP, d_PCr, d_AMPK, d_pAMPK, d_AMP_AMPK, d_ADP_AMPK, d_ATP_AMPK, d_AMP_pAMPK, d_ADP_pAMPK, d_ATP_pAMPK, d_CaMKK, d_CaMKK_AMPK, d_CaMKK_AMP_AMPK, d_CaMKK_ADP_AMPK, d_CaMKK_ATP_AMPK, d_LKB1, d_LKB1_AMP_AMPK, d_LKB1_ADP_AMPK, d_PP, d_PP_pAMPK, d_PP_ATP_pAMPK, d_AMPKAR, d_pAMPKAR, d_AMPKAR_AMP_pAMPK, d_PP1, d_PP1_pAMPKAR]
 
 
     def set_kGly(self, kGly):
