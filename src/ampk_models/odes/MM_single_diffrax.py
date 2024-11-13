@@ -105,24 +105,24 @@ class MM_single(eqx.Module):
         
         # Metabolic fluxes
         # glycolysis
-        Jgly = kGly*ADP #2*kGly*ADP*ADP
+        Jgly = self.kGly*ADP #2*kGly*ADP*ADP
         # ATP hydrolysis
-        Jhydro = kHydro*ATP
+        Jhydro = self.kHydro*ATP
         # Adenylate Kinase
         # written as (VforAK*ATP)/(kmt*kmm) in cocci, but units dont make sense
-        num_for = (VforAK*ATP*AMP)/(kmt*kmm)
-        den_ak = (1 + (ATP/kmt) + (AMP/kmm) + ((ATP*AMP)/(kmt*kmm)) + 
-                    ((2*ADP)/kmd) + ((ADP**2)/(kmd**2)))
-        VrevAK = (VforAK*(kmd**2))/(KeqAK*kmt*kmm)
-        num_rev = (VrevAK*(ADP**2))/(kmd**2)
+        num_for = (self.VforAK*ATP*AMP)/(self.kmt*self.kmm)
+        den_ak = (1 + (ATP/self.kmt) + (AMP/self.kmm) + ((ATP*AMP)/(self.kmt*self.kmm)) + 
+                    ((2*ADP)/self.kmd) + ((ADP**2)/(self.kmd**2)))
+        VrevAK = (self.VforAK*(self.kmd**2))/(self.KeqAK*self.kmt*self.kmm)
+        num_rev = (VrevAK*(ADP**2))/(self.kmd**2)
         JAK = (num_for - num_rev)/den_ak # ADP forming direction 
         # Oxidative Phos
-        Joxphos = (VmaxOxPhos * ((ADP/Kadp)**n))/(1 + ((ADP/Kadp)**n))
+        Joxphos = (self.VmaxOxPhos * ((ADP/self.Kadp)**self.n))/(1 + ((ADP/self.Kadp)**self.n))
         # Creatine kinase
-        den_ck = 1 + (ADP/Kia) + (PCr/Kib) + (ATP/Kiq) + ((ADP*PCr)/(Kia*Kb)) + (((TCr - PCr)*ATP)/(Kiq*Kp))
-        num_forCK = ((VforCK*ADP*PCr)/(Kia*Kb))
-        VrevCK = (VforCK*Kiq*Kp)/(KeqCK*Kia*Kb)
-        num_revCK = ((VrevCK*ATP*(TCr - PCr))/(Kiq*Kp))
+        den_ck = 1 + (ADP/self.Kia) + (PCr/self.Kib) + (ATP/self.Kiq) + ((ADP*PCr)/(self.Kia*self.Kb)) + (((self.TCr - PCr)*ATP)/(self.Kiq*self.Kp))
+        num_forCK = ((self.VforCK*ADP*PCr)/(self.Kia*self.Kb))
+        VrevCK = (self.VforCK*self.Kiq*self.Kp)/(self.KeqCK*self.Kia*self.Kb)
+        num_revCK = ((VrevCK*ATP*(self.TCr - PCr))/(self.Kiq*self.Kp))
         JCK = (num_revCK - num_forCK)/den_ck # Pi forming direction
 
 
@@ -146,7 +146,7 @@ class MM_single(eqx.Module):
         d_AMPKAR = -J15+J16 # AMPKAR
         d_pAMPKAR = J15-J16 # pAMPKAR
 
-        return jnp.array([d_AMP, d_ADP, d_ATP, d_PCr, d_AMPK, d_pAMPK, d_AMP_AMPK, d_ADP_AMPK, d_ATP_AMPK, d_AMP_pAMPK, d_ADP_pAMPK, d_ATP_pAMPK, d_AMPKAR, d_pAMPKAR])
+        return [d_AMP, d_ADP, d_ATP, d_PCr, d_AMPK, d_pAMPK, d_AMP_AMPK, d_ADP_AMPK, d_ATP_AMPK, d_AMP_pAMPK, d_ADP_pAMPK, d_ATP_pAMPK, d_AMPKAR, d_pAMPKAR]
 
     def set_kGly(self, kGly):
             """Set the glycolysis rate parameter."""
