@@ -5,7 +5,7 @@
 import jax.numpy as jnp
 import equinox as eqx
 
-class AMPK_coccimiglio(eqx.Module):
+class ampk_Coccimiglio(eqx.Module):
     """Right hand side of the Coccimiglio et al AMPK model.
 
     From: Ian F.Coccimiglio ID and David C. ClarkeID. "ADP is the dominant controller of AMP-activated protein kinase activity dynamics in skeletal muscle during exercise." PLOS Computational Biology. 2020. 6(7): e1008079.
