@@ -154,9 +154,9 @@ class ampk_Coccimiglio(eqx.Module):
         d_AMPKAR = -r20 - r21 - r22 - r23 + r24
         d_p_AMPKAR = r20 + r21 + r22 + r23 - r24
 
-        return jnp.array([d_ATP, d_ADP, d_AMP, d_PCr, d_Pi, d_ATP_AMPK, 
+        return [d_ATP, d_ADP, d_AMP, d_PCr, d_Pi, d_ATP_AMPK, 
                           d_ADP_AMPK, d_AMP_AMPK, d_ATP_p_AMPK, d_ADP_p_AMPK, 
-                          d_AMP_p_AMPK, d_AMPK, d_p_AMPK, d_AMPKAR, d_p_AMPKAR])
+                          d_AMP_p_AMPK, d_AMPK, d_p_AMPK, d_AMPKAR, d_p_AMPKAR]
 
     def set_kGly(self, kGly):
             """Set the glycolysis rate parameter."""
