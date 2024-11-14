@@ -172,22 +172,62 @@ def main(raw_args=None):
     # Set up solver
     ######################################################
     times = np.linspace(0, args.tmax, 1000)
-    solve = jax.pmap(jax.vmap(lambda params: solve_traj(rhs, rhs_stress, y0, params, times,
+    solve = jax.vmap(lambda params: solve_traj(rhs, rhs_stress, y0, params, times,
                                       rtol=args.rtol, atol=args.atol, 
                                       evnt_rtol=args.evnt_rtol, evnt_atol=args.evnt_atol, 
-                                      pcoeff=args.pcoeff, icoeff=args.icoeff, dcoeff=args.dcoeff)))
+                                      pcoeff=args.pcoeff, icoeff=args.icoeff, dcoeff=args.dcoeff))
+
+    print(temp.shape)
 
     # run the vmapped simulations
-    tnow = time.time()
-    sols = solve(temp)
-    tend = time.time()
+    expected_array_size = len(times)*param_vals.shape[0]*8 # 8 bytes per float64
+    
+    if expected_array_size > 250000000:
+        print('Warning: chunking simulations to avoid memory error.')
 
-    # save model evals
-    np.save(args.savedir + args.model + '_sols_stressed_GSA.npy', np.array(sols[0]))
-    np.save(args.savedir + args.model + '_sols_basal_GSA.npy', np.array(sols[1]))
+        # chunk the simulations
+        n_chunks = int(np.ceil(expected_array_size/100000000))
+        chunk_size = int(np.ceil(param_vals.shape[0]/n_chunks))
 
-    print('Simulations took {} seconds'.format(tend-tnow))
-    print('Completed {}'.format(args.model))
+        # Initialize arrays to store the results
+        all_sols_stressed = []
+        all_sols_basal = []
+
+        # loop over the chunks
+        for i in range(n_chunks):
+            tnow = time.time()
+            if i == n_chunks-1:
+                sols = solve(temp[i*chunk_size:])
+            else:
+                sols = solve(temp[i*chunk_size:(i+1)*chunk_size])
+            tend = time.time()
+
+            # append model evals to the lists
+            all_sols_stressed.append(np.array(sols[0]))
+            all_sols_basal.append(np.array(sols[1]))
+
+            print('Simulations took {} seconds'.format(tend-tnow))
+            print('Completed {} chunk {}'.format(args.model, i))
+
+        # Concatenate all chunks into single arrays
+        all_sols_stressed = np.concatenate(all_sols_stressed, axis=0)
+        all_sols_basal = np.concatenate(all_sols_basal, axis=0)
+
+        # Save the concatenated results
+        np.save(args.savedir + args.model + '_sols_stressed_GSA.npy', all_sols_stressed)
+        np.save(args.savedir + args.model + '_sols_basal_GSA.npy', all_sols_basal)
+
+
+    # tnow = time.time()
+    # sols = solve(temp)
+    # tend = time.time()
+
+    # # save model evals
+    # np.save(args.savedir + args.model + '_sols_stressed_GSA.npy', np.array(sols[0]))
+    # np.save(args.savedir + args.model + '_sols_basal_GSA.npy', np.array(sols[1]))
+
+    # print('Simulations took {} seconds'.format(tend-tnow))
+    # print('Completed {}'.format(args.model))
 
 if __name__ == '__main__':
     main()
