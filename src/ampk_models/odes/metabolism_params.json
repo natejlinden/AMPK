@@ -1,9 +1,9 @@
 {
     "metab_params_basal": {
         "kGly": 0.5,
-        "kHydro": 0.1,
+        "kHydro": 0.15,
         "VforAK": 14.66,
-        "KeqAK": 2.21,
+        "KeqAK": 2.221,
         "kmm": 0.32,
         "kmd": 0.35,
         "kmt": 0.27,

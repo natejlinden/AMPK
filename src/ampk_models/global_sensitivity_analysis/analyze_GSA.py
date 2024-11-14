@@ -4,163 +4,156 @@ from SALib.sample import morris as morris_samp
 from SALib.analyze import sobol as sobol_analyze
 from SALib.analyze import morris as morris_analyze
 from SALib.analyze.hdmr import analyze as hdmr_analyze
-import os
-import sys
+import os, sys, json
 
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+import seaborn as sns
 import pandas as pd
-from scipy.stats import t
+import met_brewer as mb
 
-############################################
-# get user inputs
-############################################
-if len(sys.argv) < 5:
-    print("Incorrect Usage: TODO: add usage") # TODO: add usage
-    sys.exit(1)
+sys.path.append('../')
+from plotting_helper_funcs import *
 
-base_name       = sys.argv[1]
-nominals_file   = sys.argv[2]
-bounds_file     = sys.argv[3]
-figpath         = sys.argv[4]
+plt.style.use('~/.matplotlib/stylelib/custom.mplstyle')
 
-############################################
-# Matplotlib settings
-############################################
-plt.style.use('~/.matplotlib/custom.mplstyle')
-mpl.rcParams['figure.autolayout'] = True
+def main():
+    # path to results
+    results_path = '../../../results/GSA/'
 
-# construct save dir
-savedir = base_name + '/'
-############################################
-# Bounds and other info for the GSA #
-############################################
-# define the bounds for the AMPK parameters
-# we use plus or minus on order of magnitude of any known values and then make reasonable assumptions for unknowns
-# Note we fix all off rates to 1.0 and dont bother sampling these or computing sensitivities
-############################################
-try:
-    nominals_file = pd.read_csv(nominals_file)
-except:
-    print("An error occurred while reading the nominal values.")
+    # path to save figures
+    fig_path = '../../../figures/GSA/'
 
-try:
-    bounds = pd.read_csv(bounds_file)
-except:
-    print("An error occurred while reading the nominal values.")
+    #  lower and upper bounds for GSA sampling
+    lower_mult = 1e-2
+    upper_mult = 1e2
 
-nominals = nominals_file['value'].to_list()
-param_names = nominals_file['parameter'].to_list()
-nparam = len(param_names)
-bounds = [[lb, ub] for lb, ub in zip(bounds['lb'].to_list(), bounds['ub'].to_list())]
+    colors = mb.met_brew(name="Veronese", n=7)
 
-problem = {'num_vars':nparam, 'names':param_names, 'bounds': bounds,}
+
+    # list of models 
+    models_free_params = {
+        "MA_double_mech": {'free':["kOffAMP","kOffADP","kOffATP","kOffCaMKK","kPhosCaMKK","kOffLKB1","kPhosLKB1","kOffPP","kDephosPP","kOffAMPK","kPhosAMPK","kOffPP1","kDephosPP1"],
+                           'names':[r'$k_{\text{OffAMP}}$',r'$k_{\text{OffADP}}$',r'$k_{\text{OffATP}}$',r'$k_{\text{OffCaMKK}}$',r'$k_{\text{PhosCaMKK}}$',r'$k_{\text{OffLKB1}}$',r'$k_{\text{PhosLKB1}}$',r'$k_{\text{OffPP}}$',r'$k_{\text{DephosPP}}$',r'$k_{\text{OffAMPK}}$',r'$k_{\text{PhosAMPK}}$',r'$k_{OffPP1}}$',r'$k_{\text{Dephos,PP1}}$']}, 
+        "MA_single_mech": {'free':["kOffAMP","kOffADP","kOffATP","kOffCaMKK","kPhosCaMKK","kOffLKB1","kPhosLKB1","kOffPP","kDephosPP","kOffAMPK","kPhosAMPK","kOffPP1","kDephosPP1"],
+                           'names':[r'$k_{\text{OffAMP}}$',r'$k_{\text{OffADP}}$',r'$k_{\text{OffATP}}$',r'$k_{\text{OffCaMKK}}$',r'$k_{\text{PhosCaMKK}}$',r'$k_{\text{OffLKB1}}$',r'$k_{\text{PhosLKB1}}$',r'$k_{\text{OffPP}}$',r'$k_{\text{DephosPP}}$',r'$k_{\text{OffAMPK}}$',r'$k_{\text{PhosAMPK}}$',r'$k_{OffPP1}}$',r'$k_{\text{Dephos,PP1}}$']}, 
+        "MM_single_mech":  {'free':["kOffAMP","kOffADP","kOffATP","kPhosCaMKK","KmCaMKK","kPhosLKB1","KmLKB1","kDephosPP","KmPP"],
+                           'names':[r'$k_{\text{OffAMP}}$',r'$k_{\text{OffADP}}$',r'$k_{\text{OffATP}}$',r'$k_{\text{PhosCaMKK}}$',r'$K_{m,\text{CaMKK}}$',r'$k_{\text{PhosLKB1}}$',r'$K_{\text{m,LKB1}}$',r'$k_{\text{DephosPP}}$',r'$K_{\text{M,PP}}$']},
+        "MM_double_mech":  {'free':["kOffAMP","kOffADP","kOffATP","kPhosCaMKK","KmCaMKK","kPhosLKB1","KmLKB1","kDephosPP","KmPP"],
+                           'names':[r'$k_{\text{OffAMP}}$',r'$k_{\text{OffADP}}$',r'$k_{\text{OffATP}}$',r'$k_{\text{PhosCaMKK}}$',r'$K_{m,\text{CaMKK}}$',r'$k_{\text{PhosLKB1}}$',r'$K_{\text{m,LKB1}}$',r'$k_{\text{DephosPP}}$',r'$K_{\text{M,PP}}$']},
+        "newmech_MA_single": {'free':["kOffAMP","kOffCaMKK","kPhosCaMKK","kOffLKB1","kPhosLKB1","kOffPP","kDephosPP","kOffAMPK","kPhosAMPK","kOffPP1","kDephosPP1","alpha","beta"],
+                           'names':[r'$k_{\text{OffAMP}}$',r'$k_{\text{OffCaMKK}}$',r'$k_{\text{PhosCaMKK}}$',r'$k_{\text{OffLKB1}}$',r'$k_{\text{PhosLKB1}}$',r'$k_{\text{OffPP}}$',r'$k_{\text{DephosPP}}$',r'$k_{\text{OffAMPK}}$',r'$k_{\text{PhosAMPK}}$',r'$k_{OffPP1}}$',r'$k_{\text{Dephos,PP1}}$',r'$\alpha$',r'$\beta$']}
+        }
     
-################################################
-# Load parameter samples and qois
-################################################
-param_vals_sobol = np.load('./' + savedir + 'param_vals_sobol.npy')
-sobol_sols = np.load('./' + savedir + 'sols_sobol.npy')
+    # loop through each model and analyze GSA results
+    for i, model in enumerate(models_free_params.keys()):
+        m_name = model.split('_mech')[0] # get the model name w/o _mech
+        # we need mech in the model to load GSA sampling results correctly
 
-# reshape into 2D array
-sobol_sols = sobol_sols.reshape(sobol_sols.shape[0]*sobol_sols.shape[1],
-                                          sobol_sols.shape[2])
-nsols, nqoi = sobol_sols.shape
-qoi_idx = 0
-################################################
-#  HISTOGRAM OF QOI
-################################################
-fig, ax = plt.subplots(1,1, figsize=(2.25,3))
-ax.hist(sobol_sols[:,qoi_idx])
-ax.set_xlabel(r'$pAMPKAR/AMPKAR_{tot}$')
-ax.set_ylabel('count')
-fig.savefig(figpath + savedir + 'qoi_hist.pdf')
-plt.show()
+        # load results
+        param_samples = np.load(results_path + model + '_param_vals_GSA.npy')
+        sol_samples = np.load(results_path + model + '_sols_GSA.npy')
 
-################################################
-####### COMPUTE SENSITIVITIY INDICES #######
-################################################
-Si_sobol = sobol_analyze.analyze(problem, sobol_sols[:,qoi_idx], calc_second_order=True)
-np.save('./' + savedir + 'sobol_pampkar_final.npy', Si_sobol)
-Si_hdmr = hdmr_analyze(problem, param_vals_sobol, sobol_sols[:,qoi_idx])
-np.save('./' + savedir + 'hdmr_pampkar_final.npy', Si_hdmr)
+        # Load JSON files with param, state, and initial condition info
+        # states and initial conditions
+        info_file = '../odes/' + m_name + '.json'
+        with open(info_file, 'r') as file:
+            model_info = json.load(file)
 
-################################################
-####### SORT #######
-################################################
-# sort sobol indices by ST
-dtype = [('name', 'U10'), ('S1', float), ('S1_conf', float), 
-            ('ST', float), ('ST_conf', float)]
+        # free parameters and nominal values
+        free_params = models_free_params[model]
+        nominal_params = model_info['nominal_params']
+        param_names = list(nominal_params.keys())
 
-Si_sobol_sorted = np.array([(name, S1, S1_conf, ST, ST_conf) for 
-                            name, S1, S1_conf, ST, ST_conf 
-                            in zip(param_names, Si_sobol['S1'], 
-                                    Si_sobol['S1_conf'], Si_sobol['ST'], 
-                                    Si_sobol['ST_conf'])], dtype=dtype)
-Si_sobol_sorted = np.sort(Si_sobol_sorted, order='ST')[::-1]
+        # define the bounds for the AMPK parameters
+        bound_mults = np.array((lower_mult, upper_mult))
+        bounds = [bound_mults*nominal_params[param] for param in free_params]
+        # dictionary of the problem for SALib
+        problem = {'num_vars':len(free_params), 'names':free_params, 'bounds': bounds}
 
-# sort hdmr by S
-dtype = [('name', 'U10'), ('Sa', float), ('Sa_conf', float), ('Sb', float), 
-            ('Sb_conf', float), ('S', float), ('S_conf', float), ('ST', float), 
-            ('ST_conf', float)]
-Si_hdmr_sorted = np.array([(name, Sa, Sa_conf, Sb, Sb_conf, S, S_conf, ST, ST_conf) 
-                                    for name, Sa, Sa_conf, Sb, Sb_conf, S, S_conf, ST, ST_conf 
-                                    in zip(param_names, Si_hdmr['Sa'], Si_hdmr['Sa_conf'], 
-                                        Si_hdmr['Sb'], Si_hdmr['Sb_conf'],
-                                        Si_hdmr['S'], Si_hdmr['S_conf'],
-                                        Si_hdmr['ST'], Si_hdmr['ST_conf'])], dtype=dtype)
-Si_hdmr_sorted = np.sort(Si_hdmr_sorted, order='S')[::-1]
+        # compute qoi
+        # use pAMPKAR_stressed/AMPKAR_stressed - pAMPKAR_basal/AMPKAR_basal
+        # get relevant state indices
+        state_names = list(model_info["init_conds"].keys())
+        ampkar_idxs = [state_names.index(item) for item in model_info['ampkar_states']]
+        pampkar_idxs = [state_names.index(item) for item in model_info['pampkar_states']]
+        
+        AMPKAR_stressed = sol_samples[0, : ,ampkar_idxs].sum(axis=0)
+        AMPKAR_basal = sol_samples[1, : ,ampkar_idxs].sum(axis=0)
+        pAMPKAR_stressed = sol_samples[0, : ,pampkar_idxs].sum(axis=0)
+        pAMPKAR_basal = sol_samples[1, : ,pampkar_idxs].sum(axis=0)
+        qoi = (pAMPKAR_stressed/AMPKAR_stressed) - (pAMPKAR_basal/AMPKAR_basal)
 
-################################################
-####### PLOT #######
-################################################
-# sobol first order
-fig, ax = plt.subplots(figsize=(4,3))
-ax.bar(np.arange(0,len(param_names)), Si_sobol_sorted['S1'],
-        yerr=Si_sobol_sorted['S1_conf'],
-        log=False)
-plt.xticks(np.arange(0,len(param_names)), Si_sobol_sorted['name'], rotation='vertical')
-plt.ylabel('Sobol First Order')
-fig.savefig(figpath + savedir + 'S1.pdf')
-plt.show()
+        # plot histogram of qoi
+        fig, ax = get_sized_fig_ax(2.5, 2.5)
+        sns.histplot(qoi, ax=ax, kde=False, stat='density', bins=30, 
+                     line_kws={'linewidth': 1.0, 'linestyle':'--'},
+                     color=colors[i])
+        ax.set_xlabel(r'$\Delta pAMPKAR/AMPKAR_{tot}$')
+        ax.set_ylabel('density')
+        fig.savefig(fig_path + m_name + '_qoi_hist.pdf', bbox_inches='tight')
 
-# sobol total order
-fig, ax = plt.subplots(figsize=(4,3))
-ax.bar(np.arange(0,len(param_names)), Si_sobol_sorted['ST'],
-        yerr=Si_sobol_sorted['ST_conf'],
-        log=False)
-plt.xticks(np.arange(0,len(param_names)), Si_sobol_sorted['name'], rotation='vertical')
-plt.ylabel('Sobol Total Order')
-fig.savefig(figpath + savedir + 'ST.pdf')
-plt.show()
+        # analyze GSA
+        Si_sobol = sobol_analyze.analyze(problem, qoi, calc_second_order=False)
 
-# sobol second order
-fig, ax = plt.subplots(figsize=(5,5))
-cf = ax.pcolormesh(Si_sobol['S2'], cmap='BrBG')
-fig.colorbar(cf, ax=ax)
-ax.set_xticks(np.arange(0,len(param_names))+0.5, labels=param_names, rotation='vertical')
-ax.set_yticks(np.arange(0,len(param_names))+0.5, labels=param_names)
-ax.grid(True)
-ax.set_aspect('equal')
-fig.savefig(figpath + savedir + 'S2.pdf')
+        # covert to pandas dataframe for easier plotting
+        sobol_df = pd.DataFrame(Si_sobol)
+        sobol_df["param"] = free_params
+        sobol_df.to_csv(results_path + m_name + '_sobol_delta_pampkar_GSA.csv')
 
-# HDMR indices
-fig, ax = plt.subplots(figsize=(4,3))
-ax.bar(np.arange(0,len(Si_hdmr_sorted['Sa'][0:len(param_names)])), 
-    Si_hdmr_sorted['Sa'][0:len(param_names)],
-    bottom=np.zeros(len(Si_hdmr_sorted['Sa'][0:len(param_names)])), 
-    label=r'$Sa$ (Structural)')
-ax.bar(np.arange(0,len(Si_hdmr_sorted['Sb'][0:len(param_names)])), 
-    Si_hdmr_sorted['Sb'][0:len(param_names)],
-    bottom=Si_hdmr_sorted['Sa'][0:len(param_names)], 
-    label=r'$Sb$ (Correlated)',
-    yerr=Si_hdmr_sorted['S_conf'])
-plt.xticks(np.arange(0, len(Si_hdmr_sorted['name'][0:len(param_names)])), 
-            Si_hdmr_sorted['name'][0:len(param_names)], rotation='vertical')
-plt.ylabel('HDMR Contribution')
-plt.legend()
-plt.show()
-fig.savefig(figpath + savedir + 'hdmr.pdf')
+        # # plot sobol indices
+        # S1
+        fig, ax = get_sized_fig_ax(2.5, 1.25)
+        sorted = sobol_df.sort_values(by='S1', ascending=False)
+        order = list(sorted["param"])
+
+        sns.barplot(x='param', y='S1', data=sobol_df, 
+                    ax=ax, order=order, color=colors[i])
+        
+        # add error bars
+        bar_width = ax.patches[0].get_width()
+        #Calculate offsets for number of hues provided
+        offset = np.linspace(-1/2, 1/2, 1)*bar_width/2 #
+        x_dict = dict((x_val,x_pos) for x_pos,x_val in list(enumerate(order)))
+        #Map the x-position and offset of each record in the dataset
+        x_values = np.array([x_dict[x] for x in sorted["param"]]);
+        #Overlay the error bars onto plot
+        ax.errorbar(x = x_values, y = sorted["S1"], yerr=sorted["S1_conf"], fmt='none', c= 'black', capsize = 2)
+
+        ax.set_ylabel('first-order index \n $S_1$')
+        ax.set_xlabel('')
+        ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
+        fig.savefig(fig_path + m_name + '_S1_delta_pamkar.pdf', bbox_inches='tight')
+
+        # ST
+        fig, ax = get_sized_fig_ax(2.5, 1.25)
+        sorted = sobol_df.sort_values(by='ST', ascending=False)
+        order = list(sorted["param"])
+
+        sns.barplot(x='param', y='ST', data=sobol_df, 
+                    ax=ax, order=order, color=colors[i])
+        
+        # add error bars
+        bar_width = ax.patches[0].get_width()
+        #Calculate offsets for number of hues provided
+        offset = np.linspace(-1/2, 1/2, 1)*bar_width/2 #
+        x_dict = dict((x_val,x_pos) for x_pos,x_val in list(enumerate(order)))
+        #Map the x-position and offset of each record in the dataset
+        x_values = np.array([x_dict[x] for x in sorted["param"]]);
+        #Overlay the error bars onto plot
+        ax.errorbar(x = x_values, y = sorted["ST"], yerr=sorted["ST_conf"], fmt='none', c= 'black', capsize = 2)
+
+        ax.set_ylabel('total-order index \n $S_T$')
+        ax.set_xlabel('')
+        ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
+        fig.savefig(fig_path + m_name + '_ST_delta_pamkar.pdf', bbox_inches='tight')
+    
+if __name__ == "__main__":
+    main()
+
+
+
+
 
 
 

@@ -20,6 +20,7 @@ import preliz as pz
 import diffrax as dfrx
 from optimistix import root_find, Newton, two_norm
 import lineax as lx
+import equinox as eqx
 #from tqdm import tqdm
 import time
 
@@ -66,42 +67,72 @@ def get_color_pallette(n_colors=11, append_colors=['#363737','#929591','#d8dcd6'
     """
     colors = sns.color_palette("colorblind", n_colors, desat=0.65)
     return colors + append_colors
+
+def load_data(data_file, to_seconds=False, constant_std=False):
+    """ Loads the data from the specified file.
+    """
+    data = np.load(data_file) # read data npz file
+
+    # handle time, convert to seconds if specified
+    times = data['times']
+    zero_idx = int(np.where(times==0.0)[0]) # we only want values after the 2-DG stimulus
+    if to_seconds:
+        mult = 60
+    else:
+        mult = 1
+    times = mult*times[zero_idx:]
+
+    # handle data
+    mean_data = data['mean'][zero_idx:]
+
+    if constant_std:
+        std_data = data['std_constant']*np.ones_like(mean_data)
+    else:
+        std_data = data['std'][zero_idx:]
+
+    return mean_data, std_data, times
 ###############################################################################
 #### Solving ODEs ####
 ###############################################################################
-@jax.jit
-def solve_traj(rhs, rhs_stress, y0, params, t1, times, rtol=1e-6, atol=1e-6, 
-               t_init=10, pcoeff=0, icoeff=1, dcoeff=0, solver = dfrx.Kvaerno5()):
+@eqx.filter_jit
+def solve_traj(rhs, rhs_stress, y0, params, times, rtol=1e-6, atol=1e-6, 
+               evnt_rtol = 1e-12, evnt_atol = 1e-12, tmax_init = 1e3, 
+               pcoeff=0, icoeff=1, dcoeff=0, solver = dfrx.Kvaerno5()):
     """ simulates a model over the specified time interval and returns the 
     calculated values.
     Returns an array of shape (n_species, 1) 
     TODO add way to specify autodiff method
     """
-    dt0=1e-3
-    solver = dfrx.Kvaerno5()
+    dt0=1e-5
     stepsize_controller=dfrx.PIDController(rtol, atol, pcoeff=pcoeff, icoeff=icoeff, dcoeff=dcoeff)
+    cond_fn=dfrx.steady_state_event(rtol=evnt_rtol, atol=evnt_atol)
+    event = dfrx.Event(cond_fn=cond_fn)
     t0 = 0.0
+    t1 = times[-1]
     saveat=dfrx.SaveAt(ts=times)
 
-    # first solve the basal model
+    # first solve the basal model to SS
     sol = dfrx.diffeqsolve(
         rhs, solver, 
-        t0, t_init, dt0, 
-        tuple(y0), args=params,
+        t0, tmax_init, dt0, 
+        y0, 
+        args=params,
         stepsize_controller=stepsize_controller,
-        max_steps=60000, throw=True)
+        event=event,
+        max_steps=100000, throw=True)
     
     # then use that solution as the initial condition for the stressed setting
     sol_stressed = dfrx.diffeqsolve(
         rhs_stress, solver, 
         t0, t1, dt0, 
-        tuple(y0), args=params, saveat=saveat,
+        sol.ys, # use basal SS at IC
+        args=params, saveat=saveat,
         stepsize_controller=stepsize_controller,
-        max_steps=60000, throw=True)
+        max_steps=100000, throw=True)
     
-    return jnp.array(sol.ys)
+    return jnp.squeeze(jnp.array(sol_stressed.ys)), jnp.squeeze(jnp.array(sol.ys))
 
-@jax.jit
+@eqx.filter_jit
 def solve_SS(rhs, rhs_stress, y0, params, rtol=1e-6, atol=1e-6, 
              evnt_rtol = 1e-12, evnt_atol = 1e-12, tmax = 1e3,
              pcoeff=0, icoeff=1, dcoeff=0, solver = dfrx.Kvaerno5()):
@@ -110,9 +141,10 @@ def solve_SS(rhs, rhs_stress, y0, params, rtol=1e-6, atol=1e-6,
     Returns an array of shape (n_species, 1) 
     TODO add way to specify autodiff method
     """
-    dt0=1e-3
+    dt0=1e-5
     solver = dfrx.Kvaerno5()
-    event = dfrx.SteadyStateEvent(rtol=evnt_rtol, atol=evnt_atol)
+    cond_fn=dfrx.steady_state_event(rtol=evnt_rtol, atol=evnt_atol)
+    event = dfrx.Event(cond_fn=cond_fn)
     stepsize_controller=dfrx.PIDController(rtol, atol, pcoeff=pcoeff, icoeff=icoeff, dcoeff=dcoeff)
     t0 = 0.0
 
@@ -122,76 +154,28 @@ def solve_SS(rhs, rhs_stress, y0, params, rtol=1e-6, atol=1e-6,
         t0, tmax, dt0, 
         y0, args=params,
         stepsize_controller=stepsize_controller,
-        discrete_terminating_event=event,
-        max_steps=60000, throw=True)
+        event=event,
+        max_steps=100000, throw=True)
     
     # then use that solution as the initial condition for the stressed setting
     sol_stressed = dfrx.diffeqsolve(
         rhs_stress, solver, 
         t0, tmax, dt0, 
-        jnp.squeeze(sol.ys), args=params,
+        sol.ys, args=params,
         stepsize_controller=stepsize_controller,
-        discrete_terminating_event=event,
-        max_steps=60000, throw=True)
+        event=event,
+        max_steps=100000, throw=True)
     
-    return jnp.squeeze(sol_stressed.ys), jnp.squeeze(sol.ys)
+    return jnp.squeeze(jnp.array(sol_stressed.ys)), jnp.squeeze(jnp.array(sol.ys))
 
-# def predict_traj_response(model, posterior_idata, inputs, times, input_state, 
-#                           ERK_states, time_conversion_factor=1, 
-#                           EGF_conversion_factor=1, nsamples=None,
-#                           max_input_index=-1, rtol=1e-6, atol=1e-6):
-#     """ function to predict trajectories for a given model and many posterior samples"""
-#     # load model
-#     try:
-#         model = eval(model + '(transient=False)')
-#     except:
-#         print('Warning Model {} not found. Skipping this.'.format(model))
-
-
-#     # get parameter names and initial conditions
-#     p_dict, _ = model.get_nominal_params()
-#     y0_dict, y0 = model.get_initial_conditions()
-
-#     # convert EGF to required units
-#     inputs_native_units = inputs * EGF_conversion_factor
-
-#     # get the EGF index and ERK indices
-#     state_names = list(y0_dict.keys())
-#     EGF_idx = state_names.index(input_state)
-#     ERK_indices = [state_names.index(s) for s in ERK_states.split(',')]
-
-#     # make initial conditions that reflect the inputs
-#     y0_EGF_ins = construct_y0_EGF_inputs(inputs_native_units, np.array([y0]), EGF_idx)
-
-#     # solve the model nsamples times
-#     if nsamples is None:
-#         nsamples = posterior_idata.posterior.dims['draw']*posterior_idata.posterior.dims['chain']
-#     elif nsamples > posterior_idata.posterior.dims['draw']*posterior_idata.posterior.dims['chain']:
-#         print('Warning: nsamples > posterior samples. Using all posterior samples.')
-#         nsamples = posterior_idata.posterior.dims['draw']*posterior_idata.posterior.dims['chain']
-
-#     param_samples = get_param_subsample(posterior_idata, nsamples, p_dict)
-#     trajectories = []
-#     if len(inputs) > 1:
-#         for param in tqdm(param_samples):
-#             trajectories.append(ERK_stim_trajectory_set(param, dfrx.ODETerm(model), 
-#                                                         max(times/time_conversion_factor), 
-#                                                         y0_EGF_ins, ERK_indices, times/time_conversion_factor, max_input_index)[0])
-#     else:
-#         def ERK_stim_traj(p, model, times, y0, output_states, time_conversion_factor=1):
-#             traj = solve_traj(model, y0, p, jnp.max(times)/time_conversion_factor, output_states, times/time_conversion_factor, rtol, atol)
-#             # return normalized trajectory
-#             return [(traj - np.min(traj)) / (np.max(traj) - np.min(traj))], traj
-#         for param in tqdm(param_samples):
-#             trajectories.append(ERK_stim_traj(param, dfrx.ODETerm(model), times, y0_EGF_ins[0], ERK_indices, time_conversion_factor)[0])
-
-#     return np.array(trajectories)
 
 ###############################################################################
 #### PyMC Inference Utils ####
 ###############################################################################
-def set_prior_params(model_name, param_names, nominal_params, free_param_idxs, prior_family=[['Gamma()',['alpha', 'beta']]], upper_mult=1.9, lower_mult=0.1, prob_mass_bounds=0.95, saveplot=True, savedir=None):
-    """ Sets the prior parameters for the MAPK models.
+def set_prior_params(param_names, nominal_params, free_param_idxs, prior_family=[['Gamma()',['alpha', 'beta']]], upper_mult=1.9, lower_mult=0.1, prob_mass_bounds=0.95):
+    """ Sets the prior parameters by finding parameters of the specified prior such that the specified probability mass is between the upper and lower bound.
+
+    Uses the preliz maximum entropy function.
         Inputs:
             - param_names (list): list of parameter names
             - nominal_params (np.ndarray): array of nominal parameter values
@@ -202,9 +186,6 @@ def set_prior_params(model_name, param_names, nominal_params, free_param_idxs, p
         Returns:
             - prior_param_dict (dict): dictionary of prior parameters for the model in syntax to use exec to set them in a pymc model object
     """
-
-    if savedir is None:
-        savedir = os.getcwd() + '/'
 
     # determine if a string or list of strings was passed for the prior family
     prior_family = eval(prior_family)
@@ -233,14 +214,7 @@ def set_prior_params(model_name, param_names, nominal_params, free_param_idxs, p
             prior_fam = prior_family_list[free_param_idxs.index(i)]
             
             dist_family = eval('pz.' + prior_fam[0])
-            fig, ax = get_sized_fig_ax(2.0,2.0)
-            ax, results = pz.maxent(dist_family, lower, upper, prob_mass_bounds, plot=saveplot, ax=ax) # for some reason the [0] element is None
-
-            # save the plot
-            if saveplot:
-                ax.set_xscale('log')
-                ax.set_title(param)
-                fig.savefig(savedir + model_name + param + '_prior.pdf', bbox_inches='tight', transparent=True)
+            ax, results = pz.maxent(dist_family, lower, upper, prob_mass_bounds, plot=False) # for some reason the [0] element is None
 
             # set the prior parameters
             prior_fam_name = prior_fam[0].strip(')').split('(')[0]
@@ -253,9 +227,10 @@ def set_prior_params(model_name, param_names, nominal_params, free_param_idxs, p
             for fixed_param in fixed_params:
                 if len(fixed_param) > 0:
                     tmp += (fixed_param + ', ')
+                        
             prior_param_dict[param] = tmp + ')'
             print(prior_param_dict[param])
-        else:
+        else: # fixed parameter
             # set the prior parameters to the nominal value
             prior_param_dict[param] = 'pm.ConstantData("' + param + '", ' + str(nominal_params[i]) + ')'
 
