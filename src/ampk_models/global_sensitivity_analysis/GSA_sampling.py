@@ -172,10 +172,10 @@ def main(raw_args=None):
     # Set up solver
     ######################################################
     times = np.linspace(0, args.tmax, 1000)
-    solve = jax.vmap(lambda params: solve_traj(rhs, rhs_stress, y0, params, times,
+    solve = jax.pmap(jax.vmap(lambda params: solve_traj(rhs, rhs_stress, y0, params, times,
                                       rtol=args.rtol, atol=args.atol, 
                                       evnt_rtol=args.evnt_rtol, evnt_atol=args.evnt_atol, 
-                                      pcoeff=args.pcoeff, icoeff=args.icoeff, dcoeff=args.dcoeff))
+                                      pcoeff=args.pcoeff, icoeff=args.icoeff, dcoeff=args.dcoeff)))
 
     # run the vmapped simulations
     tnow = time.time()
