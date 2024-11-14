@@ -1,6 +1,0 @@
-2024-08-12 13:38:34.630129: W external/xla/xla/service/gpu/nvptx_compiler.cc:836] The NVIDIA driver's CUDA version is 12.2 which is older than the PTX compiler version (12.4.99). Because the driver is older than the PTX compiler version, XLA is disabling parallel compilation, which may slow down compilation. You should update your NVIDIA driver or use the NVIDIA-provided CUDA forward compatibility packages.
-/tscc/nfs/home/nlinden/miniforge3/envs/pymc/lib/python3.11/site-packages/equinox/_jit.py:49: UserWarning: `diffrax.diffeqsolve(..., discrete_terminating_event=...)` is deprecated in favour of the more general `diffrax.diffeqsolve(..., event=...)` interface. This will be removed in some future version of Diffrax.
-  out = fun(*args, **kwargs)
-Processing model MA_double_mech.
-Simulations took 45.6237735748291 seconds
-Completed MA_double_mech
