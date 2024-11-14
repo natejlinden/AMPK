@@ -11,18 +11,25 @@ import matplotlib as mpl
 import seaborn as sns
 import pandas as pd
 import met_brewer as mb
+import argparse
 
 sys.path.append('../')
 from plotting_helper_funcs import *
 
 plt.style.use('~/.matplotlib/stylelib/custom.mplstyle')
 
-def main():
-    # path to results
-    results_path = '../../../results/GSA/'
+def parse_args(raw_args=None):
+    """ function to parse command line arguments
+    """
+    parser=argparse.ArgumentParser(description="Run GSA plotting.")
+    # required parameters
+    parser.add_argument("-results_path", type=str, default="../../../results/GSA/", help="Path to load/save raw results.")
+    parser.add_argument("-fig_path", type=str, default="../../../figures/GSA/", help="Path to save figs.")
+    args=parser.parse_args(raw_args)
+    return args
 
-    # path to save figures
-    fig_path = '../../../figures/GSA/'
+def main(raw_args=None):
+    args = parse_args()
 
     #  lower and upper bounds for GSA sampling
     lower_mult = 1e-2
@@ -98,9 +105,8 @@ def main():
         # we need mech in the model to load GSA sampling results correctly
 
         # load results
-        param_samples = np.load(results_path + model + '_param_vals_GSA.npy')
-        sol_samples_basal = np.load(results_path + model + '_sols_basal_GSA.npy')
-        sol_samples_stressed = np.load(results_path + model + '_sols_stressed_GSA.npy')
+        sol_samples_basal = np.load(args.results_path + model + '_sols_basal_GSA.npy')
+        sol_samples_stressed = np.load(args.results_path + model + '_sols_stressed_GSA.npy')
 
         # Load JSON files with param, state, and initial condition info
         # states and initial conditions
@@ -170,7 +176,7 @@ def main():
                         color=colors[i])
             ax.set_xlabel(qoi_name)
             ax.set_ylabel('density')
-            fig.savefig(fig_path + m_name + '_'+ qoi + '_hist.pdf', bbox_inches='tight')
+            fig.savefig(args.fig_path + m_name + '_'+ qoi + '_hist.pdf', bbox_inches='tight')
 
             # analyze GSA
             Si_sobol = sobol_analyze.analyze(problem, qoi_vals, calc_second_order=False)
@@ -179,7 +185,7 @@ def main():
             sobol_df = pd.DataFrame(Si_sobol)
             sobol_df["param"] = free_params
             sobol_df["param_name"] = param_names
-            sobol_df.to_csv(results_path + m_name + '_' + qoi + '_sobol_GSA.csv')
+            sobol_df.to_csv(args.results_path + m_name + '_' + qoi + '_sobol_GSA.csv')
 
             # # plot sobol indices
             # S1
@@ -203,7 +209,7 @@ def main():
             ax.set_ylabel(r'$S_1$  ' + qoi_name)
             ax.set_xlabel('')
             ax.set_xticklabels(sorted['param_name'], rotation=45, ha='right', fontsize=8)
-            fig.savefig(fig_path + m_name + '_' + qoi + '_S1.pdf', bbox_inches='tight')
+            fig.savefig(args.fig_path + m_name + '_' + qoi + '_S1.pdf', bbox_inches='tight')
 
             # ST
             fig, ax = get_sized_fig_ax(2.5, 1.25)
@@ -226,7 +232,7 @@ def main():
             ax.set_ylabel(r'$S_T$  ' + qoi_name)
             ax.set_xlabel('')
             ax.set_xticklabels(sorted['param_name'], rotation=45, ha='right', fontsize=8)
-            fig.savefig(fig_path + m_name + '_' + qoi + '_ST.pdf', bbox_inches='tight')
+            fig.savefig(args.fig_path + m_name + '_' + qoi + '_ST.pdf', bbox_inches='tight')
     
 if __name__ == "__main__":
     main()
