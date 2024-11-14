@@ -19,11 +19,6 @@ import diffrax as dfrx
 
 # import models
 sys.path.append("../odes/")
-from ampk_MA_double_mech_diffrax import *
-from ampk_MA_single_mech_diffrax import *
-from ampk_MM_double_mech_diffrax import *
-from ampk_MM_single_mech_diffrax import *
-from ampk_newmech_MA_single_diffrax import *
 
 # import utils functions
 sys.path.append("../")
@@ -39,11 +34,14 @@ def parse_args(raw_args=None):
     """ function to parse command line arguments
     """
     parser=argparse.ArgumentParser(description="Run GSA sampling and compute GSA indices.")
-    parser.add_argument("-model", type=str, help="model to process.")
-    parser.add_argument("-free_params", type=str, help="parameters to test")
-    parser.add_argument("-model_info_file", type=str, help="JSON file with relevant info. Model params, initial conditions, and AMPKAR states.")
+    # required parameters
+    parser.add_argument("-model", type=str, help="Filename of model to process.")
+    parser.add_argument("-free_params", type=str, help="Comma separated string of parameters to test.")
+    parser.add_argument("-model_info_file", type=str, help="Path to JSON file with relevant info. Model params, initial conditions, and AMPKAR states.")
+    # optional parameters
     parser.add_argument("-upper_mult", type=float, default=1e2, help="Multiplier for upper bound in GSA sampling. Defaults to 100")
     parser.add_argument("-lower_mult", type=float, default=1e-2, help="Multiplier for lower bound in GSA sampling. Defaults to 0.01.")
+    parser.add_argument("-special_bounds", default="", type=str, help="Path ro JSON file that specifies bounds for the parameters that dont follow [lower_mult*nominal, upper_mult*nominal].")
     parser.add_argument("-metab_params_file", type=str, help="Metabolism model parameters. Should be a JSON")
     parser.add_argument("-nsamples", type=int, default=256, help="Number of samples to draw in each parameter direction. Defaults to 256")
     parser.add_argument("-gsa_method", type=str, default="sobol", help="GSA method to use. Defaults to sobol. Options are sobol, morris, and hdmr.")
@@ -64,6 +62,13 @@ def main(raw_args=None):
     """
     args = parse_args(raw_args) # parse the arguments
     print('Processing model {}.'.format(args.model))
+
+    # import the model
+    try:
+        exec('from ' + args.model + '_diffrax import *')
+    except:
+        print('Warning Model {} not found. Quitting.'.format(args.model))
+        quit()
     
     # random seed for reproducibility
     seed = np.random.default_rng(12345)
@@ -81,8 +86,8 @@ def main(raw_args=None):
            model_info = json.load(file)
 
     # unpack loaded model data dictionary
-    y0 = jnp.array(list(model_info["init_conds"].values()))
-
+    y0 = list(model_info["init_conds"].values())
+    
     # get the names of the fixed parameters
     free_params = args.free_params.split(',')
     param_names = model_info['nominal_params'].keys()
@@ -116,9 +121,17 @@ def main(raw_args=None):
     bound_mults = np.array((args.lower_mult, args.upper_mult))
     bounds = [bound_mults*nominal_params[param] for param in free_params]
 
+    # if there are special bounds, load them and update the list of bounds
+    if len(args.special_bounds) > 0: # default is "" length 0 str
+        with open(args.special_bounds, 'r') as file:
+            special_bounds = json.load(file)
+        
+        for param in special_bounds.keys():
+            idx = free_params.index(param)
+            bounds[idx] = np.array(special_bounds[param])
+
     # dictionary of the problem for SALib
     bounds = {'num_vars':len(free_params), 'names':free_params, 'bounds': bounds}
-
 
     ######################################################
     # # generate samples using specified method #
