@@ -7,7 +7,7 @@ MA = @ODEmodel(
     x2'(t) = -kf*x1(t)*x2(t) + kr*x3(t) + kcat*x3(t), # E
     x3'(t) =  kf*x1(t)*x2(t) - kr*x3(t) - kcat*x3(t), # ES
     x4'(t) =  kcat*x3(t), # P
-    y1(t) = x4(t)/x1(t) # ratio of P to S
+    y1(t) = x4(t)
 )
 
 # Assess local identifiability with all parameters free
@@ -20,7 +20,7 @@ id_MA = assess_identifiability(MA)
 id_MA_known_ic = assess_identifiability(MA, known_ic = [x1,x2,x3,x4])
 
 # write everything to a file 
-fname = "../../results/MA_v_MM/results_MA_ratio .txt"
+fname = "../../results/MA_v_MM/results_MA.txt"
 if isfile(fname)
     rm(fname)
 end
