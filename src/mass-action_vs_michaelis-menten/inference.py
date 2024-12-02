@@ -141,9 +141,8 @@ def main(raw_args=None):
     # the solve_traj function first runs the model to SS in the basal energy state, and then 
     # runs the model in the stressed energy state using the SS from the basal state as the initial condition
     solver = dfrx.Kvaerno5()
-    dt0=1e-5
-    stepsize_controller=dfrx.PIDController(args.rtol, args.atol, pcoeff=args.pcoeff, icoeff=args.icoeff,dcoeff=args.dcoeff,
-                                           dtmin=1e-10, force_dtmin=True)
+    dt0=1e-10
+    stepsize_controller=dfrx.PIDController(args.rtol, args.atol, pcoeff=args.pcoeff, icoeff=args.icoeff,dcoeff=args.dcoeff)
     t0 = 0.0
     t1 = times[-1]
     saveat=dfrx.SaveAt(ts=times)
@@ -163,7 +162,7 @@ def main(raw_args=None):
         sub_prod = sol[jnp.array(sub_prod_idxs), :].sum(axis=0)
         prod = sol[jnp.array(prod_idxs), :].sum(axis=0)
 
-        return prod #/sub_prod
+        return prod/sub_prod
 
 
     ####################################################
@@ -186,54 +185,56 @@ def main(raw_args=None):
     # prior sampling #
     ####################################################
     key, newkey = random.split(key)
-    prior = Predictive(numpyro_model, num_samples=500)(newkey, y_std=data_std, solver=simulator)
+    prior = Predictive(numpyro_model, num_samples=500)(newkey, y_std=data_std, solver=None)
+    # # print(prior)
 
     # func = eqx.filter_jit(jax.value_and_grad(simulator))
 
     # def func(params):
-    #     p_dict = {'k_f': params[0], 'k_r': params[1], 'k_cat': params[2]}
-    #     return jnp.sum(numpyro.infer.util.log_likelihood(numpyro_model, p_dict, y=data, y_std=data_std, solver=simulator)['obs'])
+    #     p_dict = {'V_max': params[0], 'K_m': params[1], 'n': params[2]}
+    #     simulator(params)
+    #     # return jnp.sum(numpyro.infer.util.log_likelihood(numpyro_model, p_dict, y=data, y_std=data_std, solver=simulator)['obs']),
     
     # grad_val_func = eqx.filter_jit(jax.value_and_grad(func))
 
     # for i in range(500):
-    #     k_f = prior['k_f'][i]
-    #     k_r = prior['k_r'][i]
-    #     k_cat = prior['k_cat'][i]
-    #     params = jnp.array((k_f, k_r, k_cat))
-    #     print(grad_val_func(params))
+    #     V_max = prior['V_max'][i]
+    #     K_m = prior['K_m'][i]
+    #     n = prior['n'][i]
+    #     params = jnp.array((V_max, K_m, n))
+    #     print(params)
+    #     print((V_max*0.195**n)/((K_m**n + 0.195**n)))
+    #     print(func(params))
     
-
-
-
     ####################################################
     # MCMC (or other sampling) #
     ####################################################
     print('Running MCMC for model {}'.format(args.model))
     key, newkey = random.split(key)
-    eqx.filter_jit(mcmc.run(newkey, y=data, y_std=data_std, solver=simulator)) # run the MCMC
+    # eqx.filter_jit(mcmc.run(newkey, y=data, y_std=data_std, solver=simulator)) # run the MCMC
+    mcmc.run(newkey, y=data, y_std=data_std, solver=simulator)
     posterior_samples = mcmc.get_samples() # get the samples
 
-    # ####################################################
-    # # posterior predictive sampling #
-    # ####################################################
-    # key, newkey = random.split(key)
-    # print('Running posterior predictive sampling for model {}'.format(args.model))
-    # post_pred = Predictive(numpyro_model, posterior_samples)(newkey, y_std=data_std, solver=simulator)
+    ####################################################
+    # posterior predictive sampling #
+    ####################################################
+    key, newkey = random.split(key)
+    print('Running posterior predictive sampling for model {}'.format(args.model))
+    post_pred = Predictive(numpyro_model, posterior_samples)(newkey, y_std=data_std, solver=simulator)
 
-    # ####################################################
-    # # save the samples #
-    # ####################################################
-    # az_data = az.from_numpyro(
-    #     mcmc,
-    #     prior = prior,
-    #     posterior_predictive=post_pred
-    # )
+    ####################################################
+    # save the samples #
+    ####################################################
+    az_data = az.from_numpyro(
+        mcmc,
+        prior = prior,
+        posterior_predictive=post_pred
+    )
 
-    # # save as netcdf file
-    # az_data.to_netcdf(os.path.join(args.savedir, args.model + '_mcmc_samples.nc'))
+    # save as netcdf file
+    az_data.to_netcdf(os.path.join(args.savedir, args.model + '_mcmc_samples.nc'))
                               
-    # print('Completed {}'.format(args.model))
+    print('Completed {}'.format(args.model))
 
 if __name__ == '__main__':
     main()

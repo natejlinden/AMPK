@@ -6,9 +6,6 @@ import jax.numpy as jnp
 import equinox as eqx
 
 class MA(eqx.Module):
-
-
-
     def __call__(self, t, y, args):
         
         # unpack parameters
