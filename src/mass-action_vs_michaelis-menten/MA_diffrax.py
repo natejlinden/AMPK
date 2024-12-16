@@ -30,4 +30,4 @@ class MA(eqx.Module):
         d_ES = J1 - J2
         d_P = J2
 
-        return [d_S, d_E, d_ES, d_P]
+        return jnp.array([d_S, d_E, d_ES, d_P])

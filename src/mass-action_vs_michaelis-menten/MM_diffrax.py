@@ -25,4 +25,4 @@ class MM(eqx.Module):
         d_S = -J1
         d_P = J1
 
-        return [d_S, d_P]
+        return jnp.array([d_S, d_P])
