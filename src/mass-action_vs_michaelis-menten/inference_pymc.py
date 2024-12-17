@@ -1,13 +1,5 @@
-import pdb
-from os import environ
 
-import numpyro.infer.util
-environ['OMP_NUM_THREADS'] = '1'
-import multiprocessing
 
-environ["XLA_FLAGS"] = "--xla_force_host_platform_device_count={}".format(
-    multiprocessing.cpu_count()
-)
 
 import jax
 import jax.numpy as jnp
@@ -15,6 +7,10 @@ import numpy as np
 import pandas as pd
 import diffrax as dfrx
 import equinox as eqx
+import pymc as pm
+from pymc.sampling.jax import sample_numpyro_nuts, sample_blackjax_nuts, get_jaxified_logp
+from pytensor.link.jax.dispatch import jax_funcify
+
 import numpyro
 import numpyro.distributions as dist
 from jax import random
@@ -26,9 +22,11 @@ import sys, argparse, json, os
 sys.path.append("../ampk_models/")
 from utils import *
 
+sys.path.append("../ampk_models/model_calibration/")
+from pymc_jax_ode import *
+
 # tell jax to use 64bit floats
 jax.config.update("jax_enable_x64", True)
-numpyro.enable_x64()
 
 ##############################
 # def arg parsers to take inputs from the command line
@@ -45,6 +43,9 @@ def parse_args(raw_args=None):
     parser.add_argument("-model_info_file", type=str, help="JSON file with relevant info. Model params, initial conditions, and AMPKAR states.")
     parser.add_argument("-savedir", type=str, help="Path to save results. Defaults to current directory.")
     # MCMC sampling
+    parser.add_argument("-prior_family", type=str, default="[['Gamma()',['alpha', 'beta']]]", help="Family of priors to use. Defaults to 'lognormal'.")
+    parser.add_argument("-lower_mult", type=float, default=0.1, help="Lower bound multiplier for uniform priors. Defaults to 0.1.")
+    parser.add_argument("-upper_mult", type=float, default=2.0, help="Upper bound multiplier for uniform priors. Defaults to 2.0.")
     parser.add_argument("-nwarmup", type=int, default=1000, help="Number of MCMC tuning samples. Defaults to 1000.")
     parser.add_argument("-nsamples", type=int, default=1000, help="Number of posterior samples to draw per MCMC chain. Defaults to 1000.")
     parser.add_argument("-nchains", type=int, default=1, help="Number of chains to run. Defaults to 1.")
@@ -103,6 +104,8 @@ def main(raw_args=None):
     sub_prod_idxs = [state_names.index(item) for item in sub_prod_states]
     prod_idxs = [state_names.index(item) for item in prod_states]
 
+    # process the free parameters
+    free_params = args.free_params.split(',')
     ###############################################
     #                   Model RHS                  #
     ################################################
@@ -111,15 +114,6 @@ def main(raw_args=None):
         rhs = dfrx.ODETerm(rhs)
     except:
         print('Warning Model {} not found. Quitting.'.format(args.model))
-        quit()
-
-    ###############################################
-    #               NumPyro Model                 #
-    ###############################################
-    try:
-        numpyro_model = eval(args.model + '_numpyro_model')
-    except:
-        print('Warning NumPyro Model {} not found. Quitting.'.format(args.model))
         quit()
 
     ############################################
@@ -141,121 +135,103 @@ def main(raw_args=None):
     # the solve_traj function first runs the model to SS in the basal energy state, and then 
     # runs the model in the stressed energy state using the SS from the basal state as the initial condition
     solver = dfrx.Kvaerno5()
-    dt0=1e-10
+    dt0=1e-12
     stepsize_controller=dfrx.PIDController(args.rtol, args.atol, pcoeff=args.pcoeff, icoeff=args.icoeff,dcoeff=args.dcoeff)
     t0 = 0.0
     t1 = times[-1]
     saveat=dfrx.SaveAt(ts=times)
+    y0=jnp.array(y0)
 
-    @eqx.filter_jit
-    def solve(params):
+    def simulator(params):
+        # solve model
         sol = dfrx.diffeqsolve(rhs, solver, t0=t0, t1=t1, dt0=dt0, 
         y0=y0, args=params, saveat=saveat,
         stepsize_controller=stepsize_controller,
-        max_steps=100000, throw=True)
-
-        sol = jnp.squeeze(jnp.array(sol.ys))
+        max_steps=10000000, throw=True)
+        sol = jnp.squeeze(sol.ys)
 
         # compute ratio product/(total substrate + product)
-        sub_prod = sol[jnp.array(sub_prod_idxs), :].sum(axis=0)
-        prod = sol[jnp.array(prod_idxs), :].sum(axis=0)
+        sub_prod = sol[:, jnp.array(sub_prod_idxs)].sum(axis=1)
+        prod = sol[:, jnp.array(prod_idxs)].sum(axis=1)
+        result = prod/sub_prod
 
-        return prod/sub_prod
-
-    @eqx.filter_jit
-    def simulator(params):
-        # solve model
-        # check for inf or nan values in params, if found return zeros
-        # sol = jax.lax.cond(jnp.any(jnp.isinf(params)), 
-        #                 lambda x: jnp.zeros(len(times)),
-        #                 lambda x: solve(x), params)
-        if jnp.any(jnp.isinf(params)):
-            sol = jnp.zeros(len(times))
-        else:
-            # first solve the basal model to SS
-            sol = dfrx.diffeqsolve(rhs, solver, t0=t0, t1=t1, dt0=dt0, 
-            y0=y0, args=params, saveat=saveat,
-            stepsize_controller=stepsize_controller,
-            max_steps=100000, throw=True)
-
-            sol = jnp.squeeze(jnp.array(sol.ys))
-
-            # compute ratio product/(total substrate + product)
-            sub_prod = sol[jnp.array(sub_prod_idxs), :].sum(axis=0)
-            prod = sol[jnp.array(prod_idxs), :].sum(axis=0)
-            sol = prod/sub_prod
-
-        return sol #prod/sub_prod
-
-
-    ####################################################
-    # Set up NumPyro sampling #
-    ####################################################
-    # sampler
-    if args.sampler == 'NUTS':
-        kernel = NUTS(numpyro_model, init_strategy=numpyro.infer.init_to_sample)
-        chain_method = 'parallel' # different chain method for NUTS
-    elif args.sampler == 'AIES':
-        moves = {AIES.DEMove() : 0.5, AIES.StretchMove() : 0.5}
-        kernel = AIES(numpyro_model, moves=moves)
-        chain_method = 'vectorized' # AIES only works with the 'vectorized' chain method
-
-    # MCMC set up
-    mcmc = MCMC(kernel, num_warmup=args.nwarmup, num_samples=args.nsamples, 
-                num_chains=args.nchains, chain_method=chain_method)
+        return result.reshape(1, len(result))
     
+    # construct PyTensor Op for simulator
+    def sol_op_jax(*params):
+        return simulator(params)
+    
+    sol_op_jax_jitted = eqx.filter_jit(sol_op_jax)
+    
+    def vjp_sol_op_jax(gz, *params):
+        _, vjp_fn = jax.vjp(sol_op_jax, *params)
+        return vjp_fn(gz)
+
+    vjp_sol_op_jax_jitted = eqx.filter_jit(vjp_sol_op_jax)
+
+    vjp_sol_op = VJPSolOp(vjp_sol_op_jax_jitted)
+    sol_op = SolOp(sol_op_jax_jitted, vjp_sol_op)
+
+    # register the ops with PyTensor
+    @jax_funcify.register(SolOp)
+    def sol_op_jax_funcify(op, **kwargs):
+        return sol_op_jax
+
+    @jax_funcify.register(VJPSolOp)
+    def vjp_sol_op_jax_funcify(op, **kwargs):
+        return vjp_sol_op_jax
+
     ####################################################
+    # PyMC model #
+    ####################################################
+    prior_dict = set_prior_params(list(model_info["nominal_params"].keys()), 
+                                  free_params, model_info["nominal_params"], 
+                                  upper_mult=args.upper_mult, lower_mult=args.lower_mult, prior_family=args.prior_family)
+    
+    pm_model = build_pymc_model(prior_dict, data.reshape(1, len(data)), sol_op, data_sigma=data_std)
+
+    ###################################################
     # prior sampling #
-    ####################################################
-    key, newkey = random.split(key)
-    prior = Predictive(numpyro_model, num_samples=500)(newkey, y_std=data_std, solver=simulator)
-    # # print(prior)
-
-    func = eqx.filter_jit(jax.value_and_grad(simulator))
-
-    def func(params):
-        p_dict = {'k_f': params[0], 'k_r': params[1], 'k_cat': params[2]}
-        # simulator(params)
-        return jnp.sum(numpyro.infer.util.log_likelihood(numpyro_model, p_dict, y=data, y_std=data_std, solver=simulator)['obs'])
+    ###################################################
+    with pm_model:
+        prior_pred = pm.sample_prior_predictive(samples=10000, random_seed=args.seed)
+    prior_pred.to_netcdf(os.path.join(args.savedir, args.model + '_prior_samples_pm.nc'))
     
-    grad_val_func = eqx.filter_jit(jax.value_and_grad(func))
-
-    for i in range(500):
-        k_f = prior['k_f'][i]
-        k_r = prior['k_r'][i]
-        k_cat = prior['k_cat'][i]
-        params = jnp.array((k_f, k_r, k_cat))
-        print(params)
-        # print((V_max*0.195**n)/((K_m**n + 0.195**n)))
-        print(grad_val_func(params))
-    
-    ####################################################
-    # MCMC (or other sampling) #
-    ####################################################
+    # ######################################################
+    # # MCMC (or other sampling) #
+    # # ####################################################
     print('Running MCMC for model {}'.format(args.model))
-    key, newkey = random.split(key)
-    # eqx.filter_jit(mcmc.run(newkey, y=data, y_std=data_std, solver=simulator)) # run the MCMC
-    mcmc.run(newkey, y=data, y_std=data_std, solver=simulator)
-    posterior_samples = mcmc.get_samples() # get the samples
 
-    # ####################################################
-    # # posterior predictive sampling #
-    # ####################################################
-    # key, newkey = random.split(key)
-    # print('Running posterior predictive sampling for model {}'.format(args.model))
-    # post_pred = Predictive(numpyro_model, posterior_samples)(newkey, y_std=data_std, solver=simulator)
+    with pm_model:
+        if args.sampler == 'NUTS':
+            posterior = pm.sample(args.nsamples, tune=args.nwarmup, chains=args.nchains, 
+                                cores=1, init='ADVI', random_seed=args.seed, 
+                                idata_kwargs={'log_likelihood': True})
+        elif args.sampler == 'BlackJaxNUTS':
+            posterior = sample_blackjax_nuts(draws=args.nsamples, tune=args.nwarmup, 
+                                            jitter=False, chains=args.nchains, 
+                                            chain_method='vectorized', seed=args.seed, 
+                                            idata_kwargs={'log_likelihood': True}) 
+        elif args.sampler == 'NumpyroNUTS':
+            posterior = sample_numpyro_nuts(draws=args.nsamples, tune=args.nwarmup, jitter=False,
+                                            chains=args.nchains, random_seed=args.seed,
+                                            idata_kwargs={'log_likelihood': True})
+        
+    ####################################################
+    # posterior predictive sampling #
+    ####################################################
+    key, newkey = random.split(key)
+    print('Running posterior predictive sampling for model {}'.format(args.model))
+    post_pred = pm.sample_posterior_predictive(posterior, model=pm_model)
 
     # ####################################################
     # # save the samples #
     # ####################################################
-    # az_data = az.from_numpyro(
-    #     mcmc,
-    #     prior = prior,
-    #     posterior_predictive=post_pred
-    # )
+    posterior.extend(prior_pred)
+    posterior.extend(post_pred)
 
-    # # save as netcdf file
-    # az_data.to_netcdf(os.path.join(args.savedir, args.model + '_mcmc_samples.nc'))
+    # save as netcdf file
+    posterior.to_netcdf(os.path.join(args.savedir, args.model + '_mcmc_samples_pm.nc'))
                               
     print('Completed {}'.format(args.model))
 
