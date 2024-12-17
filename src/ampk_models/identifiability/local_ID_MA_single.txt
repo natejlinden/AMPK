@@ -1,4 +1,0 @@
-Locally Identifiable parameters:
-kOffCaMKK, kDephosPP1, kOffLKB1, kOffPP, kPhosAMPK, kHydro, kDephosPP, kPhosCaMKK, kOffAMPK, kOffATP, kOffADP, kPhosLKB1, kOffPP1, kOffAMP, 
-Nonidentifiable parameters:
-x2, x1, x6, kOnATP, x25, x15, x20, x24, x12, x21, x23, x17, kOnPP, x4, x18, x27, x7, kOnADP, x19, x10, x9, kOnAMPK, kOnPP1, x22, x14, x3, x26, x13, x16, kOnLKB1, x11, x5, x8, kGly, kOnCaMKK, kOnAMP, Jak, 

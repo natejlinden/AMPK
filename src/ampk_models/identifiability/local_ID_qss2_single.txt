@@ -1,4 +1,0 @@
-Locally Identifiable parameters:
-kHydro, alpha2, alpha, beta2, beta, 
-Nonidentifiable parameters:
-S, kLKB1, x7, kCaMKK, kPP, CaMKKtot, x3, kGly, KmPP, x4, KdAMP, PPtot, kRevAK, KmCaMKK, x6, KmAMPK, LKB1tot, x1, kPP1, KmPP1, kAMPK, KmLKB1, PP1tot, x5, kForAK, x2, 
