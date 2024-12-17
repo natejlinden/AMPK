@@ -4,6 +4,7 @@
 """
 import numpyro
 import numpyro.distributions as dist
+import jax.numpy as jnp
 
 def MA_numpyro_model(y=None, y_std=None, solver=None):
     """Returns a numpyro model for the MA model.
@@ -19,7 +20,8 @@ def MA_numpyro_model(y=None, y_std=None, solver=None):
     
     
     # PRIORS
-    k_f = numpyro.sample('k_f', dist.Gamma(2.0, rate=0.5))
+    # k_f = numpyro.sample('k_f', dist.Gamma(2.0, rate=0.5))
+    k_f = numpyro.deterministic('k_f', jnp.array(1.0))
     # k_r = numpyro.sample('k_r', dist.Gamma(1.6836, rate=1.7057))
     k_r = numpyro.sample('k_r', dist.Gamma(2.0, rate=0.5))
     k_cat = numpyro.sample('k_cat', dist.Gamma(1.6836, rate=1.7057))
@@ -29,7 +31,7 @@ def MA_numpyro_model(y=None, y_std=None, solver=None):
         y_std = numpyro.sample('y_sigma', dist.LogNormal(0, 0.01))
 
     # run solver
-    params = (k_f, k_r, k_cat)
+    params = jnp.array([k_f, k_r, k_cat])
     if solver is not None:
         predict = solver(params)
     else:
