@@ -22,7 +22,7 @@ import sys, argparse, json, os
 sys.path.append("../ampk_models/")
 from utils import *
 
-sys.path.append("../ampk_models/model_calibration/")
+# sys.path.append("../ampk_models/model_calibration/")
 from pymc_jax_ode import *
 
 # tell jax to use 64bit floats
@@ -84,7 +84,6 @@ def main(raw_args=None):
     # import the model
     try:
         exec('from ' + args.model + '_diffrax import *')
-        exec('from ' + args.model + '_numpyro import *')
     except:
         print('Warning Model {} not found. Quitting.'.format(args.model))
         quit()
