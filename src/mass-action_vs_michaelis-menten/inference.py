@@ -147,14 +147,12 @@ def main(raw_args=None):
     t1 = times[-1]
     saveat=dfrx.SaveAt(ts=times)
 
-
-    def simulator(params):
-        # solve model
-        # first solve the basal model to SS
+    @eqx.filter_jit
+    def solve(params):
         sol = dfrx.diffeqsolve(rhs, solver, t0=t0, t1=t1, dt0=dt0, 
         y0=y0, args=params, saveat=saveat,
         stepsize_controller=stepsize_controller,
-        max_steps=4096, throw=True)
+        max_steps=100000, throw=True)
 
         sol = jnp.squeeze(jnp.array(sol.ys))
 
@@ -164,13 +162,38 @@ def main(raw_args=None):
 
         return prod/sub_prod
 
+    @eqx.filter_jit
+    def simulator(params):
+        # solve model
+        # check for inf or nan values in params, if found return zeros
+        # sol = jax.lax.cond(jnp.any(jnp.isinf(params)), 
+        #                 lambda x: jnp.zeros(len(times)),
+        #                 lambda x: solve(x), params)
+        if jnp.any(jnp.isinf(params)):
+            sol = jnp.zeros(len(times))
+        else:
+            # first solve the basal model to SS
+            sol = dfrx.diffeqsolve(rhs, solver, t0=t0, t1=t1, dt0=dt0, 
+            y0=y0, args=params, saveat=saveat,
+            stepsize_controller=stepsize_controller,
+            max_steps=100000, throw=True)
+
+            sol = jnp.squeeze(jnp.array(sol.ys))
+
+            # compute ratio product/(total substrate + product)
+            sub_prod = sol[jnp.array(sub_prod_idxs), :].sum(axis=0)
+            prod = sol[jnp.array(prod_idxs), :].sum(axis=0)
+            sol = prod/sub_prod
+
+        return sol #prod/sub_prod
+
 
     ####################################################
     # Set up NumPyro sampling #
     ####################################################
     # sampler
     if args.sampler == 'NUTS':
-        kernel = NUTS(numpyro_model, init_strategy=numpyro.infer.init_to_mean)
+        kernel = NUTS(numpyro_model, init_strategy=numpyro.infer.init_to_sample)
         chain_method = 'parallel' # different chain method for NUTS
     elif args.sampler == 'AIES':
         moves = {AIES.DEMove() : 0.5, AIES.StretchMove() : 0.5}
@@ -185,26 +208,26 @@ def main(raw_args=None):
     # prior sampling #
     ####################################################
     key, newkey = random.split(key)
-    prior = Predictive(numpyro_model, num_samples=500)(newkey, y_std=data_std, solver=None)
+    prior = Predictive(numpyro_model, num_samples=500)(newkey, y_std=data_std, solver=simulator)
     # # print(prior)
 
-    # func = eqx.filter_jit(jax.value_and_grad(simulator))
+    func = eqx.filter_jit(jax.value_and_grad(simulator))
 
-    # def func(params):
-    #     p_dict = {'V_max': params[0], 'K_m': params[1], 'n': params[2]}
-    #     simulator(params)
-    #     # return jnp.sum(numpyro.infer.util.log_likelihood(numpyro_model, p_dict, y=data, y_std=data_std, solver=simulator)['obs']),
+    def func(params):
+        p_dict = {'k_f': params[0], 'k_r': params[1], 'k_cat': params[2]}
+        # simulator(params)
+        return jnp.sum(numpyro.infer.util.log_likelihood(numpyro_model, p_dict, y=data, y_std=data_std, solver=simulator)['obs'])
     
-    # grad_val_func = eqx.filter_jit(jax.value_and_grad(func))
+    grad_val_func = eqx.filter_jit(jax.value_and_grad(func))
 
-    # for i in range(500):
-    #     V_max = prior['V_max'][i]
-    #     K_m = prior['K_m'][i]
-    #     n = prior['n'][i]
-    #     params = jnp.array((V_max, K_m, n))
-    #     print(params)
-    #     print((V_max*0.195**n)/((K_m**n + 0.195**n)))
-    #     print(func(params))
+    for i in range(500):
+        k_f = prior['k_f'][i]
+        k_r = prior['k_r'][i]
+        k_cat = prior['k_cat'][i]
+        params = jnp.array((k_f, k_r, k_cat))
+        print(params)
+        # print((V_max*0.195**n)/((K_m**n + 0.195**n)))
+        print(grad_val_func(params))
     
     ####################################################
     # MCMC (or other sampling) #
@@ -215,24 +238,24 @@ def main(raw_args=None):
     mcmc.run(newkey, y=data, y_std=data_std, solver=simulator)
     posterior_samples = mcmc.get_samples() # get the samples
 
-    ####################################################
-    # posterior predictive sampling #
-    ####################################################
-    key, newkey = random.split(key)
-    print('Running posterior predictive sampling for model {}'.format(args.model))
-    post_pred = Predictive(numpyro_model, posterior_samples)(newkey, y_std=data_std, solver=simulator)
+    # ####################################################
+    # # posterior predictive sampling #
+    # ####################################################
+    # key, newkey = random.split(key)
+    # print('Running posterior predictive sampling for model {}'.format(args.model))
+    # post_pred = Predictive(numpyro_model, posterior_samples)(newkey, y_std=data_std, solver=simulator)
 
-    ####################################################
-    # save the samples #
-    ####################################################
-    az_data = az.from_numpyro(
-        mcmc,
-        prior = prior,
-        posterior_predictive=post_pred
-    )
+    # ####################################################
+    # # save the samples #
+    # ####################################################
+    # az_data = az.from_numpyro(
+    #     mcmc,
+    #     prior = prior,
+    #     posterior_predictive=post_pred
+    # )
 
-    # save as netcdf file
-    az_data.to_netcdf(os.path.join(args.savedir, args.model + '_mcmc_samples.nc'))
+    # # save as netcdf file
+    # az_data.to_netcdf(os.path.join(args.savedir, args.model + '_mcmc_samples.nc'))
                               
     print('Completed {}'.format(args.model))
 
