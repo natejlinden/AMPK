@@ -20,16 +20,10 @@ from numpyro.infer import Predictive
 import sys, argparse, json
 
 # import models
-sys.path.append("../odes/")
-from ampk_MA_double_mech_diffrax import *
-from ampk_MA_single_mech_diffrax import *
-from ampk_MM_double_mech_diffrax import *
-from ampk_MM_single_mech_diffrax import *
-# from ampk_newmech_MA_diffrax import *
+sys.path.append("../models/")
 
 sys.path.append("../")
 from utils import *
-from pymc_jax_ode import *
 
 # tell jax to use 64bit floats
 jax.config.update("jax_enable_x64", True)
@@ -42,7 +36,8 @@ def parse_args(raw_args=None):
     """
     parser=argparse.ArgumentParser(description="Run MCMC for AMPK models.")
     # model info and general setup
-    parser.add_argument("-model", type=str, help="model to process.")   
+    parser.add_argument("-model", type=str, help="model to process.") 
+    parser.add_argument("-compartment", type=str, help="compartment to which data belongs.")  
     parser.add_argument("-free_params", type=str, help="parameters to estimate")
     parser.add_argument("-data_file", type=str, help="path to the data file. Should be a NPZ with the following objects: \
                         'times', 'mean', 'std_constant', and 'std'.")
@@ -85,6 +80,14 @@ def main(raw_args=None):
     ####################################################
     # set up model info and priors #
     ####################################################
+    # import the model
+    try:
+        exec('from ' + args.model + '_diffrax import *')
+        exec('from ' + args.model + '_numpyro import *')
+    except:
+        print('Warning Model {} not found. Quitting.'.format(args.model))
+        quit()
+
     # Load JSON files with param, state, and initial condition info
     # states and initial conditions
     with open(args.model_info_file, 'r') as file:
@@ -94,20 +97,11 @@ def main(raw_args=None):
     state_names = list(model_info["init_conds"].keys())
     ampkar_states = model_info['ampkar_states']
     pampkar_states = model_info['pampkar_states']
-    y0 = jnp.array(list(model_info["init_conds"].values()))
+    y0 = list(model_info["init_conds"].values())
 
     # get the indices of the states
     ampkar_idxs = [state_names.index(item) for item in ampkar_states]
     pampkar_idxs = [state_names.index(item) for item in pampkar_states]
-
-    # # get the names of the fixed parameters
-    # param_names = list(model_info['nominal_params'].keys())
-    # # nominal_params = model_info['nominal_params']
-    
-    # free_params = args.free_params.split(',')
-    # free_param_idxs = [param_names.index(item) for item in free_params]
-    # fixed_params = list(set(param_names)  - set(free_params))
-    # fixed_param_idxs = [param_names.index(item) for item in fixed_params]
 
     # parameters for the metabolic model
     with open(args.metab_params_file, 'r') as file:
@@ -159,11 +153,11 @@ def main(raw_args=None):
 
         # compute delta pAMPKAR/AMPKAR_tot
         AMPKAR_stressed = sol_stressed[jnp.array(ampkar_idxs), :].sum(axis=0)
-        AMPKAR_basal = sol[jnp.array(ampkar_idxs)].sum(axis=0)
+        # AMPKAR_basal = sol[jnp.array(ampkar_idxs)].sum(axis=0)
         pAMPKAR_stressed = sol_stressed[jnp.array(pampkar_idxs), :].sum(axis=0)
-        pAMPKAR_basal = sol[jnp.array(pampkar_idxs)].sum(axis=0)
+        # pAMPKAR_basal = sol[jnp.array(pampkar_idxs)].sum(axis=0)
         
-        return (pAMPKAR_stressed/AMPKAR_stressed) - (pAMPKAR_basal/AMPKAR_basal)
+        return pAMPKAR_stressed/AMPKAR_stressed
 
 
     ####################################################
@@ -174,10 +168,7 @@ def main(raw_args=None):
         kernel = NUTS(numpyro_model)
         chain_method = 'parallel' # different chain method for NUTS
     elif args.sampler == 'AIES':
-        if args.mvoes==None:
-            moves = {AIES.DEMove() : 0.5, AIES.StretchMove() : 0.5}
-        else:
-            moves = args.moves
+        moves = {AIES.DEMove() : 0.5, AIES.StretchMove() : 0.5}
         kernel = AIES(numpyro_model, moves=moves)
         chain_method = 'vectorized' # AIES only works with the 'vectorized' chain method
 
@@ -189,7 +180,7 @@ def main(raw_args=None):
     # prior sampling #
     ####################################################
     key, newkey = random.split(key)
-    prior = Predictive(numpyro_model, num_samples=500)(newkey, data=data, data_std=data_std, solver=simulator)
+    prior = Predictive(numpyro_model, num_samples=500)(newkey, data_std=data_std, solver=simulator)
 
     ####################################################
     # MCMC (or other sampling) #
@@ -204,7 +195,7 @@ def main(raw_args=None):
     ####################################################
     key, newkey = random.split(key)
     print('Running posterior predictive sampling for model {}'.format(args.model))
-    post_pred = Predictive(numpyro_model, posterior_samples)(newkey, data=data, data_std=data_std, solver=simulator)
+    post_pred = Predictive(numpyro_model, posterior_samples)(newkey, data_std=data_std, solver=simulator)
 
     ####################################################
     # save the samples #
@@ -216,9 +207,8 @@ def main(raw_args=None):
     )
 
     # save as netcdf file
-    az_data.to_netcdf(os.path.join(args.savedir, args.model + '_mcmc_samples.nc'))
-                              
-    
+    az_data.to_netcdf(os.path.join(args.savedir, args.model + '_' + args.compartment + '_mcmc_samples.nc'))
+
     print('Completed {}'.format(args.model))
 
 if __name__ == '__main__':
