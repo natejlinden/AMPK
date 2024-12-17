@@ -24,7 +24,7 @@ def parse_args(raw_args=None):
     parser=argparse.ArgumentParser(description="Run GSA plotting.")
     # required parameters
     parser.add_argument("-results_path", type=str, default="../../../results/GSA/", help="Path to load/save raw results.")
-    parser.add_argument("-fig_path", type=str, default="../../../figures/GSA/", help="Path to save figs.")
+    parser.add_argument("-fig_path", type=str, default="../../../results/GSA/figs/", help="Path to save figs.")
     args=parser.parse_args(raw_args)
     return args
 
@@ -86,8 +86,8 @@ def main(raw_args=None):
                              r'$k_{\text{Dephos,PP1}}$',r'$\alpha_{\text{LKB1}}$',
                              r'$\alpha_{\text{PP}}$',r'$\beta_{\text{AMP}}$'],
                     "special_bounds":"./special_bounds.json"}, 
-        "MM_nonessential":  {'free':["kOffAMP","kOffADP","kOffATP","kCaMKK","KmCaMKK",
-                                     "kLKB1","KmLKB1","kPP","KmPP","alphaLKB1",
+        "MM_nonessential":  {'free':["kOffAMP","kOffADP","kOffATP","kPhosCaMKK","KmCaMKK",
+                                     "kPhosLKB1","KmLKB1","kDephosPP","KmPP","alphaLKB1",
                                      "alphaPP","betaAMP"],
                     'names':[r'$k_{\text{OffAMP}}$',r'$k_{\text{OffADP}}$',
                              r'$k_{\text{OffATP}}$',r'$k_{\text{PhosCaMKK}}$',
@@ -110,7 +110,7 @@ def main(raw_args=None):
 
         # Load JSON files with param, state, and initial condition info
         # states and initial conditions
-        info_file = '../odes/' + m_name + '.json'
+        info_file = '../models/' + m_name + '.json'
         with open(info_file, 'r') as file:
             model_info = json.load(file)
 
@@ -170,7 +170,7 @@ def main(raw_args=None):
             qoi_vals, qoi_name = qois[qoi]
     
             # plot histogram of qoi
-            fig, ax = get_sized_fig_ax(2.5, 2.5)
+            fig, ax = get_sized_fig_ax(1.0, 1.0)
             sns.histplot(qoi_vals, ax=ax, kde=True, stat='density', bins=30, 
                         line_kws={'linewidth': 1.0, 'linestyle':'--'},
                         color=colors[i])
@@ -189,7 +189,7 @@ def main(raw_args=None):
 
             # # plot sobol indices
             # S1
-            fig, ax = get_sized_fig_ax(2.5, 1.25)
+            fig, ax = get_sized_fig_ax(1.75, 1.0)
             sorted = sobol_df.sort_values(by='S1', ascending=False)
             order = list(sorted["param"])
 
@@ -212,7 +212,7 @@ def main(raw_args=None):
             fig.savefig(args.fig_path + m_name + '_' + qoi + '_S1.pdf', bbox_inches='tight')
 
             # ST
-            fig, ax = get_sized_fig_ax(2.5, 1.25)
+            fig, ax = get_sized_fig_ax(1.75, 1.0)
             sorted = sobol_df.sort_values(by='ST', ascending=False)
             order = list(sorted["param"])
 
@@ -232,6 +232,11 @@ def main(raw_args=None):
             ax.set_ylabel(r'$S_T$  ' + qoi_name)
             ax.set_xlabel('')
             ax.set_xticklabels(sorted['param_name'], rotation=45, ha='right', fontsize=8)
+            # if ST is greater than 0.01, change the color of the xtick labels
+            idxs = np.arange(0,len(sorted['ST']),1)[sorted['ST'] >=0.01]  # specify the indices of the xticks to change color
+            for tick_label in ax.get_xticklabels():
+                if ax.get_xticklabels().index(tick_label) in idxs:
+                    tick_label.set_color('red')
             fig.savefig(args.fig_path + m_name + '_' + qoi + '_ST.pdf', bbox_inches='tight')
     
 if __name__ == "__main__":
