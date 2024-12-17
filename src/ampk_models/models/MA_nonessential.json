@@ -64,7 +64,9 @@
         "AMPKAR",
         "AMPKAR_pAMPK",
         "AMPKAR_AMP_pAMPK",
-        "AMPKAR_ADP_pAMPK"
+        "AMPKAR_ADP_pAMPK",
+        "pAMPKAR",
+        "PP1_pAMPKAR"
     ],
     "pampkar_states": [
         "pAMPKAR",

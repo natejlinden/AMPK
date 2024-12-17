@@ -41,7 +41,8 @@
         "pAMPKAR": 0.0
     },
     "ampkar_states": [
-        "AMPKAR"
+        "AMPKAR",
+        "pAMPKAR"
     ],
     "pampkar_states": [
         "pAMPKAR"
