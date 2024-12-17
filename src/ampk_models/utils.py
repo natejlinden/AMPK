@@ -10,25 +10,19 @@ import pandas as pd
 import jax
 
 import pymc as pm
-from pymc.sampling.jax import sample_numpyro_nuts
-import pytensor
-import pytensor.tensor as pt
-from pytensor.graph import Apply, Op
-from pytensor.link.jax.dispatch import jax_funcify
 import arviz as az
 import preliz as pz
 import diffrax as dfrx
-from optimistix import root_find, Newton, two_norm
-import lineax as lx
 import equinox as eqx
-#from tqdm import tqdm
-import time
+import seaborn as sns
+
 
 jax.config.update("jax_enable_x64", True)
 rng = np.random.default_rng(seed=1234)
 
 # load DIFFRAX PYTENSOR OP for JAX ODE
 from pymc_jax_ode import *
+from plotting_helper_funcs import *
 
 ###############################################################################
 #### General Utilities ####
@@ -91,19 +85,46 @@ def load_data(data_file, to_seconds=False, constant_std=False):
         std_data = data['std'][zero_idx:]
 
     return mean_data, std_data, times
+
+def get_param_subsample(idata, n_traj, prior_or_post="post", rng=np.random.default_rng(seed=1234)):
+    if prior_or_post == "post":
+        dat = idata.posterior.to_dict() # convert to dictionary
+    elif prior_or_post == "prior":
+        dat = idata.prior.to_dict()
+    else:
+        raise ValueError("prior_or_post should be either 'prior' or 'post'.")
+    
+    params = list(dat['data_vars'].keys()) # figure out which params are free
+    # get total number of MCMC samples
+    n_samples = np.array(dat['data_vars'][params[0]]['data']).reshape(-1).shape[0]
+
+    # extract samples for free params ot dict of numpy arrays
+    free_param_samples = {}
+    for param in params:
+        free_param_samples[param] = np.array(dat['data_vars'][param]['data']).reshape(-1)
+
+    # randomly select n_traj samples
+    param_samples = []
+    idxs = rng.choice(np.arange(n_samples), size=n_traj, replace=False)
+    for i in idxs:
+        tmp = []
+        for param in params:
+            tmp.append(free_param_samples[param][i])
+        param_samples.append(tmp)
+ 
+    return np.array(param_samples)
 ###############################################################################
 #### Solving ODEs ####
 ###############################################################################
 @eqx.filter_jit
 def solve_traj(rhs, rhs_stress, y0, params, times, rtol=1e-6, atol=1e-6, 
                evnt_rtol = 1e-12, evnt_atol = 1e-12, tmax_init = 1e3, 
-               pcoeff=0, icoeff=1, dcoeff=0, solver = dfrx.Kvaerno5()):
+               pcoeff=0, icoeff=1, dcoeff=0, solver = dfrx.Kvaerno5(), dt0=1e-10):
     """ simulates a model over the specified time interval and returns the 
     calculated values.
     Returns an array of shape (n_species, 1) 
     TODO add way to specify autodiff method
     """
-    dt0=1e-5
     stepsize_controller=dfrx.PIDController(rtol, atol, pcoeff=pcoeff, icoeff=icoeff, dcoeff=dcoeff)
     cond_fn=dfrx.steady_state_event(rtol=evnt_rtol, atol=evnt_atol)
     event = dfrx.Event(cond_fn=cond_fn)
@@ -119,7 +140,7 @@ def solve_traj(rhs, rhs_stress, y0, params, times, rtol=1e-6, atol=1e-6,
         args=params,
         stepsize_controller=stepsize_controller,
         event=event,
-        max_steps=100000, throw=True)
+        max_steps=1000000, throw=True)
     
     # then use that solution as the initial condition for the stressed setting
     sol_stressed = dfrx.diffeqsolve(
@@ -128,7 +149,7 @@ def solve_traj(rhs, rhs_stress, y0, params, times, rtol=1e-6, atol=1e-6,
         sol.ys, # use basal SS at IC
         args=params, saveat=saveat,
         stepsize_controller=stepsize_controller,
-        max_steps=100000, throw=True)
+        max_steps=1000000, throw=True)
     
     return jnp.squeeze(jnp.array(sol_stressed.ys)), jnp.squeeze(jnp.array(sol.ys))
 
@@ -141,7 +162,7 @@ def solve_SS(rhs, rhs_stress, y0, params, rtol=1e-6, atol=1e-6,
     Returns an array of shape (n_species, 1) 
     TODO add way to specify autodiff method
     """
-    dt0=1e-5
+    dt0=1e-10
     solver = dfrx.Kvaerno5()
     cond_fn=dfrx.steady_state_event(rtol=evnt_rtol, atol=evnt_atol)
     event = dfrx.Event(cond_fn=cond_fn)
@@ -155,7 +176,7 @@ def solve_SS(rhs, rhs_stress, y0, params, rtol=1e-6, atol=1e-6,
         y0, args=params,
         stepsize_controller=stepsize_controller,
         event=event,
-        max_steps=100000, throw=True)
+        max_steps=1000000, throw=True)
     
     # then use that solution as the initial condition for the stressed setting
     sol_stressed = dfrx.diffeqsolve(
@@ -164,15 +185,82 @@ def solve_SS(rhs, rhs_stress, y0, params, rtol=1e-6, atol=1e-6,
         sol.ys, args=params,
         stepsize_controller=stepsize_controller,
         event=event,
-        max_steps=100000, throw=True)
+        max_steps=1000000, throw=True)
     
     return jnp.squeeze(jnp.array(sol_stressed.ys)), jnp.squeeze(jnp.array(sol.ys))
 
+def run_simulations(param_samples, model_name, model_info_file, metab_params_file, times, rtol=1e-6,atol=1e-6,pcoeff=0,icoeff=1,dcoeff=0,tmax_init=1e3):
+    """ Run simulations for the specified model and return the results.
+    """
+    ####################################################
+    # set up model info and priors #
+    ####################################################
+    # import the model
+    try:
+        exec('from ' + model_name + '_diffrax import *')
+        exec('from ' + model_name + '_numpyro import *')
+    except:
+        print('Warning Model {} not found. Quitting.'.format(model_name))
+        quit()
 
+    # Load JSON files with param, state, and initial condition info
+    # states and initial conditions
+    with open(model_info_file, 'r') as file:
+           model_info = json.load(file)
+
+    # unpack loaded model data dictionary
+    state_names = list(model_info["init_conds"].keys())
+    ampkar_states = model_info['ampkar_states']
+    pampkar_states = model_info['pampkar_states']
+    y0 = list(model_info["init_conds"].values())
+
+    # get the indices of the states
+    ampkar_idxs = [state_names.index(item) for item in ampkar_states]
+    pampkar_idxs = [state_names.index(item) for item in pampkar_states]
+
+    # parameters for the metabolic model
+    with open(metab_params_file, 'r') as file:
+           metab_params = json.load(file)
+
+    basal_params = list(metab_params["metab_params_basal"].values())
+    stress_params = list(metab_params["metab_params_stress"].values())
+
+    ###############################################
+    #                   Model RHS                  #
+    ################################################
+    try:
+        rhs = eval(model_name + '(' + ','.join(str(elm) for elm in basal_params) \
+            + ')')
+        rhs_stress = eval(model_name + '(' + ','.join(str(elm) for elm in stress_params) \
+             + ')')
+        rhs = dfrx.ODETerm(rhs)
+        rhs_stress = dfrx.ODETerm(rhs_stress)
+    except:
+        print('Warning Model {} not found. Quitting.'.format(model_name))
+        quit()
+
+    def simulator(params):
+        # solve model
+        sol_stressed, sol = solve_traj(rhs, rhs_stress, y0, params, times, tmax_init=tmax_init, rtol=rtol,atol=atol,pcoeff=pcoeff, icoeff=icoeff,dcoeff=dcoeff)
+
+        # compute delta pAMPKAR/AMPKAR_tot
+        AMPKAR_stressed = sol_stressed[jnp.array(ampkar_idxs), :].sum(axis=0)
+        # AMPKAR_basal = sol[jnp.array(ampkar_idxs)].sum(axis=0)
+        pAMPKAR_stressed = sol_stressed[jnp.array(pampkar_idxs), :].sum(axis=0)
+        # pAMPKAR_basal = sol[jnp.array(pampkar_idxs)].sum(axis=0)
+        
+        return pAMPKAR_stressed/AMPKAR_stressed
+    
+    # run the simulations
+    sim_results = []
+    for param_sample in param_samples:
+        sim_results.append(simulator(param_sample))
+    
+    return np.array(sim_results)
 ###############################################################################
 #### PyMC Inference Utils ####
 ###############################################################################
-def set_prior_params(param_names, nominal_params, free_param_idxs, prior_family=[['Gamma()',['alpha', 'beta']]], upper_mult=1.9, lower_mult=0.1, prob_mass_bounds=0.95):
+def set_prior_params(param_names, free_params, nominal_params_dict, prior_family="[['Gamma()',['alpha', 'beta']]]", upper_mult=1.9, lower_mult=0.1, prob_mass_bounds=0.95):
     """ Sets the prior parameters by finding parameters of the specified prior such that the specified probability mass is between the upper and lower bound.
 
     Uses the preliz maximum entropy function.
@@ -187,6 +275,9 @@ def set_prior_params(param_names, nominal_params, free_param_idxs, prior_family=
             - prior_param_dict (dict): dictionary of prior parameters for the model in syntax to use exec to set them in a pymc model object
     """
 
+    # get the indices of the free parameters
+    free_param_idxs = [param_names.index(param) for param in free_params]
+
     # determine if a string or list of strings was passed for the prior family
     prior_family = eval(prior_family)
     if len(prior_family) == 1:
@@ -197,9 +288,9 @@ def set_prior_params(param_names, nominal_params, free_param_idxs, prior_family=
     # set the prior parameters
     prior_param_dict = {}
     for i, param in enumerate(param_names):
-        if i in free_param_idxs: # check if we are dealing with a free parameter
+        if param in free_params: # check if we are dealing with a free parameter
             # get the nominal value
-            nominal_val = nominal_params[i]
+            nominal_val = nominal_params_dict[param]
             if nominal_val == 0:
                 upper = 1.0
                 lower = 1e-4
@@ -207,18 +298,29 @@ def set_prior_params(param_names, nominal_params, free_param_idxs, prior_family=
                 # get the upper and lower bounds
                 upper = nominal_val*upper_mult
                 lower = nominal_val*lower_mult
-                
-                print(param, upper, lower)
 
             # use preliz.maxent to find the prior parameters for the specified family
             prior_fam = prior_family_list[free_param_idxs.index(i)]
+
+            if "Truncated" in prior_fam[0]:
+                print('as', prior_fam)
+                tmp = prior_fam[0].strip(')').split('(')[1].split(',')
+                print(tmp)
+                for item in tmp:
+                    if 'lower' in item:
+                        lower = float(item.split('=')[1])
+                    elif 'upper' in item:
+                        upper = float(item.split('=')[1])
+        
+
             
             dist_family = eval('pz.' + prior_fam[0])
-            ax, results = pz.maxent(dist_family, lower, upper, prob_mass_bounds, plot=False) # for some reason the [0] element is None
+            _, results = pz.maxent(dist_family, lower, upper, prob_mass_bounds, plot=False) # for some reason the [0] element is None
 
             # set the prior parameters
             prior_fam_name = prior_fam[0].strip(')').split('(')[0]
             fixed_params = prior_fam[0].strip(')').split('(')[1].split(',')
+
             
             tmp = 'pm.' + prior_fam_name + '("' + param + '",'
             for i, hyper_param in enumerate(prior_fam[1]):
@@ -232,6 +334,133 @@ def set_prior_params(param_names, nominal_params, free_param_idxs, prior_family=
             print(prior_param_dict[param])
         else: # fixed parameter
             # set the prior parameters to the nominal value
-            prior_param_dict[param] = 'pm.ConstantData("' + param + '", ' + str(nominal_params[i]) + ')'
+            prior_param_dict[param] = 'pm.ConstantData("' + param + '", ' + str(nominal_params_dict[param]) + ')'
 
     return prior_param_dict
+
+def build_pymc_model(prior_param_dict, data, sol_op, data_sigma=0.1):
+    """ Builds a pymc model object for the AMPK models.
+    
+    If model is None, the function will use the default model. If a model is 
+    specified, it will use that model_func function to create a PyMC model.
+
+    """
+    
+    # Construct the PyMC model #   
+    with pm.Model() as model:
+        # loop over free params and construct the priors
+        priors = []
+        for key, value in prior_param_dict.items():
+            # create PyMC variables for each parameters in the model
+            prior = eval(value)
+            priors.append(prior)
+
+        # predict dose response
+        prediction = sol_op(*priors)
+
+        # assume a normal model for the data
+        # sigma specified by the data_sigma param to this function
+        llike = pm.Normal("llike", mu=prediction, sigma=data_sigma, observed=data)
+
+    return model
+
+###############################################################################
+#### Plotting Utils ####
+###############################################################################
+def plot_predictive(inf_data, data, times, plot_prior=True,
+                    add_t_0=True, n_traces=200, figsize=(6, 4), prior_color='blue',
+                    post_color='black', data_color='red', data_marker_size=10, cred_int=95):
+    """"plots prior and posterior predictive checks for the given model 
+    along with the data supplied for inference"""
+
+    # first create data frames for plotting of prior and posterior predictive checks
+    if plot_prior: # if plotting prior, then convert prior predictive into a dataframe
+        prior_sims = inf_data.prior_predictive.llike.values
+        # Convert the nchains x ndraws x ntime Prior predictive into a dataframe
+        nchains, ndraws, _, ntime = prior_sims.shape
+        prior_sims_df = pd.DataFrame({
+            'chain': np.repeat(np.arange(nchains), ndraws * ntime),
+            'draw': np.tile(np.repeat(np.arange(ndraws), ntime), nchains),
+            'time': np.tile(times, nchains * ndraws),
+            'y': prior_sims.flatten()
+        })
+        # Add rows with time 0 and y 0 for each draw
+        zero_time_rows = prior_sims_df.groupby(['chain', 'draw']).apply(lambda x: pd.DataFrame({
+            'chain': [x['chain'].iloc[0]],
+            'draw': [x['draw'].iloc[0]],
+            'time': [0],
+            'y': [0]
+        })).reset_index(drop=True)
+        prior_sims_df = pd.concat([prior_sims_df, zero_time_rows], 
+                                    ignore_index=True).sort_values(by=['chain', 
+                                    'draw', 'time']).reset_index(drop=True)
+            
+    # convert posterior predictive into a dataframe
+    post_sims = inf_data.posterior_predictive.llike.values
+    nchains, ndraws, _, ntime = post_sims.shape
+    post_sims_df = pd.DataFrame({
+        'chain': np.repeat(np.arange(nchains), ndraws * ntime),
+        'draw': np.tile(np.repeat(np.arange(ndraws), ntime), nchains),
+        'time': np.tile(times, nchains * ndraws),
+        'y': post_sims.flatten()
+    })
+    # Add rows with time 0 and y 0 for each draw
+    zero_time_rows = post_sims_df.groupby(['chain', 'draw']).apply(lambda x: pd.DataFrame({
+        'chain': [x['chain'].iloc[0]],
+        'draw': [x['draw'].iloc[0]],
+        'time': [0],
+        'y': [0]
+    })).reset_index(drop=True)
+    post_sims_df = pd.concat([post_sims_df, zero_time_rows], 
+                                ignore_index=True).sort_values(by=['chain', 
+                                'draw', 'time']).reset_index(drop=True)
+        
+
+    # plot predictive checks
+    fig, ax = get_sized_fig_ax(figsize[0], figsize[1])
+    if n_traces > 0:
+        for i in range(n_traces):
+            if plot_prior:
+                if i == 0:
+                    label = 'Prior'
+                else:
+                    label = None
+                ax.plot(np.hstack((np.array([0]), times)), 
+                        np.hstack((np.array([0]), np.squeeze(prior_sims[0, i, 0, :]))), 
+                        color=prior_color, alpha=0.05, linewidth=0.5, label=label)
+            
+            if i == 0:
+                label = 'Posterior'
+            else:
+                label = None
+            ax.plot(np.hstack((np.array([0]), times)), 
+                    np.hstack((np.array([0]), np.squeeze(post_sims[0, i, 0, :]))), 
+                    color=post_color, alpha=0.05, linewidth=0.5, label=label)
+            
+    # plot predictive densities
+    if plot_prior:
+        sns.lineplot(data=prior_sims_df, x='time', y='y', 
+                     errorbar=("pi", cred_int), ax=ax, color=prior_color, 
+                     label='Prior', linewidth=1.0)
+    
+    sns.lineplot(data=post_sims_df, x='time', y='y',
+                    errorbar=("pi", cred_int), ax=ax, color=post_color, 
+                    label='Posterior predictive', linewidth=1.0)
+    
+    # plot data
+    ax.scatter(times, data, color=data_color, s=data_marker_size, 
+               label='Data', marker='x', linewidth=1.0)
+
+    # label formatting
+    ax.set_xlabel('')
+    ax.set_ylabel('')
+    for label in ax.get_xticklabels() + ax.get_yticklabels():
+        label.set_fontsize(8)
+
+    # set min lims to 0 for x and y axes
+    ax.set_xlim(0, ax.get_xlim()[1])
+    ax.set_ylim(0, ax.get_ylim()[1])
+    
+    leg = ax.legend(fontsize=8, bbox_to_anchor=(1.05, 1), loc='upper left')
+
+    return fig, ax, leg
