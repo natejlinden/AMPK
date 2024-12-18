@@ -131,16 +131,16 @@ def solve_traj(rhs, rhs_stress, y0, params, times, rtol=1e-6, atol=1e-6,
     t0 = 0.0
     t1 = times[-1]
     saveat=dfrx.SaveAt(ts=times)
+    max_steps=int(1e7)
 
     # first solve the basal model to SS
     sol = dfrx.diffeqsolve(
         rhs, solver, 
-        t0, tmax_init, dt0, 
-        y0, 
+        t0, tmax_init, dt0, y0, 
         args=params,
         stepsize_controller=stepsize_controller,
         event=event,
-        max_steps=1000000, throw=True)
+        max_steps=max_steps, throw=True)
     
     # then use that solution as the initial condition for the stressed setting
     sol_stressed = dfrx.diffeqsolve(
@@ -149,7 +149,7 @@ def solve_traj(rhs, rhs_stress, y0, params, times, rtol=1e-6, atol=1e-6,
         sol.ys, # use basal SS at IC
         args=params, saveat=saveat,
         stepsize_controller=stepsize_controller,
-        max_steps=1000000, throw=True)
+        max_steps=max_steps, throw=True)
     
     return jnp.squeeze(jnp.array(sol_stressed.ys)), jnp.squeeze(jnp.array(sol.ys))
 
@@ -315,7 +315,7 @@ def set_prior_params(param_names, free_params, nominal_params_dict, prior_family
 
             
             dist_family = eval('pz.' + prior_fam[0])
-            _, results = pz.maxent(dist_family, lower, upper, prob_mass_bounds, plot=False) # for some reason the [0] element is None
+            results = pz.maxent(dist_family, lower, upper, prob_mass_bounds, plot=False)
 
             # set the prior parameters
             prior_fam_name = prior_fam[0].strip(')').split('(')[0]
