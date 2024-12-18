@@ -58,7 +58,8 @@ def parse_args(raw_args=None):
     parser.add_argument('-icoeff', type=float, default=1.0, help='icoeff for PID time stepper')
     # other
     parser.add_argument("-seed", type=int, default=0, help="Random seed to use. Defaults to 0.")
-    parser.add_argument("-prior_only", type=bool, default=False, help="Boolean to only sample from the prior.")
+    parser.add_argument("--sample_prior", action='store_true', help="Flag to sample from the prior.")
+    parser.add_argument("--sample_posterior", action='store_true', help="Flag to sample from the posterior.")
     parser.add_argument("-n_advi_iter", type=int, default=1000, help="Number of iterations for ADVI. Defaults to 1000.")
     
     args=parser.parse_args(raw_args)
@@ -186,17 +187,18 @@ def main(raw_args=None):
     
     pm_model = build_pymc_model(prior_dict, data, sol_op, data_sigma=data_std)
 
+    print(args.sample_prior)
     ###################################################
     # prior sampling #
     ###################################################
-    with pm_model:
-        prior_pred = pm.sample_prior_predictive(samples=2000, random_seed=args.seed)
+    if args.sample_prior:
+        with pm_model:
+            prior_pred = pm.sample_prior_predictive(samples=2000, random_seed=args.seed)
 
-    if args.prior_only:
-        prior_pred.to_netcdf(os.path.join(args.savedir, args.model + '_' \
-                                          + args.compartment + '_prior_samples.nc'))
+            prior_pred.to_netcdf(os.path.join(args.savedir, args.model + '_' \
+                                            + args.compartment + '_prior_samples.nc'))
     
-    if not args.prior_only:
+    if args.sample_posterior:
         #####################################################
         # MCMC (or other sampling) #
         #####################################################
@@ -234,7 +236,8 @@ def main(raw_args=None):
         # ####################################################
         # # save the samples #
         # ####################################################
-        posterior.extend(prior_pred)
+        if args.sample_prior:
+            posterior.extend(prior_pred)
         posterior.extend(post_pred)
 
         # save as netcdf file
