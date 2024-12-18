@@ -315,16 +315,16 @@ def set_prior_params(param_names, free_params, nominal_params_dict, prior_family
 
             
             dist_family = eval('pz.' + prior_fam[0])
-            results = pz.maxent(dist_family, lower, upper, prob_mass_bounds, plot=False)
+            result = pz.maxent(dist_family, lower, upper, prob_mass_bounds, plot=False)
+            result_dict = {result.param_names[i]: result.params[i] for i in range(len(result.params))}
 
             # set the prior parameters
             prior_fam_name = prior_fam[0].strip(')').split('(')[0]
             fixed_params = prior_fam[0].strip(')').split('(')[1].split(',')
 
-            
             tmp = 'pm.' + prior_fam_name + '("' + param + '",'
             for i, hyper_param in enumerate(prior_fam[1]):
-                tmp += hyper_param + '=' + str(results.x[i]) + ', '
+                tmp += hyper_param + '=' + str(result_dict[hyper_param]) + ', '
             
             for fixed_param in fixed_params:
                 if len(fixed_param) > 0:
