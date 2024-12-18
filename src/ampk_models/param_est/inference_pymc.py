@@ -8,10 +8,7 @@ import pymc as pm
 from pymc.sampling.jax import sample_numpyro_nuts, sample_blackjax_nuts, get_jaxified_logp
 from pytensor.link.jax.dispatch import jax_funcify
 
-import numpyro
-import numpyro.distributions as dist
 from jax import random
-from numpyro.infer import MCMC, NUTS, AIES, init_to_sample
 import arviz as az
 from numpyro.infer import Predictive
 import sys, argparse, json, os
@@ -23,6 +20,7 @@ from pymc_jax_ode import *
 sys.path.append("../models/")
 
 # tell jax to use 64bit floats
+jax.config.update('jax_platform_name', 'cpu')
 jax.config.update("jax_enable_x64", True)
 
 ##############################
