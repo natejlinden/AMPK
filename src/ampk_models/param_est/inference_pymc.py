@@ -20,6 +20,8 @@ sys.path.append("../")
 from utils import *
 from pymc_jax_ode import *
 
+sys.path.append("../models/")
+
 # tell jax to use 64bit floats
 jax.config.update("jax_enable_x64", True)
 
@@ -46,7 +48,7 @@ def parse_args(raw_args=None):
     parser.add_argument("-nwarmup", type=int, default=1000, help="Number of MCMC tuning samples. Defaults to 1000.")
     parser.add_argument("-nsamples", type=int, default=1000, help="Number of posterior samples to draw per MCMC chain. Defaults to 1000.")
     parser.add_argument("-nchains", type=int, default=1, help="Number of chains to run. Defaults to 1.")
-    parser.add_argument("-sampler", type=str, default='NUTS', help="Name of the MCMC sampler to use ['NUTS', 'NumpyroNUTS', 'BlackJaxNUTS']. Defaults to 'NUTS'")
+    parser.add_argument("-sampler", type=str, default='NUTS', help="Name of the MCMC sampler to use ['NUTS', 'NUTS-ADVI', 'NumpyroNUTS', 'BlackJaxNUTS']. Defaults to 'NUTS'")
     # simulation parameters
     parser.add_argument("-tmax_init", type=float, default=1e3, help="Maximum time to run the simulation. Defaults to 1e3.")
     parser.add_argument("-rtol", type=float,default=1e-6)
@@ -58,13 +60,14 @@ def parse_args(raw_args=None):
     parser.add_argument('-icoeff', type=float, default=1.0, help='icoeff for PID time stepper')
     # other
     parser.add_argument("-seed", type=int, default=0, help="Random seed to use. Defaults to 0.")
+    parser.add_argument("-prior_only", type=bool, default=False, help="Boolean to only sample from the prior.")
     
     args=parser.parse_args(raw_args)
     return args
 
 
 def main(raw_args=None):
-    jax.config.update("jax_enable_x64", True)
+    # jax.config.update("jax_enable_x64", True)
     """ Main function to execute command line script functionality. See the args parser for arguments
     """
     args = parse_args(raw_args) # parse the arguments
@@ -79,7 +82,6 @@ def main(raw_args=None):
     # import the model
     try:
         exec('from ' + args.model + '_diffrax import *')
-        exec('from ' + args.model + '_numpyro import *')
     except:
         print('Warning Model {} not found. Quitting.'.format(args.model))
         quit()
@@ -93,7 +95,7 @@ def main(raw_args=None):
     state_names = list(model_info["init_conds"].keys())
     ampkar_states = model_info['ampkar_states']
     pampkar_states = model_info['pampkar_states']
-    y0 = jnp.array(list(model_info["init_conds"].values()))
+    y0 = list(model_info["init_conds"].values())
 
     # process the free parameters
     free_params = args.free_params.split(',')
@@ -128,6 +130,12 @@ def main(raw_args=None):
     # load the data
     # converts from min to seconds
     data, data_std, times = load_data(args.data_file, to_seconds=True, constant_std=False)
+    print(data.shape)
+    data = data.reshape(1, len(data))
+    data_std = data_std.reshape(1, len(data_std))
+    # data_std = 1e-5*data_std
+
+    print(y0)
 
     ############################################
     # Simulator func #
@@ -135,17 +143,16 @@ def main(raw_args=None):
     # def simulation function that solves ODE and computes proper qoi
     # the solve_traj function first runs the model to SS in the basal energy state, and then 
     # runs the model in the stressed energy state using the SS from the basal state as the initial condition
-
-
     def simulator(params):
         # solve model
-        sol_stressed, sol = solve_traj(rhs, rhs_stress, y0, params, times, tmax_init=args.tmax_init, rtol=args.rtol, atol=args.atol, evnt_atol=args.evnt_atol, evnt_rtol=args.evnt_rtol, pcoeff=args.pcoeff, icoeff=args.icoeff, dcoeff=args.dcoeff, dt0=1e-12)
+        sol_stressed, sol = solve_traj(rhs, rhs_stress, y0, params, times, tmax_init=args.tmax_init, rtol=args.rtol, atol=args.atol, evnt_atol=args.evnt_atol, evnt_rtol=args.evnt_rtol, pcoeff=args.pcoeff, icoeff=args.icoeff, dcoeff=args.dcoeff, dt0=1e-10)
 
         # compute delta pAMPKAR/AMPKAR_tot
         AMPKAR_stressed = sol_stressed[jnp.array(ampkar_idxs), :].sum(axis=0)
         pAMPKAR_stressed = sol_stressed[jnp.array(pampkar_idxs), :].sum(axis=0)
+        result = pAMPKAR_stressed/AMPKAR_stressed
         
-        return pAMPKAR_stressed/AMPKAR_stressed
+        return jnp.reshape(result, (1, len(result)))
     
     # construct PyTensor Op for simulator
     def sol_op_jax(*params):
@@ -178,13 +185,13 @@ def main(raw_args=None):
                                   free_params, model_info["nominal_params"], 
                                   upper_mult=args.upper_mult, lower_mult=args.lower_mult, prior_family=args.prior_family)
     
-    pm_model = build_pymc_model(prior_dict, data.reshape(1, len(data)), sol_op, data_sigma=data_std)
+    pm_model = build_pymc_model(prior_dict, data, sol_op, data_sigma=data_std)
 
     ###################################################
     # prior sampling #
     ###################################################
     with pm_model:
-        prior_pred = pm.sample_prior_predictive(samples=10000, random_seed=args.seed)
+        prior_pred = pm.sample_prior_predictive(samples=2000, random_seed=args.seed)
 
     if args.prior_only:
         prior_pred.to_netcdf(os.path.join(args.savedir, args.model + '_' \
@@ -199,22 +206,29 @@ def main(raw_args=None):
         with pm_model:
             if args.sampler == 'NUTS':
                 posterior = pm.sample(args.nsamples, tune=args.nwarmup, chains=args.nchains, 
+                                    cores=1, random_seed=args.seed, 
+                                    idata_kwargs={'log_likelihood': True})
+                
+            elif args.sampler == 'NUTS-ADVI':
+                posterior = pm.sample(args.nsamples, tune=args.nwarmup, chains=args.nchains, 
                                     cores=1, init='ADVI', random_seed=args.seed, 
                                     idata_kwargs={'log_likelihood': True})
             elif args.sampler == 'BlackJaxNUTS':
                 posterior = sample_blackjax_nuts(draws=args.nsamples, tune=args.nwarmup, 
                                                 jitter=False, chains=args.nchains, 
                                                 chain_method='vectorized', seed=args.seed, 
-                                                idata_kwargs={'log_likelihood': True}) 
+                                                idata_kwargs={'log_likelihood': True})
             elif args.sampler == 'NumpyroNUTS':
                 posterior = sample_numpyro_nuts(draws=args.nsamples, tune=args.nwarmup, jitter=False,
                                                 chains=args.nchains, random_seed=args.seed,
                                                 idata_kwargs={'log_likelihood': True})
+            elif args.sampler == "ADVI":
+                mean_field = pm.fit(n=20_0000)
+                posterior = mean_field.sample(draws=args.nsamples)
             
         ####################################################
         # posterior predictive sampling #
         ####################################################
-        key, newkey = random.split(key)
         print('Running posterior predictive sampling for model {}'.format(args.model))
         post_pred = pm.sample_posterior_predictive(posterior, model=pm_model)
 
