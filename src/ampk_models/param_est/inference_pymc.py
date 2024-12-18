@@ -61,6 +61,7 @@ def parse_args(raw_args=None):
     # other
     parser.add_argument("-seed", type=int, default=0, help="Random seed to use. Defaults to 0.")
     parser.add_argument("-prior_only", type=bool, default=False, help="Boolean to only sample from the prior.")
+    parser.add_argument("-n_advi_iter", type=int, default=1000, help="Number of iterations for ADVI. Defaults to 1000.")
     
     args=parser.parse_args(raw_args)
     return args
@@ -223,7 +224,7 @@ def main(raw_args=None):
                                                 chains=args.nchains, random_seed=args.seed,
                                                 idata_kwargs={'log_likelihood': True})
             elif args.sampler == "ADVI":
-                mean_field = pm.fit(n=20_0000)
+                mean_field = pm.fit(n=args.n_advi_iter)
                 posterior = mean_field.sample(draws=args.nsamples)
             
         ####################################################
@@ -239,7 +240,8 @@ def main(raw_args=None):
         posterior.extend(post_pred)
 
         # save as netcdf file
-        posterior.to_netcdf(os.path.join(args.savedir, args.model + '_mcmc_samples_pm.nc'))
+        posterior.to_netcdf(os.path.join(args.savedir, args.model + '_' + \
+                                        args.compartment + '_mcmc_samples_' + args.sampler + '.nc'))
                               
     print('Completed {}'.format(args.model))
 
