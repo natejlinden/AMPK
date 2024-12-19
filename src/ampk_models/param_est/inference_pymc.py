@@ -6,6 +6,7 @@ import diffrax as dfrx
 import equinox as eqx
 import pymc as pm
 from pymc.sampling.jax import sample_numpyro_nuts, sample_blackjax_nuts, get_jaxified_logp
+from pymc.variational.callbacks import CheckParametersConvergence
 from pytensor.link.jax.dispatch import jax_funcify
 
 from jax import random
@@ -130,12 +131,8 @@ def main(raw_args=None):
     # load the data
     # converts from min to seconds
     data, data_std, times = load_data(args.data_file, to_seconds=True, constant_std=False)
-    print(data.shape)
     data = data.reshape(1, len(data))
     data_std = data_std.reshape(1, len(data_std))
-    # data_std = 1e-5*data_std
-
-    print(y0)
 
     ############################################
     # Simulator func #
@@ -224,7 +221,14 @@ def main(raw_args=None):
                                                 chains=args.nchains, random_seed=args.seed,
                                                 idata_kwargs={'log_likelihood': True})
             elif args.sampler == "ADVI":
-                mean_field = pm.fit(n=args.n_advi_iter)
+                mean_field = pm.fit(n=args.n_advi_iter, method='advi', 
+                                    callbacks=[CheckParametersConvergence(diff='absolute')])
+
+                fig, ax = plt.subplots()
+                ax.plot(mean_field.hist)
+                fig.savefig(args.savedir, args.model + '_' + \
+                                        args.compartment + '_advi_converg.png', dpi=300)
+                fig.close()
                 posterior = mean_field.sample(draws=args.nsamples)
             
         ####################################################
