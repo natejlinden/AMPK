@@ -226,7 +226,7 @@ def main(raw_args=None):
 
                 fig, ax = plt.subplots()
                 ax.plot(mean_field.hist)
-                fig.savefig(args.savedir, args.model + '_' + \
+                fig.savefig(args.savedir + args.model + '_' + \
                                         args.compartment + '_advi_converg.png', dpi=300)
                 fig.close()
                 posterior = mean_field.sample(draws=args.nsamples)
