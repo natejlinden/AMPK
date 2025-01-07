@@ -18,7 +18,7 @@ import equinox as eqx
 import diffrax as dfrx
 
 # import models
-sys.path.append("../odes/")
+sys.path.append("../models/")
 
 # import utils functions
 sys.path.append("../")
@@ -111,7 +111,7 @@ def main(raw_args=None):
         rhs = dfrx.ODETerm(rhs)
         rhs_stress = dfrx.ODETerm(rhs_stress)
     except:
-        print('Warning Model {} not found. Quitting.'.format(args.model))
+        print('Warning Model {} not loaded properly. Quitting.'.format(args.model))
         quit()
 
     ############################################
@@ -216,6 +216,17 @@ def main(raw_args=None):
         # Save the concatenated results
         np.save(args.savedir + args.model + '_sols_stressed_GSA.npy', all_sols_stressed)
         np.save(args.savedir + args.model + '_sols_basal_GSA.npy', all_sols_basal)
+    else:
+        tnow = time.time()
+        sols = solve(temp)
+        tend = time.time()
+
+        # save model evals
+        np.save(args.savedir + args.model + '_sols_stressed_GSA.npy', np.array(sols[0]))
+        np.save(args.savedir + args.model + '_sols_basal_GSA.npy', np.array(sols[1]))
+
+        print('Simulations took {} seconds'.format(tend-tnow))
+        print('Completed {}'.format(args.model))
 
 
     # tnow = time.time()

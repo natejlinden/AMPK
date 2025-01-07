@@ -47,12 +47,17 @@ def main(raw_args=None):
                             "VmaxppaseADP","VmaxppaseAMP","Km_pAMPK","k_pAMPK",
                             "Km_AMP_pAMPK","k_AMP_pAMPK","Km_ADP_pAMPK",
                             "k_ADP_pAMPK","Km_ATP_pAMPK","k_ATP_pAMPK"],
-                    'names':["k6r","k7r","k8r","k9r","k10r","k11r","Km12","Km13","Km14",
-                            "Km15","Km16","Km17","Km18","Km19","Vmaxkinase",
-                            "VmaxkinaseATP","VmaxkinaseADP","VmaxkinaseAMP","Vmaxppase",
-                            "VmaxppaseATP","VmaxppaseADP","VmaxppaseAMP","Km_pAMPK",
-                            "k_pAMPK","Km_AMP_pAMPK","k_AMP_pAMPK","Km_ADP_pAMPK",
-                            "k_ADP_pAMPK","Km_ATP_pAMPK","k_ATP_pAMPK"],
+                    'names':[r'$k_{6r}$',r'$k_{7r}$',r'$k_{8r}$',r'$k_{9r}$',
+                             r'$k_{10r}$',r'$k_{11r}$',r'$K_{m12}$',r'$K_{m13}$',
+                             r'$K_{m14}$',r'$K_{m15}$',r'$K_{m16}$',r'$K_{m17}$',
+                             r'$K_{m18}$',r'$K_{m19}$',r'$V_{max,kinase}$',
+                            r'$V_{max,kinase,ATP}$',r'$V_{max,kinase,ADP}$',
+                            r'$V_{max,kinase,AMP}$',r'$V_{max,ppase}$',
+                            r'$V_{max,ppase,ATP}$',r'$V_{max,ppase,ADP}$',
+                            r'$V_{max,ppase,AMP}$',r'$K_{m,pAMPK}$',
+                            r'$k_{pAMPK}$',r'$K_{m,AMP,pAMPK}$',r'$k_{AMP,pAMPK}$',
+                            r'$K_{m,ADP,pAMPK}$',r'$k_{ADP,pAMPK}$',r'$K_{m,ATP,pAMPK}$',
+                            r'$k_{ATP,pAMPK}$'],
                     "special_bounds":""},
         "MA_single": {'free':["kOffAMP","kOffADP","kOffATP","kOffCaMKK","kPhosCaMKK",
                               "kOffLKB1","kPhosLKB1","kOffPP","kDephosPP","kOffAMPK",
@@ -64,6 +69,14 @@ def main(raw_args=None):
                              r'$k_{\text{DephosPP}}$',r'$k_{\text{OffAMPK}}$',
                              r'$k_{\text{PhosAMPK}}$',r'$k_{\text{OffPP1}}$',
                              r'$k_{\text{Dephos,PP1}}$'],
+                    "special_bounds":""}, 
+        "MA_single_noSensor": {'free':["kOffAMP","kOffADP","kOffATP","kOffCaMKK","kPhosCaMKK",
+                            "kOffLKB1","kPhosLKB1","kOffPP","kDephosPP"],
+                    'names':[r'$k_{\text{OffAMP}}$',r'$k_{\text{OffADP}}$',
+                            r'$k_{\text{OffATP}}$',r'$k_{\text{OffCaMKK}}$',
+                            r'$k_{\text{PhosCaMKK}}$',r'$k_{\text{OffLKB1}}$',
+                            r'$k_{\text{PhosLKB1}}$',r'$k_{\text{OffPP}}$',
+                            r'$k_{\text{DephosPP}}$'],
                     "special_bounds":""}, 
         "MM_single":  {'free':["kOffAMP","kOffADP","kOffATP","kCaMKK","KmCaMKK",
                                "kLKB1","KmLKB1","kPP","KmPP"],
@@ -154,6 +167,7 @@ def main(raw_args=None):
             return half_max_idx
         
         time_to_half_max = np.apply_along_axis(compute_half_max, 1, pAMPKAR_stressed / AMPKAR_stressed)
+        time_to_half_max_delta = np.apply_along_axis(compute_half_max, 1, (pAMPKAR_stressed / AMPKAR_stressed) - (pAMPKAR_basal / AMPKAR_basal).reshape((pAMPKAR_basal.shape[0],1)))
 
         # define dict of the qoi's -- there are multiple, so we need to run sobol analysis for each
         # the items in the dict are tuples, where the first entry is the vector of qoi's
@@ -161,7 +175,8 @@ def main(raw_args=None):
         qois = {
             "ratio":((pAMPKAR_stressed/AMPKAR_stressed).max(axis=1), r'$\frac{[\rm pAMPKAR]}{[\rm AMPKAR]}$'), # raw ratio
             "delta_ratio":((pAMPKAR_stressed/AMPKAR_stressed).max(axis=1) - (pAMPKAR_basal/AMPKAR_basal), r'$\Delta\frac{[\rm pAMPKAR]}{[\rm AMPKAR]}$'), # delta ratio
-            "t_half": (time_to_half_max, r'$t_{\frac{1}{2},{\rm max}}$') # time to half max
+            "t_half": (time_to_half_max, r'$t_{\frac{1}{2},{\rm max}}$'), # time to half max
+            "t_half_delta": (time_to_half_max_delta, r'$t_{\frac{1}{2},{\rm max}}$') # delta time to half max
         }
 
         for qoi in qois.keys():
@@ -189,7 +204,12 @@ def main(raw_args=None):
 
             # # plot sobol indices
             # S1
-            fig, ax = get_sized_fig_ax(1.75, 1.0)
+            if model == "ampk_Coccimiglio":
+                fig_width = 3.25
+            else:
+                fig_width = 1.75
+            fig_height = 1.0
+            fig, ax = get_sized_fig_ax(fig_width, fig_height)
             sorted = sobol_df.sort_values(by='S1', ascending=False)
             order = list(sorted["param"])
 
@@ -212,7 +232,7 @@ def main(raw_args=None):
             fig.savefig(args.fig_path + m_name + '_' + qoi + '_S1.pdf', bbox_inches='tight')
 
             # ST
-            fig, ax = get_sized_fig_ax(1.75, 1.0)
+            fig, ax = get_sized_fig_ax(fig_width, fig_height)
             sorted = sobol_df.sort_values(by='ST', ascending=False)
             order = list(sorted["param"])
 
