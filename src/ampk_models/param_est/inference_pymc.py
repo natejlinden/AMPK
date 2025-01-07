@@ -8,6 +8,7 @@ import pymc as pm
 from pymc.sampling.jax import sample_numpyro_nuts, sample_blackjax_nuts, get_jaxified_logp
 from pymc.variational.callbacks import CheckParametersConvergence
 from pytensor.link.jax.dispatch import jax_funcify
+from pymc.stats.log_density import compute_log_likelihood
 
 from jax import random
 import arviz as az
@@ -44,6 +45,7 @@ def parse_args(raw_args=None):
     parser.add_argument("-prior_family", type=str, default="[['Gamma()',['alpha', 'beta']]]", help="Family of priors to use. Defaults to 'lognormal'.")
     parser.add_argument("-lower_mult", type=float, default=0.1, help="Lower bound multiplier for uniform priors. Defaults to 0.1.")
     parser.add_argument("-upper_mult", type=float, default=2.0, help="Upper bound multiplier for uniform priors. Defaults to 2.0.")
+    parser.add_argument("-normalization", type=str, default='ratio', help="Normalization to use for the data. Defaults to 'ratio'.")
     parser.add_argument("-nwarmup", type=int, default=1000, help="Number of MCMC tuning samples. Defaults to 1000.")
     parser.add_argument("-nsamples", type=int, default=1000, help="Number of posterior samples to draw per MCMC chain. Defaults to 1000.")
     parser.add_argument("-nchains", type=int, default=1, help="Number of chains to run. Defaults to 1.")
@@ -61,6 +63,7 @@ def parse_args(raw_args=None):
     parser.add_argument("-seed", type=int, default=0, help="Random seed to use. Defaults to 0.")
     parser.add_argument("--sample_prior", action='store_true', help="Flag to sample from the prior.")
     parser.add_argument("--sample_posterior", action='store_true', help="Flag to sample from the posterior.")
+    parser.add_argument("--resample_ppc", action='store_true', help="Flag to resample the posterior predictive using previous param samples.")
     parser.add_argument("-n_advi_iter", type=int, default=1000, help="Number of iterations for ADVI. Defaults to 1000.")
     
     args=parser.parse_args(raw_args)
@@ -137,17 +140,26 @@ def main(raw_args=None):
     ############################################
     # Simulator func #
     ############################################
+    # normaliztion func
+    if args.normalization == 'ratio':
+        def norm_func(pAMPKAR_stressed, AMPKAR_stressed, pAMPKAR_basal, AMPKAR_basal):
+            return (pAMPKAR_stressed / AMPKAR_stressed)
+    elif args.normalization == 'delta_ratio':
+        def norm_func(pAMPKAR_stressed, AMPKAR_stressed, pAMPKAR_basal, AMPKAR_basal):
+            return (pAMPKAR_stressed / AMPKAR_stressed) - (pAMPKAR_basal / AMPKAR_basal)
     # def simulation function that solves ODE and computes proper qoi
     # the solve_traj function first runs the model to SS in the basal energy state, and then 
     # runs the model in the stressed energy state using the SS from the basal state as the initial condition
     def simulator(params):
         # solve model
-        sol_stressed, sol = solve_traj(rhs, rhs_stress, y0, params, times, tmax_init=args.tmax_init, rtol=args.rtol, atol=args.atol, evnt_atol=args.evnt_atol, evnt_rtol=args.evnt_rtol, pcoeff=args.pcoeff, icoeff=args.icoeff, dcoeff=args.dcoeff, dt0=1e-10)
+        sol_stressed, sol_basal = solve_traj(rhs, rhs_stress, y0, params, times, tmax_init=args.tmax_init, rtol=args.rtol, atol=args.atol, evnt_atol=args.evnt_atol, evnt_rtol=args.evnt_rtol, pcoeff=args.pcoeff, icoeff=args.icoeff, dcoeff=args.dcoeff, dt0=1e-10)
 
         # compute delta pAMPKAR/AMPKAR_tot
+        AMPKAR_basal = sol_basal[jnp.array(ampkar_idxs)].sum(axis=0)
+        pAMPKAR_basal = sol_basal[jnp.array(pampkar_idxs)].sum(axis=0)
         AMPKAR_stressed = sol_stressed[jnp.array(ampkar_idxs), :].sum(axis=0)
         pAMPKAR_stressed = sol_stressed[jnp.array(pampkar_idxs), :].sum(axis=0)
-        result = pAMPKAR_stressed/AMPKAR_stressed
+        result = norm_func(pAMPKAR_stressed, AMPKAR_stressed, pAMPKAR_basal, AMPKAR_basal)
         
         return jnp.reshape(result, (1, len(result)))
     
@@ -235,7 +247,7 @@ def main(raw_args=None):
         # posterior predictive sampling #
         ####################################################
         print('Running posterior predictive sampling for model {}'.format(args.model))
-        post_pred = pm.sample_posterior_predictive(posterior, model=pm_model)
+        post_pred = pm.sample_posterior_predictive(posterior, model=pm_model, idata_kwargs={'log_likelihood': True})
 
         # ####################################################
         # # save the samples #
@@ -247,6 +259,27 @@ def main(raw_args=None):
         # save as netcdf file
         posterior.to_netcdf(os.path.join(args.savedir, args.model + '_' + \
                                         args.compartment + '_mcmc_samples_' + args.sampler + '.nc'))
+        
+    ####################################################
+    # posterior predictive REsampling #
+    ####################################################
+    print(args.resample_ppc)
+    if args.resample_ppc:
+        fname = os.path.join(args.savedir, args.model + '_' + args.compartment + '_mcmc_samples_' + args.sampler + '.nc')
+        print('Resampling posterior predictive samples using samples stored in {}'.format(fname))
+        posterior = az.from_netcdf(fname)
+
+        posterior = compute_log_likelihood(posterior, model=pm_model, progressbar=True,
+                                           extend_inferencedata=True)
+
+        # print('Running posterior predictive sampling for model {}'.format(args.model))
+        # post_pred = pm.sample_posterior_predictive(posterior, model=pm_model, idata_kwargs={'log_likelihood': True})
+
+        # posterior.extend(post_pred)
+
+        # save as netcdf file
+        posterior.to_netcdf(os.path.join(args.savedir, args.model + '_' + \
+                                        args.compartment + '_mcmc_samples_loglike_' + args.sampler + '.nc'))
                               
     print('Completed {}'.format(args.model))
 
