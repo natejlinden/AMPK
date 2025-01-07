@@ -23,6 +23,7 @@ rng = np.random.default_rng(seed=1234)
 # load DIFFRAX PYTENSOR OP for JAX ODE
 from pymc_jax_ode import *
 from plotting_helper_funcs import *
+from matplotlib.patches import Patch
 
 ###############################################################################
 #### General Utilities ####
@@ -198,7 +199,6 @@ def run_simulations(param_samples, model_name, model_info_file, metab_params_fil
     # import the model
     try:
         exec('from ' + model_name + '_diffrax import *')
-        exec('from ' + model_name + '_numpyro import *')
     except:
         print('Warning Model {} not found. Quitting.'.format(model_name))
         quit()
@@ -367,9 +367,9 @@ def build_pymc_model(prior_param_dict, data, sol_op, data_sigma=0.1):
 ###############################################################################
 #### Plotting Utils ####
 ###############################################################################
-def plot_predictive(inf_data, data, times, plot_prior=True,
+def plot_predictive(inf_data, data, times, plot_prior=True, plot_post=True,
                     add_t_0=True, n_traces=200, figsize=(6, 4), prior_color='blue',
-                    post_color='black', data_color='red', data_marker_size=10, cred_int=95):
+                    post_color='black', data_color='red', data_marker_size=10, cred_int=95, fig_ax = (None, None)):
     """"plots prior and posterior predictive checks for the given model 
     along with the data supplied for inference"""
 
@@ -394,30 +394,39 @@ def plot_predictive(inf_data, data, times, plot_prior=True,
         prior_sims_df = pd.concat([prior_sims_df, zero_time_rows], 
                                     ignore_index=True).sort_values(by=['chain', 
                                     'draw', 'time']).reset_index(drop=True)
+    
+    if plot_post:
+        # convert posterior predictive into a dataframe
+        if type(inf_data) == az.InferenceData:
+            post_sims = inf_data.posterior_predictive.llike.values
+            nchains, ndraws, _, ntime = post_sims.shape
+        elif type(inf_data) == np.ndarray:
+            post_sims = inf_data
+            nchains = 1
+            ndraws, ntime = post_sims.shape
             
-    # convert posterior predictive into a dataframe
-    post_sims = inf_data.posterior_predictive.llike.values
-    nchains, ndraws, _, ntime = post_sims.shape
-    post_sims_df = pd.DataFrame({
-        'chain': np.repeat(np.arange(nchains), ndraws * ntime),
-        'draw': np.tile(np.repeat(np.arange(ndraws), ntime), nchains),
-        'time': np.tile(times, nchains * ndraws),
-        'y': post_sims.flatten()
-    })
-    # Add rows with time 0 and y 0 for each draw
-    zero_time_rows = post_sims_df.groupby(['chain', 'draw']).apply(lambda x: pd.DataFrame({
-        'chain': [x['chain'].iloc[0]],
-        'draw': [x['draw'].iloc[0]],
-        'time': [0],
-        'y': [0]
-    })).reset_index(drop=True)
-    post_sims_df = pd.concat([post_sims_df, zero_time_rows], 
-                                ignore_index=True).sort_values(by=['chain', 
+        post_sims_df = pd.DataFrame({
+            'chain': np.repeat(np.arange(nchains), ndraws * ntime),
+            'draw': np.tile(np.repeat(np.arange(ndraws), ntime), nchains),
+            'time': np.tile(times, nchains * ndraws),
+            'y': post_sims.flatten()
+        })
+        # Add rows with time 0 and y 0 for each draw
+        zero_time_rows = post_sims_df.groupby(['chain', 'draw']).apply(lambda x: pd.DataFrame({
+            'chain': [x['chain'].iloc[0]],
+            'draw': [x['draw'].iloc[0]],
+            'time': [0],
+            'y': [0]
+        })).reset_index(drop=True)
+        post_sims_df = pd.concat([post_sims_df, zero_time_rows], 
+                                    ignore_index=True).sort_values(by=['chain', 
                                 'draw', 'time']).reset_index(drop=True)
-        
 
     # plot predictive checks
-    fig, ax = get_sized_fig_ax(figsize[0], figsize[1])
+    if fig_ax[0] is not None and fig_ax[1] is not None:
+        fig, ax = fig_ax
+    else:
+        fig, ax = get_sized_fig_ax(figsize[0], figsize[1])
     if n_traces > 0:
         for i in range(n_traces):
             if plot_prior:
@@ -428,24 +437,24 @@ def plot_predictive(inf_data, data, times, plot_prior=True,
                 ax.plot(np.hstack((np.array([0]), times)), 
                         np.hstack((np.array([0]), np.squeeze(prior_sims[0, i, 0, :]))), 
                         color=prior_color, alpha=0.05, linewidth=0.5, label=label)
-            
-            if i == 0:
-                label = 'Posterior'
-            else:
-                label = None
-            ax.plot(np.hstack((np.array([0]), times)), 
-                    np.hstack((np.array([0]), np.squeeze(post_sims[0, i, 0, :]))), 
-                    color=post_color, alpha=0.05, linewidth=0.5, label=label)
+            elif plot_post:
+                if i == 0:
+                    label = 'Posterior'
+                else:
+                    label = None
+                ax.plot(np.hstack((np.array([0]), times)), 
+                        np.hstack((np.array([0]), np.squeeze(post_sims[0, i, 0, :]))), 
+                        color=post_color, alpha=0.05, linewidth=0.5, label=label)
             
     # plot predictive densities
     if plot_prior:
         sns.lineplot(data=prior_sims_df, x='time', y='y', 
-                     errorbar=("pi", cred_int), ax=ax, color=prior_color, 
-                     label='Prior', linewidth=1.0)
-    
-    sns.lineplot(data=post_sims_df, x='time', y='y',
+                    errorbar=("pi", cred_int), ax=ax, color=prior_color, 
+                    label='Prior', linewidth=1.0)
+    elif plot_post:
+        sns.lineplot(data=post_sims_df, x='time', y='y',
                     errorbar=("pi", cred_int), ax=ax, color=post_color, 
-                    label='Posterior predictive', linewidth=1.0)
+                    label='Posterior predictive', linewidth=2.0)
     
     # plot data
     ax.scatter(times, data, color=data_color, s=data_marker_size, 
@@ -462,5 +471,18 @@ def plot_predictive(inf_data, data, times, plot_prior=True,
     ax.set_ylim(0, ax.get_ylim()[1])
     
     leg = ax.legend(fontsize=8, bbox_to_anchor=(1.05, 1), loc='upper left')
+
+    # Add shaded region to the legend item for the line on a seaborn lineplot
+    handles, labels = ax.get_legend_handles_labels()
+    print(handles)
+    for i, label in enumerate(labels):
+        if label == 'Posterior predictive':
+            # handles[i] = Patch(facecolor=post_color, edgecolor='none', alpha=0.3)
+            handles[i] = (handles[i], Patch(facecolor=post_color, edgecolor='none', alpha=0.3))
+        elif label == 'Prior':
+            handles[i] = Patch(facecolor=prior_color, edgecolor='none', alpha=0.3)
+        elif label == 'Data':
+            handles[i] = handles[i]
+    leg  = ax.legend(handles=handles, labels=labels, fontsize=8, bbox_to_anchor=(1.05, 1), loc='upper left')
 
     return fig, ax, leg
