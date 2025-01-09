@@ -41,7 +41,7 @@ def parse_args(raw_args=None):
     # optional parameters
     parser.add_argument("-upper_mult", type=float, default=1e2, help="Multiplier for upper bound in GSA sampling. Defaults to 100")
     parser.add_argument("-lower_mult", type=float, default=1e-2, help="Multiplier for lower bound in GSA sampling. Defaults to 0.01.")
-    parser.add_argument("-special_bounds", default="", type=str, help="Path ro JSON file that specifies bounds for the parameters that dont follow [lower_mult*nominal, upper_mult*nominal].")
+    parser.add_argument("-special_bounds", default="", type=str, help="Path to JSON file that specifies bounds for the parameters that dont follow [lower_mult*nominal, upper_mult*nominal].")
     parser.add_argument("-metab_params_file", type=str, help="Metabolism model parameters. Should be a JSON")
     parser.add_argument("-nsamples", type=int, default=256, help="Number of samples to draw in each parameter direction. Defaults to 256")
     parser.add_argument("-gsa_method", type=str, default="sobol", help="GSA method to use. Defaults to sobol. Options are sobol, morris, and hdmr.")
@@ -176,8 +176,6 @@ def main(raw_args=None):
                                       rtol=args.rtol, atol=args.atol, 
                                       evnt_rtol=args.evnt_rtol, evnt_atol=args.evnt_atol, 
                                       pcoeff=args.pcoeff, icoeff=args.icoeff, dcoeff=args.dcoeff))
-
-    print(temp.shape)
 
     # run the vmapped simulations
     expected_array_size = len(times)*param_vals.shape[0]*8 # 8 bytes per float64
