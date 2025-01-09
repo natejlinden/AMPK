@@ -41,7 +41,6 @@ def parse_args(raw_args=None):
     # optional parameters
     parser.add_argument("-upper_mult", type=float, default=1e2, help="Multiplier for upper bound in GSA sampling. Defaults to 100")
     parser.add_argument("-lower_mult", type=float, default=1e-2, help="Multiplier for lower bound in GSA sampling. Defaults to 0.01.")
-    parser.add_argument("-special_bounds", default="", type=str, help="Path to JSON file that specifies bounds for the parameters that dont follow [lower_mult*nominal, upper_mult*nominal].")
     parser.add_argument("-metab_params_file", type=str, help="Metabolism model parameters. Should be a JSON")
     parser.add_argument("-nsamples", type=int, default=256, help="Number of samples to draw in each parameter direction. Defaults to 256")
     parser.add_argument("-gsa_method", type=str, default="sobol", help="GSA method to use. Defaults to sobol. Options are sobol, morris, and hdmr.")
@@ -118,17 +117,8 @@ def main(raw_args=None):
     # Bounds and other info for the GSA #
     ############################################
     # define the bounds for the AMPK parameters
-    bound_mults = np.array((args.lower_mult, args.upper_mult))
-    bounds = [bound_mults*nominal_params[param] for param in free_params]
-
-    # if there are special bounds, load them and update the list of bounds
-    if len(args.special_bounds) > 0: # default is "" length 0 str
-        with open(args.special_bounds, 'r') as file:
-            special_bounds = json.load(file)
-        
-        for param in special_bounds.keys():
-            idx = free_params.index(param)
-            bounds[idx] = np.array(special_bounds[param])
+    bound_dict = model_info['param_bounds']
+    bounds = [bound_dict[param] for param in free_params]
 
     # dictionary of the problem for SALib
     bounds = {'num_vars':len(free_params), 'names':free_params, 'bounds': bounds}
