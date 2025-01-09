@@ -1,4 +1,4 @@
-    #!/bin/bash
+#!/bin/bash
 #SBATCH --job-name  gsa-ma-nonessential  
 #SBATCH --output slurm-%j.out-%N            # Standard output file
 #SBATCH --output slurm-%j.err-%N        # Optional, for separating standard error
