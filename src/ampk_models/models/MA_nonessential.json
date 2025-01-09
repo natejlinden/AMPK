@@ -71,5 +71,29 @@
     "pampkar_states": [
         "pAMPKAR",
         "PP1_pAMPKAR"
-    ]
+    ],
+    "param_bounds":{
+        "kOnAMP":[],
+        "kOffAMP":[1e-4, 1.0],
+        "kOnADP":[],
+        "kOffADP":[1e-4, 1.0],
+        "kOnATP":[],
+        "kOffATP":[1e-4, 1.0],
+        "kOnCaMKK":[],
+        "kOffCaMKK":[1e-4, 1e0],
+        "kPhosCaMKK":[1e-7, 1e-2],
+        "kOnLKB1":[],
+        "kOffLKB1":[1e-4, 1e0],
+        "kPhosLKB1":[1e-7, 1e-2],
+        "kOnPP":[],
+        "kOffPP":[1e-2, 1e4],
+        "kDephosPP":[1e-7, 1e-3],
+        "kOnAMPK":[],
+        "kOffAMPK":[1e-3, 1e1],
+        "kPhosAMPK":[1e-2, 1e2],
+        "betaAMP":[1.0, 100.0],
+        "kOnPP1":[],
+        "kOffPP1":[1e-2, 1e4],
+        "kDephosPP1":[1e-7, 1e-3]
+    }
 }
