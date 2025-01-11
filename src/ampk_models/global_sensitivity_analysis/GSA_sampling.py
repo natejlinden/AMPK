@@ -60,6 +60,8 @@ def main(raw_args=None):
     args = parse_args(raw_args) # parse the arguments
     print('Processing model {}.'.format(args.model))
 
+    print(args.log_transform_bounds)
+
     # import the model
     try:
         exec('from ' + args.model + '_diffrax import *')
@@ -127,7 +129,7 @@ def main(raw_args=None):
     # use sobol sampling for hdmr since it is sampling agnostic
     if args.gsa_method in ['sobol', 'hdmr']:
         param_vals = sobol_samp.sample(bounds, args.nsamples, \
-                                       calc_second_order=False, seed=seed)
+                                       calc_second_order=True, seed=seed)
     elif args.gsa_method == "morris":
         pass
         # TODO implement morris sampling
