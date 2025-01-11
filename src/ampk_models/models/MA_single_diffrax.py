@@ -141,14 +141,14 @@ class MA_single(eqx.Module):
         J26 = kDephosPP1*PP1_pAMPKAR
 
         # additional fluxes to allow AXP to bind/unbind enzyme--AMPK complexes
-        Ja = kOnAMP*AMP*CaMKK_AMPK - kOffADP*CaMKK_AMP_AMPK
-        Jb = kOnADP*ADP*CaMKK_AMPK - kOffADP*CaMKK_ADP_AMPK
-        Jc = kOnATP*ATP*CaMKK_AMPK - kOffATP*CaMKK_ATP_AMPK
-        Jd = kOnATP*ATP*PP_pAMPK - kOffATP*PP_ATP_pAMPK
-        # Ja = 0
-        # Jb = 0
-        # Jc = 0
-        # Jd = 0
+        # Ja = kOnAMP*AMP*CaMKK_AMPK - kOffADP*CaMKK_AMP_AMPK
+        # Jb = kOnADP*ADP*CaMKK_AMPK - kOffADP*CaMKK_ADP_AMPK
+        # Jc = kOnATP*ATP*CaMKK_AMPK - kOffATP*CaMKK_ATP_AMPK
+        # Jd = kOnATP*ATP*PP_pAMPK - kOffATP*PP_ATP_pAMPK
+        Ja = 0
+        Jb = 0
+        Jc = 0
+        Jd = 0
 
         # Metabolic fluxes
         # glycolysis
