@@ -60,8 +60,6 @@ def main(raw_args=None):
     args = parse_args(raw_args) # parse the arguments
     print('Processing model {}.'.format(args.model))
 
-    print(args.log_transform_bounds)
-
     # import the model
     try:
         exec('from ' + args.model + '_diffrax import *')
