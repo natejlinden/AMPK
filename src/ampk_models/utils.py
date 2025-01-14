@@ -87,7 +87,7 @@ def load_data(data_file, to_seconds=False, constant_std=False):
 
     return mean_data, std_data, times
 
-def get_param_subsample(idata, n_traj, prior_or_post="post", rng=np.random.default_rng(seed=1234)):
+def get_param_subsample(param_names, idata, n_traj, prior_or_post="post", rng=np.random.default_rng(seed=1234)):
     if prior_or_post == "post":
         dat = idata.posterior.to_dict() # convert to dictionary
     elif prior_or_post == "prior":
@@ -95,22 +95,28 @@ def get_param_subsample(idata, n_traj, prior_or_post="post", rng=np.random.defau
     else:
         raise ValueError("prior_or_post should be either 'prior' or 'post'.")
     
-    params = list(dat['data_vars'].keys()) # figure out which params are free
     # get total number of MCMC samples
-    n_samples = np.array(dat['data_vars'][params[0]]['data']).reshape(-1).shape[0]
+    n_samples = np.array(dat['data_vars'][list(dat['data_vars'].keys())[0]]['data']).reshape(-1).shape[0]
 
     # extract samples for free params ot dict of numpy arrays
-    free_param_samples = {}
-    for param in params:
-        free_param_samples[param] = np.array(dat['data_vars'][param]['data']).reshape(-1)
+    free_param_samples_dict = {}
+    fixed_params_value = {}
+    for param in param_names:
+        if param in dat['data_vars'].keys(): # free parameter
+            free_param_samples_dict[param] = np.array(dat['data_vars'][param]['data']).reshape(-1)
+        else: # fixed parameter
+            fixed_params_value[param] = idata.constant_data[param].values
 
     # randomly select n_traj samples
     param_samples = []
     idxs = rng.choice(np.arange(n_samples), size=n_traj, replace=False)
     for i in idxs:
         tmp = []
-        for param in params:
-            tmp.append(free_param_samples[param][i])
+        for param in param_names:
+            if param in free_param_samples_dict.keys():
+                tmp.append(free_param_samples_dict[param][i])
+            else:
+                tmp.append(fixed_params_value[param])
         param_samples.append(tmp)
  
     return np.array(param_samples)
@@ -260,7 +266,7 @@ def run_simulations(param_samples, model_name, model_info_file, metab_params_fil
 ###############################################################################
 #### PyMC Inference Utils ####
 ###############################################################################
-def set_prior_params(param_names, free_params, nominal_params_dict, prior_family="[['Gamma()',['alpha', 'beta']]]", upper_mult=1.9, lower_mult=0.1, prob_mass_bounds=0.95):
+def set_prior_params(param_names, free_params, nominal_params_dict,bounds_dict, prior_family="[['Gamma()',['alpha', 'beta']]]", prob_mass_bounds=0.95, log_transform_bounds=False):
     """ Sets the prior parameters by finding parameters of the specified prior such that the specified probability mass is between the upper and lower bound.
 
     Uses the preliz maximum entropy function.
@@ -296,8 +302,12 @@ def set_prior_params(param_names, free_params, nominal_params_dict, prior_family
                 lower = 1e-4
             else:
                 # get the upper and lower bounds
-                upper = nominal_val*upper_mult
-                lower = nominal_val*lower_mult
+                if log_transform_bounds:
+                    upper = np.exp(bounds_dict[param][1])
+                    lower = np.exp(bounds_dict[param][0])
+                else:
+                    upper = bounds_dict[param][1]
+                    lower = bounds_dict[param][0]
 
             # use preliz.maxent to find the prior parameters for the specified family
             prior_fam = prior_family_list[free_param_idxs.index(i)]
@@ -312,8 +322,6 @@ def set_prior_params(param_names, free_params, nominal_params_dict, prior_family
                     elif 'upper' in item:
                         upper = float(item.split('=')[1])
         
-
-            
             dist_family = eval('pz.' + prior_fam[0])
             result = pz.maxent(dist_family, lower, upper, prob_mass_bounds, plot=False)
             result_dict = {result.param_names[i]: result.params[i] for i in range(len(result.params))}
@@ -338,25 +346,57 @@ def set_prior_params(param_names, free_params, nominal_params_dict, prior_family
 
     return prior_param_dict
 
-def build_pymc_model(prior_param_dict, data, sol_op, data_sigma=0.1):
+def set_lognormal_priors(param_names, free_params, nominal_params_dict,prior_param_dict):
+    """ Constructs dict of priors for the specified model using lognormal priors.
+
+    Assums prior_params_dict contains the mu and tau values for the lognormal priors.
+
+    Returns:
+        - prior_param_dict (dict): dictionary of prior parameters for the model in syntax to use exec to set them in a pymc model object
+    """
+
+    # # get the indices of the free parameters
+    # free_param_idxs = [param_names.index(param) for param in free_params]
+
+    # set the prior parameters
+    prior_dict = {}
+    for i, param in enumerate(param_names):
+        if param in free_params: # check if we are dealing with a free parameter
+            
+            # set the prior parameters string to be evaluated in the pymc model constructor
+            tmp = 'pm.LogNormal("' + param + '", mu=' + \
+                str(prior_param_dict[param]['mu']) + ', tau=' + \
+                str(prior_param_dict[param]['tau']) + ')'
+            
+            print(tmp)
+            prior_dict[param] = tmp
+
+        else: # fixed parameter
+            # set the prior parameters to the nominal value
+            prior_dict[param] = 'pm.Data("' + param + '", jnp.array(' + str(nominal_params_dict[param]) + '), mutable=False)'
+
+    return prior_dict
+
+def build_pymc_model(param_names, prior_param_dict, data, sol_op, data_sigma=0.1):
     """ Builds a pymc model object for the AMPK models.
     
     If model is None, the function will use the default model. If a model is 
     specified, it will use that model_func function to create a PyMC model.
 
     """
-    
+
     # Construct the PyMC model #   
     with pm.Model() as model:
         # loop over free params and construct the priors
-        priors = []
-        for key, value in prior_param_dict.items():
+        priors = {}
+        # for key, value in prior_param_dict.items():
+        for param in param_names:
             # create PyMC variables for each parameters in the model
-            prior = eval(value)
-            priors.append(prior)
+            prior = eval(prior_param_dict[param])
+            priors[param] = prior
 
-        # predict dose response
-        prediction = sol_op(*priors)
+        # predict response
+        prediction = sol_op(*[priors[param] for param in param_names])
 
         # assume a normal model for the data
         # sigma specified by the data_sigma param to this function
