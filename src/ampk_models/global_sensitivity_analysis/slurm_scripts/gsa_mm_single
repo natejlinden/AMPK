@@ -16,5 +16,11 @@
 # change to GSA dir
 cd /tscc/nfs/home/nlinden/AMPK/src/ampk_models/global_sensitivity_analysis/
 
+# mkdir for results
+mkdir -p /tscc/lustre/ddn/scratch/nlinden/ampk/MM_single/
+
 # run sampling
-/tscc/nfs/home/nlinden/miniforge3/envs/pymc/bin/python GSA_sampling.py -model MM_single -free_params kOffAMP,kOffADP,kOffATP,kCaMKK,KmCaMKK,kLKB1,KmLKB1,kPP,KmPP -model_info_file ../odes/MM_single.json -upper_mult 1e2 -lower_mult 1e-2 -metab_params_file ../odes/metabolism_params_Coccimiglio.json -nsamples 4096 -gsa_method sobol -savedir /tscc/lustre/ddn/scratch/nlinden/ampk/ -tmax 1e4
+/tscc/nfs/home/nlinden/miniforge3/envs/pymc/bin/python GSA_sampling.py -model MM_single -free_params kOffAMP,kOffADP,kOffATP,kCaMKK,KmCaMKK,kLKB1,KmLKB1,kPP,KmPP -model_info_file ../models/MM_single.json -metab_params_file ../models/metabolism_params_Coccimiglio.json -nsamples 4096 -gsa_method sobol -savedir /tscc/lustre/ddn/scratch/nlinden/ampk/MM_single/ -tmax 1800
+
+# rsync results to Engram via Cortex
+rsync -av /tscc/lustre/ddn/scratch/nlinden/ampk/MM_single cortex:/net/engram/nlinden/AMPK/results/GSA/
