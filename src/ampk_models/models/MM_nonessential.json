@@ -18,7 +18,11 @@
         "KmAMPK",
         "betaAMP",
         "kPP1",
-        "KmPP1"
+        "KmPP1",
+        "CaMKKtot",
+        "LKB1tot",
+        "PPtot",
+        "PP1tot"
     ],
     "nominal_params": {
         "kOnAMP": 1.0,
@@ -39,7 +43,11 @@
         "KmAMPK": 0.0849,
         "betaAMP": 1.0,
         "kDephosPP1": 0.00011,
-        "KmPP1": 0.067
+        "KmPP1": 0.067,
+        "CaMKKtot": 1.0,
+        "LKB1tot": 1.0,
+        "PPtot": 1.0,
+        "PP1tot": 1.0
     },
     "init_conds": {
         "AMP": 0.02,
@@ -54,7 +62,7 @@
         "AMP_pAMPK": 0.0,
         "ADP_pAMPK": 0.0,
         "ATP_pAMPK": 0.0,
-        "AMPKAR": 0.1,
+        "AMPKAR": 1.0,
         "pAMPKAR": 0.0
     },
     "ampkar_states": [
@@ -131,7 +139,11 @@
         "KmPP1": [
             6.7e-06,
             5.71
-        ]
+        ],
+        "CaMKKtot": [],
+        "LKB1tot": [],
+        "PPtot": [],
+        "PP1tot": []
     },
     "prior_params": {
         "kOnAMP": {},
@@ -200,6 +212,10 @@
         "KmPP1": {
             "mu": 0.7423135228097387,
             "tau": 1.6426864033778863
-        }
+        },
+        "CaMKKtot": {},
+        "LKB1tot": {},
+        "PPtot": {},
+        "PP1tot": {}
     }
 }

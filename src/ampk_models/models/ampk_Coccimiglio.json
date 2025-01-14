@@ -93,7 +93,7 @@
         "AMP_pAMPK": 0.075,
         "ADP_pAMPK": 0.075,
         "ATP_pAMPK": 0.075,
-        "AMPKAR": 0.1,
+        "AMPKAR": 1.0,
         "pAMPKAR": 0.0
     },
     "ampkar_states": [

@@ -15,7 +15,11 @@
         "kAMPK",
         "KmAMPK",
         "kPP1",
-        "KmPP1"
+        "KmPP1",
+        "CaMKKtot",
+        "LKB1tot",
+        "PPtot",
+        "PP1tot"
     ],
     "nominal_params": {
         "kOnAMP": 1.0,
@@ -33,7 +37,11 @@
         "kAMPK": 1.92e-05,
         "KmAMPK": 0.0849,
         "kPP1": 0.00011,
-        "KmPP1": 0.067
+        "KmPP1": 0.067,
+        "CaMKKtot": 1.0,
+        "LKB1tot": 1.0,
+        "PPtot": 1.0,
+        "PP1tot": 1.0
     },
     "init_conds": {
         "AMP": 0.02,
@@ -113,7 +121,11 @@
         "KmPP1": [
             6.7e-06,
             5.71
-        ]
+        ],
+        "CaMKKtot": [],
+        "LKB1tot": [],
+        "PPtot": [],
+        "PP1tot": []
     },
     "prior_params": {
         "kOnAMP": {},
@@ -170,6 +182,10 @@
         "KmPP1": {
             "mu": 0.7423135228097387,
             "tau": 1.6426864033778863
-        }
+        },
+        "CaMKKtot": {},
+        "LKB1tot": {},
+        "PPtot": {},
+        "PP1tot": {}
     }
 }
