@@ -1,63 +1,89 @@
 {
+    "params": [
+        "kOnAMP",
+        "kOffAMP",
+        "kOnADP",
+        "kOffADP",
+        "kOnATP",
+        "kOffATP",
+        "kOnCaMKK",
+        "kOffCaMKK",
+        "kPhosCaMKK",
+        "kOnLKB1",
+        "kOffLKB1",
+        "alphaLKB1",
+        "kPhosLKB1",
+        "kOnPP",
+        "kOffPP",
+        "alphaPP",
+        "kDephosPP",
+        "kOnAMPK",
+        "kOffAMPK",
+        "kPhosAMPK",
+        "betaAMP",
+        "kOnPP1",
+        "kOffPP1",
+        "kDephosPP1"
+    ],
     "nominal_params": {
         "kOnAMP": 1.0,
-        "kOffAMP": 2.5e-3,
+        "kOffAMP": 0.0025,
         "kOnADP": 1.0,
-        "kOffADP": 1.5e-3,
+        "kOffADP": 0.0015,
         "kOnATP": 1.0,
-        "kOffATP": 1.8e-2,
+        "kOffATP": 0.018,
         "kOnCaMKK": 1.0,
-        "kOffCaMKK": 1.32e-2,
-        "kPhosCaMKK": 8.1e-4,
+        "kOffCaMKK": 0.0132,
+        "kPhosCaMKK": 0.00081,
         "kOnLKB1": 1.0,
         "kOffLKB1": 1.396,
         "alphaLKB1": 1.0,
-        "kPhosLKB1": 3.92e-3,
+        "kPhosLKB1": 0.00392,
         "kOnPP": 1.0,
-        "kOffPP": 5.6e-1,
-        "alphaPP":1.0,
-        "kDephosPP": 1.1e-4,
+        "kOffPP": 0.56,
+        "alphaPP": 1.0,
+        "kDephosPP": 0.00011,
         "kOnAMPK": 1.0,
-        "kOffAMPK": 8.49e-3,
-        "kPhosAMPK": 1.92e-4,
+        "kOffAMPK": 0.00849,
+        "kPhosAMPK": 0.000192,
         "betaAMP": 1.0,
         "kOnPP1": 1.0,
-        "kOffPP1": 5.6e-1,
-        "kDephosPP1": 1.1e-4
+        "kOffPP1": 0.56,
+        "kDephosPP1": 0.00011
     },
     "init_conds": {
-        "AMP": 2e-2, 
-        "ADP": 1.3, 
+        "AMP": 0.02,
+        "ADP": 1.3,
         "ATP": 8.2,
-        "PCr": 22.1, 
-        "AMPK": 0.6, 
-        "pAMPK": 0.0, 
-        "AMP_AMPK": 0.0, 
-        "ADP_AMPK": 0.0, 
+        "PCr": 22.1,
+        "AMPK": 0.6,
+        "pAMPK": 0.0,
+        "AMP_AMPK": 0.0,
+        "ADP_AMPK": 0.0,
         "ATP_AMPK": 0.0,
-        "AMP_pAMPK": 0.0, 
-        "ADP_pAMPK": 0.0, 
-        "ATP_pAMPK": 0.0, 
-        "CaMKK": 1.0, 
-        "CaMKK_AMPK": 0.0, 
-        "CaMKK_AMP_AMPK": 0.0, 
-        "CaMKK_ADP_AMPK": 0.0, 
-        "CaMKK_ATP_AMPK": 0.0, 
-        "LKB1": 1.0, 
+        "AMP_pAMPK": 0.0,
+        "ADP_pAMPK": 0.0,
+        "ATP_pAMPK": 0.0,
+        "CaMKK": 1.0,
+        "CaMKK_AMPK": 0.0,
+        "CaMKK_AMP_AMPK": 0.0,
+        "CaMKK_ADP_AMPK": 0.0,
+        "CaMKK_ATP_AMPK": 0.0,
+        "LKB1": 1.0,
         "LKB1_AMPK": 0.0,
-        "LKB1_AMP_AMPK": 0.0, 
-        "LKB1_ADP_AMPK": 0.0, 
-        "PP": 0.1, 
+        "LKB1_AMP_AMPK": 0.0,
+        "LKB1_ADP_AMPK": 0.0,
+        "PP": 0.1,
         "PP_pAMPK": 0.0,
         "PP_AMP_pAMPK": 0.0,
         "PP_ADP_pAMPK": 0.0,
         "PP_ATP_pAMPK": 0.0,
-        "AMPKAR": 0.1, 
-        "pAMPKAR": 0.0, 
+        "AMPKAR": 0.1,
+        "pAMPKAR": 0.0,
         "AMPKAR_pAMPK": 0.0,
         "AMPKAR_AMP_pAMPK": 0.0,
         "AMPKAR_ADP_pAMPK": 0.0,
-        "PP1": 0.1, 
+        "PP1": 0.1,
         "PP1_pAMPKAR": 0.0
     },
     "ampkar_states": [
@@ -72,30 +98,152 @@
         "pAMPKAR",
         "PP1_pAMPKAR"
     ],
-    "param_bounds":{
-        "kOnAMP":[],
-        "kOffAMP":[1e-4, 1.0],
-        "kOnADP":[],
-        "kOffADP":[1e-4, 1.0],
-        "kOnATP":[],
-        "kOffATP":[1e-4, 1.0],
-        "kOnCaMKK":[],
-        "kOffCaMKK":[1e-4, 1e0],
-        "kPhosCaMKK":[1e-7, 1e-2],
-        "kOnLKB1":[],
-        "kOffLKB1":[1e-4, 1e0],
-        "alphaLKB1": [0.01, 10.0],
-        "kPhosLKB1":[1e-7, 1e-2],
-        "kOnPP":[],
-        "kOffPP":[1e-2, 1e4],
-        "alphaPP":[1.0, 100.0],
-        "kDephosPP":[1e-7, 1e-3],
-        "kOnAMPK":[],
-        "kOffAMPK":[1e-3, 1e1],
-        "kPhosAMPK":[1e-2, 1e2],
-        "betaAMP":[1.0, 100.0],
-        "kOnPP1":[],
-        "kOffPP1":[1e-2, 1e4],
-        "kDephosPP1":[1e-7, 1e-3]
+    "param_bounds": {
+        "kOnAMP": [],
+        "kOffAMP": [
+            2.5e-09,
+            25.0
+        ],
+        "kOnADP": [],
+        "kOffADP": [
+            1.5e-09,
+            15.0
+        ],
+        "kOnATP": [],
+        "kOffATP": [
+            1.7e-09,
+            17.0
+        ],
+        "kOnCaMKK": [],
+        "kOffCaMKK": [
+            1.11e-05,
+            1.11
+        ],
+        "kPhosCaMKK": [
+            3.92e-05,
+            0.392
+        ],
+        "kOnLKB1": [],
+        "kOffLKB1": [
+            0.001396,
+            1396.0
+        ],
+        "alphaLKB1": [
+            0.0001,
+            1.0
+        ],
+        "kPhosLKB1": [
+            3.92e-06,
+            0.392
+        ],
+        "kOnPP": [],
+        "kOffPP": [
+            5.6e-06,
+            5.6
+        ],
+        "alphaPP": [
+            1.0,
+            100.0
+        ],
+        "kDephosPP": [
+            1.1e-06,
+            0.11
+        ],
+        "kOnAMPK": [],
+        "kOffAMPK": [
+            0.000301,
+            301.0
+        ],
+        "kPhosAMPK": [
+            0.00633,
+            6330.0
+        ],
+        "betaAMP": [
+            1.0,
+            100.0
+        ],
+        "kOnPP1": [],
+        "kOffPP1": [
+            5.6e-06,
+            5.6
+        ],
+        "kDephosPP1": [
+            1.1e-06,
+            0.11
+        ]
+    },
+    "prior_params": {
+        "kOnAMP": {},
+        "kOffAMP": {
+            "mu": 2.218970318309841,
+            "tau": 1.64268638489495
+        },
+        "kOnADP": {},
+        "kOffADP": {
+            "mu": 1.7081447032954988,
+            "tau": 1.6426864133967471
+        },
+        "kOnATP": {},
+        "kOffATP": {
+            "mu": 1.8333078583612543,
+            "tau": 1.6426864531286318
+        },
+        "kOnCaMKK": {},
+        "kOffCaMKK": {
+            "mu": -0.8955455538023362,
+            "tau": 1.6426861789228502
+        },
+        "kPhosCaMKK": {
+            "mu": -1.9363996557157261,
+            "tau": 1.6426840488849777
+        },
+        "kOnLKB1": {},
+        "kOffLKB1": {
+            "mu": 6.2414607725949764,
+            "tau": 1.6426863711383846
+        },
+        "alphaLKB1": {
+            "mu": -0.9999062012627679,
+            "tau": 1.6426840987120628
+        },
+        "kPhosLKB1": {
+            "mu": -1.9363990182222106,
+            "tau": 1.642686146379783
+        },
+        "kOnPP": {},
+        "kOffPP": {
+            "mu": 0.7228610835084307,
+            "tau": 1.6426863596203358
+        },
+        "alphaPP": {
+            "mu": 3.60543972225317,
+            "tau": 1.643289133408556
+        },
+        "kDephosPP": {
+            "mu": -3.2071804901083367,
+            "tau": 1.6426861533192687
+        },
+        "kOnAMPK": {},
+        "kOffAMPK": {
+            "mu": 4.707204809572439,
+            "tau": 1.6426865536055206
+        },
+        "kPhosAMPK": {
+            "mu": 7.753150002100707,
+            "tau": 1.6426863636131595
+        },
+        "betaAMP": {
+            "mu": 3.60543972225317,
+            "tau": 1.643289133408556
+        },
+        "kOnPP1": {},
+        "kOffPP1": {
+            "mu": 0.7228610835084307,
+            "tau": 1.6426863596203358
+        },
+        "kDephosPP1": {
+            "mu": -3.2071804901083367,
+            "tau": 1.6426861533192687
+        }
     }
 }
