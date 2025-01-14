@@ -58,7 +58,7 @@ def main(raw_args=None):
                             r'$k_{pAMPK}$',r'$K_{m,AMP,pAMPK}$',r'$k_{AMP,pAMPK}$',
                             r'$K_{m,ADP,pAMPK}$',r'$k_{ADP,pAMPK}$',r'$K_{m,ATP,pAMPK}$',
                             r'$k_{ATP,pAMPK}$'],
-                    "special_bounds":""},
+                    },
         "MA_single": {'free':["kOffAMP","kOffADP","kOffATP","kOffCaMKK","kPhosCaMKK",
                               "kOffLKB1","kPhosLKB1","kOffPP","kDephosPP","kOffAMPK",
                               "kPhosAMPK","kOffPP1","kDephosPP1"],
@@ -68,16 +68,7 @@ def main(raw_args=None):
                              r'$k_{\text{PhosLKB1}}$',r'$k_{\text{OffPP}}$',
                              r'$k_{\text{DephosPP}}$',r'$k_{\text{OffAMPK}}$',
                              r'$k_{\text{PhosAMPK}}$',r'$k_{\text{OffPP1}}$',
-                             r'$k_{\text{Dephos,PP1}}$'],
-                    "special_bounds":""}, 
-        "MA_single_noSensor": {'free':["kOffAMP","kOffADP","kOffATP","kOffCaMKK","kPhosCaMKK",
-                            "kOffLKB1","kPhosLKB1","kOffPP","kDephosPP"],
-                    'names':[r'$k_{\text{OffAMP}}$',r'$k_{\text{OffADP}}$',
-                            r'$k_{\text{OffATP}}$',r'$k_{\text{OffCaMKK}}$',
-                            r'$k_{\text{PhosCaMKK}}$',r'$k_{\text{OffLKB1}}$',
-                            r'$k_{\text{PhosLKB1}}$',r'$k_{\text{OffPP}}$',
-                            r'$k_{\text{DephosPP}}$'],
-                    "special_bounds":""}, 
+                             r'$k_{\text{Dephos,PP1}}$']}, 
         "MM_single":  {'free':["kOffAMP","kOffADP","kOffATP","kCaMKK","KmCaMKK",
                                "kLKB1","KmLKB1","kPP","KmPP"],
                     'names':[r'$k_{\text{OffAMP}}$',r'$k_{\text{OffADP}}$',
@@ -85,7 +76,7 @@ def main(raw_args=None):
                              r'$K_{m,\text{CaMKK}}$',r'$k_{\text{PhosLKB1}}$',
                              r'$K_{\text{m,LKB1}}$',r'$k_{\text{DephosPP}}$',
                              r'$K_{\text{M,PP}}$'],
-                    "special_bounds":""},
+                    },
         "MA_nonessential": {'free':["kOffAMP","kOffADP","kOffATP","kOffCaMKK",
                                     "kPhosCaMKK","kOffLKB1","kPhosLKB1","kOffPP",
                                     "kDephosPP","kOffAMPK","kPhosAMPK","kOffPP1",
@@ -98,7 +89,7 @@ def main(raw_args=None):
                              r'$k_{\text{PhosAMPK}}$',r'$k_{\text{OffPP1}}$',
                              r'$k_{\text{Dephos,PP1}}$',r'$\alpha_{\text{LKB1}}$',
                              r'$\alpha_{\text{PP}}$',r'$\beta_{\text{AMP}}$'],
-                    "special_bounds":"./special_bounds.json"}, 
+                    }, 
         "MM_nonessential":  {'free':["kOffAMP","kOffADP","kOffATP","kPhosCaMKK","KmCaMKK",
                                      "kPhosLKB1","KmLKB1","kDephosPP","KmPP","alphaLKB1",
                                      "alphaPP","betaAMP"],
@@ -108,7 +99,7 @@ def main(raw_args=None):
                              r'$K_{\text{m,LKB1}}$',r'$k_{\text{DephosPP}}$',
                              r'$K_{\text{M,PP}}$',r'$\alpha_{\text{LKB1}}$',
                              r'$\alpha_{\text{PP}}$',r'$\beta_{\text{AMP}}$'],
-                    "special_bounds":"./special_bounds.json"}
+                    }
         }
 
     # loop through each model and analyze GSA results
@@ -133,17 +124,7 @@ def main(raw_args=None):
         param_names = models_free_params[model]['names']
 
         # define the bounds for the AMPK parameters
-        bound_mults = np.array((lower_mult, upper_mult))
-        bounds = [bound_mults*nominal_params[param] for param in free_params]
-
-        # if there are special bounds, load them and update the list of bounds
-        if len(models_free_params[model]['special_bounds']) > 0: # default is "" length 0 str
-            with open(models_free_params[model]['special_bounds'], 'r') as file:
-                special_bounds = json.load(file)
-            
-            for param in special_bounds.keys():
-                idx = free_params.index(param)
-                bounds[idx] = np.array(special_bounds[param])
+        bounds = [model_info['param_bounds'] for param in free_params]
 
         # dictionary of the problem for SALib
         problem = {'num_vars':len(free_params), 'names':free_params, 'bounds': bounds}
@@ -176,7 +157,8 @@ def main(raw_args=None):
             "ratio":((pAMPKAR_stressed/AMPKAR_stressed).max(axis=1), r'$\frac{[\rm pAMPKAR]}{[\rm AMPKAR]}$'), # raw ratio
             "delta_ratio":((pAMPKAR_stressed/AMPKAR_stressed).max(axis=1) - (pAMPKAR_basal/AMPKAR_basal), r'$\Delta\frac{[\rm pAMPKAR]}{[\rm AMPKAR]}$'), # delta ratio
             "t_half": (time_to_half_max, r'$t_{\frac{1}{2},{\rm max}}$'), # time to half max
-            "t_half_delta": (time_to_half_max_delta, r'$t_{\frac{1}{2},{\rm max}}$') # delta time to half max
+            "t_half_delta": (time_to_half_max_delta, r'$t_{\frac{1}{2},{\rm max}}$'), # delta time to half max
+            "ratio_basal":((pAMPKAR_basal/AMPKAR_basal), r'basal $\frac{[\rm pAMPKAR]}{[\rm AMPKAR]}$')
         }
 
         for qoi in qois.keys():
@@ -194,10 +176,13 @@ def main(raw_args=None):
             fig.savefig(args.fig_path + m_name + '_'+ qoi + '_hist.pdf', bbox_inches='tight')
 
             # analyze GSA
-            Si_sobol = sobol_analyze.analyze(problem, qoi_vals, calc_second_order=False)
+            Si_sobol = sobol_analyze.analyze(problem, qoi_vals, calc_second_order=True)
+            print(Si_sobol)
+
+
 
             # covert to pandas dataframe for easier plotting
-            sobol_df = pd.DataFrame(Si_sobol)
+            sobol_df = pd.DataFrame({item:Si_sobol[item] for item in ['S1', 'S1_conf', 'ST', 'ST_conf']})
             sobol_df["param"] = free_params
             sobol_df["param_name"] = param_names
             sobol_df.to_csv(args.results_path + m_name + '_' + qoi + '_sobol_GSA.csv')
