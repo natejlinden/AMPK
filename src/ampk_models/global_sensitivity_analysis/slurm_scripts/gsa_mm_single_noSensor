@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name  gsa-ma-single   
+#SBATCH --job-name  gsa-ma-single-noSensor  
 #SBATCH --output slurm-%j.out-%N            # Standard output file
 #SBATCH --output slurm-%j.err-%N        # Optional, for separating standard error
 #SBATCH --partition rtx3090                                   # Partition name
