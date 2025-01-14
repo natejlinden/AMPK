@@ -214,17 +214,5 @@ def main(raw_args=None):
         print('Simulations took {} seconds'.format(tend-tnow))
         print('Completed {}'.format(args.model))
 
-
-    # tnow = time.time()
-    # sols = solve(temp)
-    # tend = time.time()
-
-    # # save model evals
-    # np.save(args.savedir + args.model + '_sols_stressed_GSA.npy', np.array(sols[0]))
-    # np.save(args.savedir + args.model + '_sols_basal_GSA.npy', np.array(sols[1]))
-
-    # print('Simulations took {} seconds'.format(tend-tnow))
-    # print('Completed {}'.format(args.model))
-
 if __name__ == '__main__':
     main()
