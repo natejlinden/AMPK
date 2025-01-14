@@ -43,8 +43,6 @@ def parse_args(raw_args=None):
     parser.add_argument("-savedir", type=str, help="Path to save results. Defaults to current directory.")
     # MCMC sampling
     parser.add_argument("-prior_family", type=str, default="[['Gamma()',['alpha', 'beta']]]", help="Family of priors to use. Defaults to 'lognormal'.")
-    parser.add_argument("-lower_mult", type=float, default=0.1, help="Lower bound multiplier for uniform priors. Defaults to 0.1.")
-    parser.add_argument("-upper_mult", type=float, default=2.0, help="Upper bound multiplier for uniform priors. Defaults to 2.0.")
     parser.add_argument("-normalization", type=str, default='ratio', help="Normalization to use for the data. Defaults to 'ratio'.")
     parser.add_argument("-nwarmup", type=int, default=1000, help="Number of MCMC tuning samples. Defaults to 1000.")
     parser.add_argument("-nsamples", type=int, default=1000, help="Number of posterior samples to draw per MCMC chain. Defaults to 1000.")
@@ -65,6 +63,7 @@ def parse_args(raw_args=None):
     parser.add_argument("--sample_posterior", action='store_true', help="Flag to sample from the posterior.")
     parser.add_argument("--resample_ppc", action='store_true', help="Flag to resample the posterior predictive using previous param samples.")
     parser.add_argument("-n_advi_iter", type=int, default=1000, help="Number of iterations for ADVI. Defaults to 1000.")
+
     
     args=parser.parse_args(raw_args)
     return args
@@ -190,13 +189,12 @@ def main(raw_args=None):
     ####################################################
     # PyMC model #
     ####################################################
-    prior_dict = set_prior_params(list(model_info["nominal_params"].keys()), 
+    prior_dict = set_lognormal_priors(list(model_info["nominal_params"].keys()), 
                                   free_params, model_info["nominal_params"], 
-                                  upper_mult=args.upper_mult, lower_mult=args.lower_mult, prior_family=args.prior_family)
+                                  model_info['prior_params'])
     
-    pm_model = build_pymc_model(prior_dict, data, sol_op, data_sigma=data_std)
+    pm_model = build_pymc_model(model_info['params'], prior_dict, data, sol_op, data_sigma=data_std)
 
-    print(args.sample_prior)
     ###################################################
     # prior sampling #
     ###################################################
@@ -221,16 +219,16 @@ def main(raw_args=None):
                 
             elif args.sampler == 'NUTS-ADVI':
                 posterior = pm.sample(args.nsamples, tune=args.nwarmup, chains=args.nchains, 
-                                    cores=1, init='ADVI', random_seed=args.seed, 
+                                    cores=1, init='advi+adapt_diag', random_seed=args.seed, 
                                     idata_kwargs={'log_likelihood': True})
             elif args.sampler == 'BlackJaxNUTS':
                 posterior = sample_blackjax_nuts(draws=args.nsamples, tune=args.nwarmup, 
-                                                jitter=False, chains=args.nchains, 
-                                                chain_method='vectorized', seed=args.seed, 
+                                                jitter=False, chains=args.nchains, progress_bar=False,
+                                                chain_method='vectorized', random_seed=args.seed, 
                                                 idata_kwargs={'log_likelihood': True})
             elif args.sampler == 'NumpyroNUTS':
                 posterior = sample_numpyro_nuts(draws=args.nsamples, tune=args.nwarmup, jitter=False,
-                                                chains=args.nchains, random_seed=args.seed,
+                                                chains=args.nchains, random_seed=args.seed, chain_method='vectorized', progressbar=True,
                                                 idata_kwargs={'log_likelihood': True})
             elif args.sampler == "ADVI":
                 mean_field = pm.fit(n=args.n_advi_iter, method='advi', 
@@ -247,7 +245,7 @@ def main(raw_args=None):
         # posterior predictive sampling #
         ####################################################
         print('Running posterior predictive sampling for model {}'.format(args.model))
-        post_pred = pm.sample_posterior_predictive(posterior, model=pm_model, idata_kwargs={'log_likelihood': True})
+        post_pred = pm.sample_posterior_predictive(posterior, model=pm_model)
 
         # ####################################################
         # # save the samples #
