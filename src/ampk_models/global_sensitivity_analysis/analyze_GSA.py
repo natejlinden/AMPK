@@ -31,12 +31,7 @@ def parse_args(raw_args=None):
 def main(raw_args=None):
     args = parse_args()
 
-    #  lower and upper bounds for GSA sampling
-    lower_mult = 1e-2
-    upper_mult = 1e2
-
     colors = mb.met_brew(name="Veronese", n=7)
-
 
     # list of models 
     models_free_params = { 
@@ -109,8 +104,8 @@ def main(raw_args=None):
         # we need mech in the model to load GSA sampling results correctly
 
         # load results
-        sol_samples_basal = np.load(args.results_path + model + '_sols_basal_GSA.npy')
-        sol_samples_stressed = np.load(args.results_path + model + '_sols_stressed_GSA.npy')
+        sol_samples_basal = np.load(args.results_path + '/' + model + '/' + model + '_sols_basal_GSA.npy')
+        sol_samples_stressed = np.load(args.results_path + '/' + model + '/' + model + '_sols_stressed_GSA.npy')
 
         # Load JSON files with param, state, and initial condition info
         # states and initial conditions
