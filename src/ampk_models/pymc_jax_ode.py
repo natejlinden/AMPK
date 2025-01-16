@@ -61,5 +61,4 @@ class SolOp_noGrad(Op):
         outputs[0][0] = np.asarray(result, dtype="float64")
         
     def grad(self, inputs, output_grads):
-        def grad(self, inputs, output_grads):
         raise NotImplementedError("PyTensor gradient of Op not implemented")
