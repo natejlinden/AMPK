@@ -46,7 +46,7 @@ class VJPSolOp(Op):
 
 class SolOp_noGrad(Op):
     """ Pytensor Op for the solution of the ODE system using Diffrax w/o a pytensor gradient Op. """
-    def __init__(self, sol_op_jax_jitted, vjp_sol_op):
+    def __init__(self, sol_op_jax_jitted):
         self.sol_op_jax_jitted = sol_op_jax_jitted
 
     def make_node(self, *inputs):
