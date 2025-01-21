@@ -115,7 +115,7 @@ def main(raw_args=None):
     # Bounds and other info for the GSA #
     ############################################
     # define the bounds for the AMPK parameters
-    bound_dict = model_info['param_bounds']
+    bound_dict = model_info['param_bounds_updated']
     bounds = [bound_dict[param] for param in free_params]
 
     # dictionary of the problem for SALib
