@@ -115,7 +115,7 @@ def main(raw_args=None):
     # Bounds and other info for the GSA #
     ############################################
     # define the bounds for the AMPK parameters
-    bound_dict = model_info['param_bounds_updated']
+    bound_dict = model_info['param_bounds']
     bounds = [bound_dict[param] for param in free_params]
 
     # dictionary of the problem for SALib
@@ -127,7 +127,7 @@ def main(raw_args=None):
     # use sobol sampling for hdmr since it is sampling agnostic
     if args.gsa_method in ['sobol', 'hdmr']:
         param_vals = sobol_samp.sample(bounds, args.nsamples, \
-                                       calc_second_order=True, seed=seed)
+                                       calc_second_order=False, seed=seed)
     elif args.gsa_method == "morris":
         pass
         # TODO implement morris sampling
