@@ -21,7 +21,7 @@
         "PPtot",
         "PP1tot"
     ],
-    "nominal_params": {
+    "nominal_params_original": {
         "kOnAMP": 1.0,
         "kOffAMP": 0.0025,
         "kOnADP": 1.0,
@@ -36,6 +36,28 @@
         "KmPP": 0.67,
         "kAMPK": 1.92e-05,
         "KmAMPK": 0.0849,
+        "kPP1": 0.00011,
+        "KmPP1": 0.067,
+        "CaMKKtot": 1.0,
+        "LKB1tot": 1.0,
+        "PPtot": 1.0,
+        "PP1tot": 1.0
+    },
+    "nominal_params": {
+        "kOnAMP": 1.0,
+        "kOffAMP": 0.0025,
+        "kOnADP": 1.0,
+        "kOffADP": 0.0015,
+        "kOnATP": 1.0,
+        "kOffATP": 0.018,
+        "kCaMKK": 0.00081,
+        "KmCaMKK": 0.015,
+        "kLKB1": 0.00392,
+        "KmLKB1": 1.4,
+        "kPP": 0.00011,
+        "KmPP": 0.67,
+        "kAMPK": 1.92e-03,
+        "KmAMPK": 0.0085,
         "kPP1": 0.00011,
         "KmPP1": 0.067,
         "CaMKKtot": 1.0,
