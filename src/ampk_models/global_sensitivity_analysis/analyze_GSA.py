@@ -14,6 +14,7 @@ import met_brewer as mb
 import argparse
 
 sys.path.append('../')
+sys.path.append('../models/')
 from plotting_helper_funcs import *
 from utils import *
 
@@ -109,6 +110,7 @@ def main(raw_args=None):
         if not args.replot:
             sol_samples_basal = np.load(args.results_path  + model + '/' + model + '_sols_basal_GSA.npy')
             sol_samples_stressed = np.load(args.results_path + model + '/' + model + '_sols_stressed_GSA.npy')
+            param_samples = np.laod(args.results_path + model + '/' + model + '_param_samples_GSA.npy')
 
             # Load JSON files with param, state, and initial condition info
             # states and initial conditions
@@ -127,7 +129,7 @@ def main(raw_args=None):
             # dictionary of the problem for SALib
             problem = {'num_vars':len(free_params), 'names':free_params, 'bounds': bounds}
 
-            # compute qoi
+            #### compute qois
             # use pAMPKAR_stressed/AMPKAR_stressed - pAMPKAR_basal/AMPKAR_basal
             # get relevant state indices
             state_names = list(model_info["init_conds"].keys())
@@ -138,18 +140,6 @@ def main(raw_args=None):
             ampk_states = ["AMPK", "AMP_AMPK" , "ADP_AMPK" , "ATP_AMPK", "CaMKK_AMPK" , "CaMKK_AMP_AMPK" , "CaMKK_ADP_AMPK" , "CaMKK_ATP_AMPK" , "LKB1_AMP_AMPK" , "LKB1_ADP_AMPK"] + pAMPK_states
             ampk_idxs = [list(model_info['init_conds'].keys()).index(state) for state in ampk_states]
             pampk_idxs = [list(model_info['init_conds'].keys()).index(state) for state in pAMPK_states]
-
-            # load data
-            cyto_data, cyto_std, cyto_times = load_data('../../../Schmitt_et_al_2022_data/fig_2e_cyto.npz', 
-                                        to_seconds=False, constant_std=False)
-
-            times = np.linspace(0, 1800, 1000)
-
-            def fit_to_cyto(arr):
-                arr_at_cyto_times = np.interp(cyto_times, times, arr)
-                sigma_inv = np.diag(1/cyto_std)
-                res = arr_at_cyto_times - cyto_data
-                return np.exp(-0.5*(res.T*sigma_inv*res))
             
             AMPKAR_stressed = sol_samples_stressed[: ,ampkar_idxs, :].sum(axis=1)
             AMPKAR_basal = sol_samples_basal[: ,ampkar_idxs].sum(axis=1)
@@ -162,12 +152,39 @@ def main(raw_args=None):
                 half_max_idx = np.argmin(np.abs(arr - half_max))
                 return half_max_idx
             
+            times = np.linspace(0, 1800, 1000)
+            
             time_to_half_max_idx = np.apply_along_axis(compute_half_max, 1, pAMPKAR_stressed / AMPKAR_stressed)
             time_to_half_max = [times[idx] for idx in time_to_half_max_idx]
             time_to_half_max_delta_idx = np.apply_along_axis(compute_half_max, 1, (pAMPKAR_stressed / AMPKAR_stressed) - (pAMPKAR_basal / AMPKAR_basal).reshape((pAMPKAR_basal.shape[0],1)))
             time_to_half_max_delta = [times[idx] for idx in time_to_half_max_delta_idx]
 
-            # cyto_data_fit = np.apply_along_axis(fit_to_cyto, 1, pAMPKAR_stressed / AMPKAR_stressed)
+            # initial pAMPKAR rate
+            # load the model
+            try:
+                exec('from ' + model + '_diffrax import *')
+            except:
+                print('Warning Model {} not found. Quitting.'.format(model))
+                quit()
+
+            # load metabolic parameters
+            # parameters for the metabolic model
+            with open(args.metab_params_file, 'r') as file:
+                metab_params = json.load(file)
+
+            stress_params = list(metab_params["metab_params_stress"].values())
+            rhs_stress = eval(args.model + '(' + ','.join(str(elm) for elm in stress_params) \
+                + ')')
+
+            initial_rhs = []
+            for sample_idx in range(sol_samples_basal.shape[0]):
+                # get the initial conditions for the current sample
+                y0 = sol_samples_basal[sample_idx, :]
+                # create an instance of the model
+                # compute the initial rate
+                dydt = rhs_stress(0, y0, param_samples[sample_idx,:])
+                initial_rhs.append(dydt)
+
 
             # define dict of the qoi's -- there are multiple, so we need to run sobol analysis for each
             # the items in the dict are tuples, where the first entry is the vector of qoi's
