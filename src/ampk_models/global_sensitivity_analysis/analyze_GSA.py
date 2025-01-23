@@ -67,37 +67,37 @@ def main(raw_args=None):
                              r'$k_{\text{DephosPP}}$',r'$k_{\text{OffAMPK}}$',
                              r'$k_{\text{PhosAMPK}}$',r'$k_{\text{OffPP1}}$',
                              r'$k_{\text{Dephos,PP1}}$']}, 
-         "MM_single":  {'free':["kOffAMP","kOffADP","kOffATP","kCaMKK","KmCaMKK",
-                                "kLKB1","KmLKB1","kPP","KmPP"],
-                     'names':[r'$k_{\text{OffAMP}}$',r'$k_{\text{OffADP}}$',
-                              r'$k_{\text{OffATP}}$',r'$k_{\text{PhosCaMKK}}$',
-                              r'$K_{m,\text{CaMKK}}$',r'$k_{\text{PhosLKB1}}$',
-                              r'$K_{\text{m,LKB1}}$',r'$k_{\text{DephosPP}}$',
-                              r'$K_{\text{M,PP}}$'],
-                     },
-         "MA_nonessential": {'free':["kOffAMP","kOffADP","kOffATP","kOffCaMKK",
-                                     "kPhosCaMKK","kOffLKB1","kPhosLKB1","kOffPP",
-                                     "kDephosPP","kOffAMPK","kPhosAMPK","kOffPP1",
-                                     "kDephosPP1","alphaLKB1","alphaPP","betaAMP"],
-                     'names':[r'$k_{\text{OffAMP}}$',r'$k_{\text{OffADP}}$',
-                              r'$k_{\text{OffATP}}$',r'$k_{\text{OffCaMKK}}$',
-                              r'$k_{\text{PhosCaMKK}}$',r'$k_{\text{OffLKB1}}$',
-                              r'$k_{\text{PhosLKB1}}$',r'$k_{\text{OffPP}}$',
-                              r'$k_{\text{DephosPP}}$',r'$k_{\text{OffAMPK}}$',
-                              r'$k_{\text{PhosAMPK}}$',r'$k_{\text{OffPP1}}$',
-                              r'$k_{\text{Dephos,PP1}}$',r'$\alpha_{\text{LKB1}}$',
-                              r'$\alpha_{\text{PP}}$',r'$\beta_{\text{AMP}}$'],
-                     }, 
-         "MM_nonessential":  {'free':["kOffAMP","kOffADP","kOffATP","kPhosCaMKK","KmCaMKK",
-                                      "kPhosLKB1","KmLKB1","kDephosPP","KmPP","alphaLKB1",
-                                      "alphaPP","betaAMP"],
-                     'names':[r'$k_{\text{OffAMP}}$',r'$k_{\text{OffADP}}$',
-                              r'$k_{\text{OffATP}}$',r'$k_{\text{PhosCaMKK}}$',
-                              r'$K_{m,\text{CaMKK}}$',r'$k_{\text{PhosLKB1}}$',
-                              r'$K_{\text{m,LKB1}}$',r'$k_{\text{DephosPP}}$',
-                              r'$K_{\text{M,PP}}$',r'$\alpha_{\text{LKB1}}$',
-                              r'$\alpha_{\text{PP}}$',r'$\beta_{\text{AMP}}$'],
-                     }
+        #  "MM_single":  {'free':["kOffAMP","kOffADP","kOffATP","kCaMKK","KmCaMKK",
+        #                         "kLKB1","KmLKB1","kPP","KmPP"],
+        #              'names':[r'$k_{\text{OffAMP}}$',r'$k_{\text{OffADP}}$',
+        #                       r'$k_{\text{OffATP}}$',r'$k_{\text{PhosCaMKK}}$',
+        #                       r'$K_{m,\text{CaMKK}}$',r'$k_{\text{PhosLKB1}}$',
+        #                       r'$K_{\text{m,LKB1}}$',r'$k_{\text{DephosPP}}$',
+        #                       r'$K_{\text{M,PP}}$'],
+        #              },
+        #  "MA_nonessential": {'free':["kOffAMP","kOffADP","kOffATP","kOffCaMKK",
+        #                              "kPhosCaMKK","kOffLKB1","kPhosLKB1","kOffPP",
+        #                              "kDephosPP","kOffAMPK","kPhosAMPK","kOffPP1",
+        #                              "kDephosPP1","alphaLKB1","alphaPP","betaAMP"],
+        #              'names':[r'$k_{\text{OffAMP}}$',r'$k_{\text{OffADP}}$',
+        #                       r'$k_{\text{OffATP}}$',r'$k_{\text{OffCaMKK}}$',
+        #                       r'$k_{\text{PhosCaMKK}}$',r'$k_{\text{OffLKB1}}$',
+        #                       r'$k_{\text{PhosLKB1}}$',r'$k_{\text{OffPP}}$',
+        #                       r'$k_{\text{DephosPP}}$',r'$k_{\text{OffAMPK}}$',
+        #                       r'$k_{\text{PhosAMPK}}$',r'$k_{\text{OffPP1}}$',
+        #                       r'$k_{\text{Dephos,PP1}}$',r'$\alpha_{\text{LKB1}}$',
+        #                       r'$\alpha_{\text{PP}}$',r'$\beta_{\text{AMP}}$'],
+        #              }, 
+        #  "MM_nonessential":  {'free':["kOffAMP","kOffADP","kOffATP","kPhosCaMKK","KmCaMKK",
+        #                               "kPhosLKB1","KmLKB1","kDephosPP","KmPP","alphaLKB1",
+        #                               "alphaPP","betaAMP"],
+        #              'names':[r'$k_{\text{OffAMP}}$',r'$k_{\text{OffADP}}$',
+        #                       r'$k_{\text{OffATP}}$',r'$k_{\text{PhosCaMKK}}$',
+        #                       r'$K_{m,\text{CaMKK}}$',r'$k_{\text{PhosLKB1}}$',
+        #                       r'$K_{\text{m,LKB1}}$',r'$k_{\text{DephosPP}}$',
+        #                       r'$K_{\text{M,PP}}$',r'$\alpha_{\text{LKB1}}$',
+        #                       r'$\alpha_{\text{PP}}$',r'$\beta_{\text{AMP}}$'],
+        #              }
         }
 
     # loop through each model and analyze GSA results
@@ -110,7 +110,7 @@ def main(raw_args=None):
         if not args.replot:
             sol_samples_basal = np.load(args.results_path  + model + '/' + model + '_sols_basal_GSA.npy')
             sol_samples_stressed = np.load(args.results_path + model + '/' + model + '_sols_stressed_GSA.npy')
-            param_samples = np.laod(args.results_path + model + '/' + model + '_param_samples_GSA.npy')
+            param_samples = np.load(args.results_path + model + '/' + model + '_param_vals_GSA.npy')
 
             # Load JSON files with param, state, and initial condition info
             # states and initial conditions
@@ -169,11 +169,11 @@ def main(raw_args=None):
 
             # load metabolic parameters
             # parameters for the metabolic model
-            with open(args.metab_params_file, 'r') as file:
+            with open('../models/metabolism_params_Coccimiglio.json', 'r') as file:
                 metab_params = json.load(file)
 
             stress_params = list(metab_params["metab_params_stress"].values())
-            rhs_stress = eval(args.model + '(' + ','.join(str(elm) for elm in stress_params) \
+            rhs_stress = eval(model + '(' + ','.join(str(elm) for elm in stress_params) \
                 + ')')
 
             initial_rhs = []
@@ -182,9 +182,12 @@ def main(raw_args=None):
                 y0 = sol_samples_basal[sample_idx, :]
                 # create an instance of the model
                 # compute the initial rate
-                dydt = rhs_stress(0, y0, param_samples[sample_idx,:])
+                params = model_info['nominal_params'].copy()
+                for i, param in enumerate(free_params):
+                    params[param] = param_samples[sample_idx, i]
+                dydt = rhs_stress(0, y0, list(params.values()))
+                dydt =  np.sum([dydt[idx] for idx in pampkar_idxs])
                 initial_rhs.append(dydt)
-
 
             # define dict of the qoi's -- there are multiple, so we need to run sobol analysis for each
             # the items in the dict are tuples, where the first entry is the vector of qoi's
@@ -195,7 +198,7 @@ def main(raw_args=None):
                 "t_half": (time_to_half_max, r'$t_{\frac{1}{2},{\rm max}}$'), # time to half max
                 "t_half_delta": (time_to_half_max_delta, r'$t_{\frac{1}{2},{\rm max}}$'), # delta time to half max
                 "ratio_basal":((pAMPKAR_basal/AMPKAR_basal), r'basal $\frac{[\rm pAMPKAR]}{[\rm AMPKAR]}$'),
-                # "cyto_data_fit":(cyto_data_fit, 'fit to cyto data')
+                "initial_dpAPKAR_dt":(np.array(initial_rhs), r'\frac{d pAMPKAR(0)}{dt}')
             }
         qoi_names = ['ratio', 'delta_ratio', 't_half', 't_half_delta', 'ratio_basal']
 
