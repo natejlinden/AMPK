@@ -200,7 +200,7 @@ def main(raw_args=None):
         }
 
         # save to npz file
-        np.savez(args.results_path + m_name + '_qois.npz', **qois)
+        np.savez(args.results_path +  m_name + '/'+ m_name + '_qois.npz', **qois)
 
         qoi_names = ['ratio', 'delta_ratio', 't_half', 't_half_delta', 'ratio_basal', 'initial_dpAPKAR_dt']
 
@@ -216,7 +216,7 @@ def main(raw_args=None):
             sobol_df = pd.DataFrame({item:Si_sobol[item] for item in ['S1', 'S1_conf', 'ST', 'ST_conf']})
             sobol_df["param"] = free_params
             sobol_df["param_name"] = param_names
-            sobol_df.to_csv(args.results_path + m_name + '_' + qoi + '_sobol_GSA.csv')
+            sobol_df.to_csv(args.results_path  +  m_name + '/'+  m_name + '_' + qoi + '_sobol_GSA.csv')
     
 if __name__ == "__main__":
     main()
