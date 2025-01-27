@@ -66,14 +66,14 @@ def main(raw_args=None):
                             r'$k_{\text{DephosPP}}$',r'$k_{\text{OffAMPK}}$',
                             r'$k_{\text{PhosAMPK}}$',r'$k_{\text{OffPP1}}$',
                             r'$k_{\text{Dephos,PP1}}$']}, 
-        # "MM_single":  {'free':["kOffAMP","kOffADP","kOffATP","kCaMKK","KmCaMKK",
-        #                        "kLKB1","KmLKB1","kPP","KmPP"],
-        #             'names':[r'$k_{\text{OffAMP}}$',r'$k_{\text{OffADP}}$',
-        #                      r'$k_{\text{OffATP}}$',r'$k_{\text{PhosCaMKK}}$',
-        #                      r'$K_{m,\text{CaMKK}}$',r'$k_{\text{PhosLKB1}}$',
-        #                      r'$K_{\text{m,LKB1}}$',r'$k_{\text{DephosPP}}$',
-        #                      r'$K_{\text{M,PP}}$'],
-        #             },
+        "MM_single":  {'free':["kOffAMP","kOffADP","kOffATP","kCaMKK","KmCaMKK",
+                               "kLKB1","KmLKB1","kPP","KmPP"],
+                    'names':[r'$k_{\text{OffAMP}}$',r'$k_{\text{OffADP}}$',
+                             r'$k_{\text{OffATP}}$',r'$k_{\text{PhosCaMKK}}$',
+                             r'$K_{m,\text{CaMKK}}$',r'$k_{\text{PhosLKB1}}$',
+                             r'$K_{\text{m,LKB1}}$',r'$k_{\text{DephosPP}}$',
+                             r'$K_{\text{M,PP}}$'],
+                    },
         "MA_nonessential": {'free':["kOffAMP","kOffADP","kOffATP","kOffCaMKK",
                                     "kPhosCaMKK","kOffLKB1","kPhosLKB1","kOffPP",
                                     "kDephosPP","kOffAMPK","kPhosAMPK","kOffPP1",
@@ -233,7 +233,8 @@ def main(raw_args=None):
             qoi_vals = qois[qoi]
 
             # analyze GSA
-            Si_sobol = sobol_analyze.analyze(problem, qoi_vals, calc_second_order=False)
+            # Si_sobol = sobol_analyze.analyze(problem, qoi_vals, calc_second_order=False)
+            Si_sobol = hdmr_analyze.analyze(problem, param_samples, qoi_vals)
 
             # covert to pandas dataframe for easier plotting
             sobol_df = pd.DataFrame({item:Si_sobol[item] for item in ['S1', 'S1_conf', 'ST', 'ST_conf']})
