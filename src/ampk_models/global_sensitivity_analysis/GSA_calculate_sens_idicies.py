@@ -37,64 +37,64 @@ def main(raw_args=None):
 
     # list of models 
     models_free_params = { 
-#        "ampk_Coccimiglio": {'free':["k6r","k7r","k8r","k9r","k10r","k11r","Km12",
-#                            "Km13","Km14","Km15","Km16","Km17","Km18","Km19",
-#                            "Vmaxkinase","VmaxkinaseATP","VmaxkinaseADP",
-#                            "VmaxkinaseAMP","Vmaxppase","VmaxppaseATP",
-#                            "VmaxppaseADP","VmaxppaseAMP","Km_pAMPK","k_pAMPK",
-#                            "Km_AMP_pAMPK","k_AMP_pAMPK","Km_ADP_pAMPK",
-#                            "k_ADP_pAMPK","Km_ATP_pAMPK","k_ATP_pAMPK"],
-#                    'names':[r'$k_{6r}$',r'$k_{7r}$',r'$k_{8r}$',r'$k_{9r}$',
-#                             r'$k_{10r}$',r'$k_{11r}$',r'$K_{m12}$',r'$K_{m13}$',
-#                             r'$K_{m14}$',r'$K_{m15}$',r'$K_{m16}$',r'$K_{m17}$',
-#                             r'$K_{m18}$',r'$K_{m19}$',r'$V_{max,kinase}$',
-#                            r'$V_{max,kinase,ATP}$',r'$V_{max,kinase,ADP}$',
-#                            r'$V_{max,ppase,AMP}$',r'$K_{m,pAMPK}$',
-#                            r'$k_{pAMPK}$',r'$K_{m,AMP,pAMPK}$',r'$k_{AMP,pAMPK}$',
-#                            r'$K_{m,ADP,pAMPK}$',r'$k_{ADP,pAMPK}$',r'$K_{m,ATP,pAMPK}$',
-#                            r'$k_{ATP,pAMPK}$'],
-#                    },
-#        "MA_single": {'free':["kOffAMP","kOffADP","kOffATP","kOffCaMKK","kPhosCaMKK",
-#                              "kOffLKB1","kPhosLKB1","kOffPP","kDephosPP","kOffAMPK",
-#                              "kPhosAMPK","kOffPP1","kDephosPP1"],
-#                    'names':[r'$k_{\text{OffAMP}}$',r'$k_{\text{OffADP}}$',
-#                             r'$k_{\text{OffATP}}$',r'$k_{\text{OffCaMKK}}$',
-#                             r'k_{\text{PhosCaMKK}}',r'k_{\text{OffLKB1}}',
-#                             r'k_{\text{PhosLKB1}}',r'k_{\text{OffPP}}',
-#                             r'$k_{\text{DephosPP}}$',r'$k_{\text{OffAMPK}}$',
-#                             r'$k_{\text{PhosAMPK}}$',r'$k_{\text{OffPP1}}$',
-#                             r'$k_{\text{Dephos,PP1}}$']}, 
-#         "MM_single":  {'free':["kOffAMP","kOffADP","kOffATP","kCaMKK","KmCaMKK",
-#                                "kLKB1","KmLKB1","kPP","KmPP"],
-#                     'names':[r'$k_{\text{OffAMP}}$',r'$k_{\text{OffADP}}$',
-#                              r'$k_{\text{OffATP}}$',r'$k_{\text{PhosCaMKK}}$',
-#                              r'$K_{m,\text{CaMKK}}$',r'$k_{\text{PhosLKB1}}$',
-#                              r'$K_{\text{m,LKB1}}$',r'$k_{\text{DephosPP}}$',
-#                              r'$K_{\text{M,PP}}$'],
-#                     },
-#         "MA_nonessential": {'free':["kOffAMP","kOffADP","kOffATP","kOffCaMKK",
-#                                     "kPhosCaMKK","kOffLKB1","kPhosLKB1","kOffPP",
-#                                     "kDephosPP","kOffAMPK","kPhosAMPK","kOffPP1",
-#                                     "kDephosPP1","alphaLKB1","alphaPP","betaAMP"],
-#                     'names':[r'$k_{\text{OffAMP}}$',r'$k_{\text{OffADP}}$',
-#                              r'$k_{\text{OffATP}}$',r'$k_{\text{OffCaMKK}}$',
-#                              r'$k_{\text{PhosCaMKK}}$',r'$k_{\text{OffLKB1}}$',
-#                              r'$k_{\text{PhosLKB1}}$',r'$k_{\text{OffPP}}$',
-#                              r'$k_{\text{DephosPP}}$',r'$k_{\text{OffAMPK}}$',
-#                              r'$k_{\text{PhosAMPK}}$',r'$k_{\text{OffPP1}}$',
-#                              r'$k_{\text{Dephos,PP1}}$',r'$\alpha_{\text{LKB1}}$',
-#                              r'$\alpha_{\text{PP}}$',r'$\beta_{\text{AMP}}$'],
-#                     }, 
-         "MM_nonessential":  {'free':["kOffAMP","kOffADP","kOffATP","kPhosCaMKK","KmCaMKK",
-                                      "kPhosLKB1","KmLKB1","kDephosPP","KmPP","alphaLKB1",
-                                      "alphaPP","betaAMP"],
-                              'names':[r'k_{\text{OffAMP}}',r'k_{\text{OffADP}}',
-                              r'$k_{\text{OffATP}}$',r'$k_{\text{PhosCaMKK}}$',
-                              r'$K_{m,\text{CaMKK}}$',r'$k_{\text{PhosLKB1}}$',
-                              r'$K_{\text{m,LKB1}}$',r'$k_{\text{DephosPP}}$',
-                              r'$K_{\text{M,PP}}$',r'$\alpha_{\text{LKB1}}$',
-                             r'$\alpha_{\text{PP}}$',r'$\beta_{\text{AMP}}$'],
-                     }
+    #    "ampk_Coccimiglio": {'free':["k6r","k7r","k8r","k9r","k10r","k11r","Km12",
+    #                        "Km13","Km14","Km15","Km16","Km17","Km18","Km19",
+    #                        "Vmaxkinase","VmaxkinaseATP","VmaxkinaseADP",
+    #                        "VmaxkinaseAMP","Vmaxppase","VmaxppaseATP",
+    #                        "VmaxppaseADP","VmaxppaseAMP","Km_pAMPK","k_pAMPK",
+    #                        "Km_AMP_pAMPK","k_AMP_pAMPK","Km_ADP_pAMPK",
+    #                        "k_ADP_pAMPK","Km_ATP_pAMPK","k_ATP_pAMPK"],
+    #                'names':[r'$k_{6r}$',r'$k_{7r}$',r'$k_{8r}$',r'$k_{9r}$',
+    #                         r'$k_{10r}$',r'$k_{11r}$',r'$K_{m12}$',r'$K_{m13}$',
+    #                         r'$K_{m14}$',r'$K_{m15}$',r'$K_{m16}$',r'$K_{m17}$',
+    #                         r'$K_{m18}$',r'$K_{m19}$',r'$V_{max,kinase}$',
+    #                        r'$V_{max,kinase,ATP}$',r'$V_{max,kinase,ADP}$',
+    #                        r'$V_{max,ppase,AMP}$',r'$K_{m,pAMPK}$',
+    #                        r'$k_{pAMPK}$',r'$K_{m,AMP,pAMPK}$',r'$k_{AMP,pAMPK}$',
+    #                        r'$K_{m,ADP,pAMPK}$',r'$k_{ADP,pAMPK}$',r'$K_{m,ATP,pAMPK}$',
+    #                        r'$k_{ATP,pAMPK}$'],
+    #                },
+    #    "MA_single": {'free':["kOffAMP","kOffADP","kOffATP","kOffCaMKK","kPhosCaMKK",
+    #                          "kOffLKB1","kPhosLKB1","kOffPP","kDephosPP","kOffAMPK",
+    #                          "kPhosAMPK","kOffPP1","kDephosPP1"],
+    #                'names':[r'$k_{\text{OffAMP}}$',r'$k_{\text{OffADP}}$',
+    #                         r'$k_{\text{OffATP}}$',r'$k_{\text{OffCaMKK}}$',
+    #                         r'k_{\text{PhosCaMKK}}',r'k_{\text{OffLKB1}}',
+    #                         r'k_{\text{PhosLKB1}}',r'k_{\text{OffPP}}',
+    #                         r'$k_{\text{DephosPP}}$',r'$k_{\text{OffAMPK}}$',
+    #                         r'$k_{\text{PhosAMPK}}$',r'$k_{\text{OffPP1}}$',
+    #                         r'$k_{\text{Dephos,PP1}}$']}, 
+        "MM_single":  {'free':["kOffAMP","kOffADP","kOffATP","kCaMKK","KmCaMKK",
+                               "kLKB1","KmLKB1","kPP","KmPP"],
+                    'names':[r'$k_{\text{OffAMP}}$',r'$k_{\text{OffADP}}$',
+                             r'$k_{\text{OffATP}}$',r'$k_{\text{PhosCaMKK}}$',
+                             r'$K_{m,\text{CaMKK}}$',r'$k_{\text{PhosLKB1}}$',
+                             r'$K_{\text{m,LKB1}}$',r'$k_{\text{DephosPP}}$',
+                             r'$K_{\text{M,PP}}$'],
+                    },
+        # "MA_nonessential": {'free':["kOffAMP","kOffADP","kOffATP","kOffCaMKK",
+        #                             "kPhosCaMKK","kOffLKB1","kPhosLKB1","kOffPP",
+        #                             "kDephosPP","kOffAMPK","kPhosAMPK","kOffPP1",
+        #                             "kDephosPP1","alphaLKB1","alphaPP","betaAMP"],
+        #             'names':[r'$k_{\text{OffAMP}}$',r'$k_{\text{OffADP}}$',
+        #                      r'$k_{\text{OffATP}}$',r'$k_{\text{OffCaMKK}}$',
+        #                      r'$k_{\text{PhosCaMKK}}$',r'$k_{\text{OffLKB1}}$',
+        #                      r'$k_{\text{PhosLKB1}}$',r'$k_{\text{OffPP}}$',
+        #                      r'$k_{\text{DephosPP}}$',r'$k_{\text{OffAMPK}}$',
+        #                      r'$k_{\text{PhosAMPK}}$',r'$k_{\text{OffPP1}}$',
+        #                      r'$k_{\text{Dephos,PP1}}$',r'$\alpha_{\text{LKB1}}$',
+        #                      r'$\alpha_{\text{PP}}$',r'$\beta_{\text{AMP}}$'],
+        #             }, 
+        #  "MM_nonessential":  {'free':["kOffAMP","kOffADP","kOffATP","kPhosCaMKK","KmCaMKK",
+        #                               "kPhosLKB1","KmLKB1","kDephosPP","KmPP","alphaLKB1",
+        #                               "alphaPP","betaAMP"],
+        #                       'names':[r'k_{\text{OffAMP}}',r'k_{\text{OffADP}}',
+        #                       r'$k_{\text{OffATP}}$',r'$k_{\text{PhosCaMKK}}$',
+        #                       r'$K_{m,\text{CaMKK}}$',r'$k_{\text{PhosLKB1}}$',
+        #                       r'$K_{\text{m,LKB1}}$',r'$k_{\text{DephosPP}}$',
+        #                       r'$K_{\text{M,PP}}$',r'$\alpha_{\text{LKB1}}$',
+        #                      r'$\alpha_{\text{PP}}$',r'$\beta_{\text{AMP}}$'],
+        #              }
         }
 
     # loop through each model and analyze GSA results
@@ -121,10 +121,6 @@ def main(raw_args=None):
         free_params = models_free_params[model]['free']
         nominal_params = model_info['nominal_params']
         param_names = models_free_params[model]['names']
-
-
-        print(param_names)
-        print(free_params)
 
         # define the bounds for the AMPK parameters
         bounds = [model_info['param_bounds'] for param in free_params]
@@ -186,6 +182,22 @@ def main(raw_args=None):
             dydt = rhs_stress(0, y0, list(params.values()))
             dydt =  np.sum([dydt[idx] for idx in pampkar_idxs])
             initial_rhs.append(dydt)
+
+        # fits to the data
+        cyto_data, cyto_std, cyto_times = load_data('../../../Schmitt_et_al_2022_data/fig_2e_cyto.npz', to_seconds=True)
+        lyso_data, lyso_std, lyso_times = load_data('../../../Schmitt_et_al_2022_data/fig_2b_lyso.npz', to_seconds=True)
+        mito_data, mito_std, mito_times = load_data('../../../Schmitt_et_al_2022_data/fig_2c_mito.npz', to_seconds=True)
+
+        # fit to data
+        ratio = pAMPKAR_stressed/AMPKAR_stressed
+
+        iterp_cyto = np.interp(cyto_times, times, ratio)
+        iterp_lyso = np.interp(lyso_times, times, ratio)
+        iterp_mito = np.interp(mito_times, times, ratio)
+
+        # define the loss function
+        loss_fn = lambda x, x_true, sigma_inv: (x - x_true).T@sigma_inv@(x - x_true) 
+
 
         # define dict of the qoi's -- there are multiple, so we need to run sobol analysis for each
         # the items in the dict are tuples, where the first entry is the vector of qoi's
