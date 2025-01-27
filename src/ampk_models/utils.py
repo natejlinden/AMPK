@@ -123,7 +123,7 @@ def get_param_subsample(param_names, idata, n_traj, prior_or_post="post", rng=np
 ###############################################################################
 #### Solving ODEs ####
 ###############################################################################
-@eqx.filter_jit
+@jax.jit
 def solve_traj(rhs, rhs_stress, y0, params, times, rtol=1e-6, atol=1e-6, 
                evnt_rtol = 1e-12, evnt_atol = 1e-12, tmax_init = 1e3, 
                pcoeff=0, icoeff=1, dcoeff=0, solver = dfrx.Kvaerno5(), dt0=1e-10):
@@ -160,7 +160,7 @@ def solve_traj(rhs, rhs_stress, y0, params, times, rtol=1e-6, atol=1e-6,
     
     return jnp.squeeze(jnp.array(sol_stressed.ys)), jnp.squeeze(jnp.array(sol.ys))
 
-@eqx.filter_jit
+@jax.jit
 def solve_SS(rhs, rhs_stress, y0, params, rtol=1e-6, atol=1e-6, 
              evnt_rtol = 1e-12, evnt_atol = 1e-12, tmax = 1e3,
              pcoeff=0, icoeff=1, dcoeff=0, solver = dfrx.Kvaerno5()):
@@ -396,7 +396,7 @@ def build_pymc_model(param_names, prior_param_dict, data, sol_op, data_sigma=0.1
             priors[param] = prior
 
         # predict response
-        prediction = sol_op(*[priors[param] for param in param_names])
+        prediction = pm.Deterministic('prediction', sol_op(*[priors[param] for param in param_names]))
 
         # assume a normal model for the data
         # sigma specified by the data_sigma param to this function
