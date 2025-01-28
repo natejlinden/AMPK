@@ -365,8 +365,8 @@ def set_lognormal_priors(param_names, free_params, nominal_params_dict,prior_par
             
             # set the prior parameters string to be evaluated in the pymc model constructor
             tmp = 'pm.LogNormal("' + param + '", mu=' + \
-                str(prior_param_dict[param]['mu']) + ', tau=' + \
-                str(prior_param_dict[param]['tau']) + ')'
+                str(prior_param_dict[param]['mu']) + ', sigma=' + \
+                str(prior_param_dict[param]['sigma']) + ')'
             
             print(tmp)
             prior_dict[param] = tmp
