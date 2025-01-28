@@ -238,7 +238,7 @@ def main(raw_args=None):
 
             # covert to pandas dataframe for easier plotting
             # sobol_df = pd.DataFrame({item:Si_sobol[item] for item in ['S1', 'S1_conf', 'ST', 'ST_conf']})
-            sobol_df = pd.DataFrame({item:Si_sobol[item] for item in ['Si', 'Sa_conf', 'Sb', 'Sb_conf', 'S', 'S_conf', 'ST', 'ST_conf']})
+            sobol_df = pd.DataFrame({item:Si_sobol[item] for item in ['S', 'S_conf', 'ST', 'ST_conf']})
             sobol_df["param"] = free_params
             sobol_df["param_name"] = param_names
             sobol_df.to_csv(args.results_path  +  m_name + '/'+  m_name + '_' + qoi + '_sobol_GSA.csv')
