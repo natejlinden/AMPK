@@ -234,7 +234,7 @@ def main(raw_args=None):
 
             # analyze GSA
             # Si_sobol = sobol_analyze.analyze(problem, qoi_vals, calc_second_order=False)
-            Si_sobol = hdmr_analyze.analyze(problem, param_samples, qoi_vals)
+            Si_sobol = hdmr_analyze(problem, param_samples, qoi_vals)
 
             # covert to pandas dataframe for easier plotting
             # sobol_df = pd.DataFrame({item:Si_sobol[item] for item in ['S1', 'S1_conf', 'ST', 'ST_conf']})
