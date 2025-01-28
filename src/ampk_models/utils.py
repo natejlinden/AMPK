@@ -373,7 +373,7 @@ def set_lognormal_priors(param_names, free_params, nominal_params_dict,prior_par
 
         else: # fixed parameter
             # set the prior parameters to the nominal value
-            if 'On' not in param:
+            if len(prior_param_dict[param]) > 0:
                 val = pz.LogNormal(mu=prior_param_dict[param]['mu'], sigma=prior_param_dict[param]['sigma']).mean()
             else:
                 val = nominal_params_dict[param]
