@@ -6,6 +6,7 @@ import diffrax as dfrx
 import equinox as eqx
 import pymc as pm
 from pymc.sampling.jax import sample_numpyro_nuts, sample_blackjax_nuts, get_jaxified_logp
+import nutpie
 from pymc.variational.callbacks import CheckParametersConvergence
 from pytensor.link.jax.dispatch import jax_funcify
 from pymc.stats.log_density import compute_log_likelihood
@@ -47,7 +48,9 @@ def parse_args(raw_args=None):
     parser.add_argument("-nwarmup", type=int, default=1000, help="Number of MCMC tuning samples. Defaults to 1000.")
     parser.add_argument("-nsamples", type=int, default=1000, help="Number of posterior samples to draw per MCMC chain. Defaults to 1000.")
     parser.add_argument("-nchains", type=int, default=1, help="Number of chains to run. Defaults to 1.")
-    parser.add_argument("-sampler", type=str, default='NUTS', help="Name of the MCMC sampler to use ['NUTS', 'NUTS-ADVI', 'NumpyroNUTS', 'BlackJaxNUTS']. Defaults to 'NUTS'")
+    parser.add_argument("-sampler", type=str, default='NUTS', help="Name of the MCMC sampler to use ['NUTS', 'NUTS-ADVI', 'NumpyroNUTS', 'Nutpie']. Defaults to 'NUTS'")
+    parser.add_argument("-chain_method_numpyro", type=str, default='vectorized', help="Method to use for running chains in NumpyroNUTS. Defaults to 'vectorized'.")
+    parser.add_argument("-ncores_nutpie", type=int, default=1, help="Number of cores to use for Nutpie. Defaults to 1 in which case sampling is sequential over the chains. If ncores > 1 then sampling is parallel over the chains.")
     # simulation parameters
     parser.add_argument("-tmax_init", type=float, default=1e3, help="Maximum time to run the simulation. Defaults to 1e3.")
     parser.add_argument("-rtol", type=float,default=1e-6)
@@ -174,17 +177,26 @@ def main(raw_args=None):
 
     vjp_sol_op_jax_jitted = eqx.filter_jit(vjp_sol_op_jax)
 
-    vjp_sol_op = VJPSolOp(vjp_sol_op_jax_jitted)
-    sol_op = SolOp(sol_op_jax_jitted, vjp_sol_op)
+    if args.sampler in ['NUTS', 'NUTS-ADVI', 'Nutpie', 'ADVI']:
+        # if using Pymc or Nutpie samplers, then we need the Pytensor op for the grads
+        vjp_sol_op = VJPSolOp(vjp_sol_op_jax_jitted)
+        sol_op = SolOp(sol_op_jax_jitted, vjp_sol_op)
 
-    # register the ops with PyTensor
-    @jax_funcify.register(SolOp)
-    def sol_op_jax_funcify(op, **kwargs):
-        return sol_op_jax
+        # register the ops with PyTensor
+        @jax_funcify.register(SolOp)
+        def sol_op_jax_funcify(op, **kwargs):
+            return sol_op_jax
 
-    @jax_funcify.register(VJPSolOp)
-    def vjp_sol_op_jax_funcify(op, **kwargs):
-        return vjp_sol_op_jax
+        @jax_funcify.register(VJPSolOp)
+        def vjp_sol_op_jax_funcify(op, **kwargs):
+            return vjp_sol_op_jax
+    elif args.sampler in ['NumpyroNUTS']:
+        # using Jax-based sampler, so we do not need the Pytensor ops
+        sol_op = SolOp_noGrad(sol_op_jax_jitted)
+
+        @jax_funcify.register(SolOp_noGrad)
+        def sol_op_jax_funcify(op, **kwargs):
+            return sol_op_jax
 
     ####################################################
     # PyMC model #
@@ -205,41 +217,47 @@ def main(raw_args=None):
             prior_pred.to_netcdf(os.path.join(args.savedir, args.model + '_' \
                                             + args.compartment + '_prior_samples.nc'))
     
+    #####################################################
+    # Posterior sampleing (MCMC or ADVI) #
+    #####################################################
     if args.sample_posterior:
-        #####################################################
-        # MCMC (or other sampling) #
-        #####################################################
-        print('Running MCMC for model {}'.format(args.model))
-
-        with pm_model:
-            if args.sampler == 'NUTS':
+        print('Running MCMC for model {} with sampler {}'.format(args.model, args.sampler))
+        if args.sampler == 'NUTS':
+            with pm_model:
                 posterior = pm.sample(args.nsamples, tune=args.nwarmup, chains=args.nchains, 
-                                    cores=1, random_seed=args.seed, 
-                                    idata_kwargs={'log_likelihood': True})
-                
-            elif args.sampler == 'NUTS-ADVI':
+                                cores=1, random_seed=args.seed, 
+                                idata_kwargs={'log_likelihood': True})
+            
+        elif args.sampler == 'NUTS-ADVI':
+            with pm_model:
                 posterior = pm.sample(args.nsamples, tune=args.nwarmup, chains=args.nchains, 
-                                    cores=1, init='advi+adapt_diag', random_seed=args.seed, 
-                                    idata_kwargs={'log_likelihood': True})
-            elif args.sampler == 'BlackJaxNUTS':
-                posterior = sample_blackjax_nuts(draws=args.nsamples, tune=args.nwarmup, 
-                                                jitter=False, chains=args.nchains, progress_bar=False,
-                                                chain_method='vectorized', random_seed=args.seed, 
-                                                idata_kwargs={'log_likelihood': True})
-            elif args.sampler == 'NumpyroNUTS':
-                posterior = sample_numpyro_nuts(draws=args.nsamples, tune=args.nwarmup, jitter=False,
-                                                chains=args.nchains, random_seed=args.seed, chain_method='vectorized', progressbar=True,
-                                                idata_kwargs={'log_likelihood': True})
-            elif args.sampler == "ADVI":
+                                cores=1, init='advi+adapt_diag', random_seed=args.seed, 
+                                idata_kwargs={'log_likelihood': True})
+        elif args.sampler == 'NumpyroNUTS':
+            with pm_model:
+                posterior = sample_numpyro_nuts(draws=args.nsamples, tune=args.nwarmup, 
+                                jitter=False, chains=args.nchains, 
+                                random_seed=args.seed, chain_method=args.chain_method_numpyro, 
+                                progressbar=True, data_kwargs={'log_likelihood': True})
+        elif args.sampler == "ADVI":
+            with pm_model:
                 mean_field = pm.fit(n=args.n_advi_iter, method='advi', 
-                                    callbacks=[CheckParametersConvergence(diff='absolute')])
+                                callbacks=[CheckParametersConvergence(diff='absolute')])
 
-                fig, ax = plt.subplots()
-                ax.plot(mean_field.hist)
-                fig.savefig(args.savedir + args.model + '_' + \
-                                        args.compartment + '_advi_converg.png', dpi=300)
-                plt.close()
-                posterior = mean_field.sample(draws=args.nsamples)
+            # make convergence plot
+            fig, ax = plt.subplots()
+            ax.plot(mean_field.hist)
+            fig.savefig(args.savedir + args.model + '_' + \
+                                    args.compartment + '_advi_converg.png', dpi=300)
+            plt.close()
+
+            # sample from the mean field approximation
+            posterior = mean_field.sample(draws=args.nsamples)
+        elif args.sampler == "Nutpie":
+            nutpie_compiled_model = nutpie.compile_pymc_model(pm_model)
+            posterior = nutpie.sample(nutpie_compiled_model, draws=args.nsamples, 
+                                      tune=args.nwarmup, chains=args.nchains, 
+                                      cores=args.ncores_nutpie, seed=args.seed)
             
         ####################################################
         # posterior predictive sampling #
@@ -261,6 +279,7 @@ def main(raw_args=None):
     ####################################################
     # posterior predictive REsampling #
     ####################################################
+    # Block to generate new posterior predictive samples using the stored posterior samples
     print(args.resample_ppc)
     if args.resample_ppc:
         fname = os.path.join(args.savedir, args.model + '_' + args.compartment + '_mcmc_samples_' + args.sampler + '.nc')
@@ -269,11 +288,6 @@ def main(raw_args=None):
 
         posterior = compute_log_likelihood(posterior, model=pm_model, progressbar=True,
                                            extend_inferencedata=True)
-
-        # print('Running posterior predictive sampling for model {}'.format(args.model))
-        # post_pred = pm.sample_posterior_predictive(posterior, model=pm_model, idata_kwargs={'log_likelihood': True})
-
-        # posterior.extend(post_pred)
 
         # save as netcdf file
         posterior.to_netcdf(os.path.join(args.savedir, args.model + '_' + \
