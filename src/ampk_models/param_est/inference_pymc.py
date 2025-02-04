@@ -242,7 +242,10 @@ def main(raw_args=None):
         elif args.sampler == "ADVI":
             with pm_model:
                 mean_field = pm.fit(n=args.n_advi_iter, method='advi', 
-                                callbacks=[CheckParametersConvergence(diff='absolute')])
+                                callbacks=[CheckParametersConvergence(diff='absolute', tolerance=1e-3)], 
+                                obj_optimizer=pm.adam)
+                
+                
 
             # make convergence plot
             fig, ax = plt.subplots()
