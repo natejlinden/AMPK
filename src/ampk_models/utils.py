@@ -15,7 +15,7 @@ import preliz as pz
 import diffrax as dfrx
 import equinox as eqx
 import seaborn as sns
-
+import met_brewer as mb
 
 jax.config.update("jax_enable_x64", True)
 rng = np.random.default_rng(seed=1234)
@@ -196,7 +196,7 @@ def solve_SS(rhs, rhs_stress, y0, params, rtol=1e-6, atol=1e-6,
     
     return jnp.squeeze(jnp.array(sol_stressed.ys)), jnp.squeeze(jnp.array(sol.ys))
 
-def run_simulations(param_samples, model_name, model_info_file, metab_params_file, times, rtol=1e-6,atol=1e-6,pcoeff=0,icoeff=1,dcoeff=0,tmax_init=1e3):
+def run_simulations(param_samples, model_name, model_info_file, metab_params_file, times, rtol=1e-6,atol=1e-6,pcoeff=0,icoeff=1,dcoeff=0,tmax_init=1e3, y0=None):
     """ Run simulations for the specified model and return the results.
     """
     ####################################################
@@ -218,7 +218,9 @@ def run_simulations(param_samples, model_name, model_info_file, metab_params_fil
     state_names = list(model_info["init_conds"].keys())
     ampkar_states = model_info['ampkar_states']
     pampkar_states = model_info['pampkar_states']
-    y0 = list(model_info["init_conds"].values())
+
+    if y0 is None:
+        y0 = list(model_info["init_conds"].values())
 
     # get the indices of the states
     ampkar_idxs = [state_names.index(item) for item in ampkar_states]
@@ -247,13 +249,11 @@ def run_simulations(param_samples, model_name, model_info_file, metab_params_fil
 
     def simulator(params):
         # solve model
-        sol_stressed, sol = solve_traj(rhs, rhs_stress, y0, params, times, tmax_init=tmax_init, rtol=rtol,atol=atol,pcoeff=pcoeff, icoeff=icoeff,dcoeff=dcoeff)
+        sol_stressed, _ = solve_traj(rhs, rhs_stress, y0, params, times, tmax_init=tmax_init, rtol=rtol,atol=atol,pcoeff=pcoeff, icoeff=icoeff,dcoeff=dcoeff)
 
         # compute delta pAMPKAR/AMPKAR_tot
         AMPKAR_stressed = sol_stressed[jnp.array(ampkar_idxs), :].sum(axis=0)
-        # AMPKAR_basal = sol[jnp.array(ampkar_idxs)].sum(axis=0)
         pAMPKAR_stressed = sol_stressed[jnp.array(pampkar_idxs), :].sum(axis=0)
-        # pAMPKAR_basal = sol[jnp.array(pampkar_idxs)].sum(axis=0)
         
         return pAMPKAR_stressed/AMPKAR_stressed
     
@@ -530,3 +530,14 @@ def plot_predictive(inf_data, data, times, plot_prior=True, plot_post=True,
     leg  = ax.legend(handles=handles, labels=labels, fontsize=8, bbox_to_anchor=(1.05, 1), loc='upper left')
 
     return fig, ax, leg
+
+def get_compartment_colors(compartment_names=['cyto', 'lyso', 'mito'], mb_pallete='Egypt'):
+    n_compartment = len(compartment_names)
+
+    # get the colors for the compartments
+    colors = mb.met_brew(name=mb_pallete, n=n_compartment)
+
+    # create a dictionary of compartment colors
+    compartment_colors = {compartment_names[i]: colors[i] for i in range(n_compartment)}
+
+    return compartment_colors
