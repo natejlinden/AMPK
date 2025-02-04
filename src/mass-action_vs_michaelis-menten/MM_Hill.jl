@@ -5,7 +5,7 @@ using StructuralIdentifiability
 MA = @ODEmodel(
     x1'(t) = -(Vmax_1*x1(t)/(Km_1 + x1(t))) + (Vmax_2*x2(t)*x2(t)/(Km_2*Km_2 + x2(t)*x2(t))),
     x2'(t) = (Vmax_1*x1(t)/(Km_1 + x1(t))) - (Vmax_2*x2(t)*x2(t)/(Km_2*Km_2 + x2(t)*x2(t))),
-    y1(t) = x2(t)/x1(t)
+    y1(t) = x2(t)
 )
 
 # Assess local identifiability with all parameters free
