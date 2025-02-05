@@ -16,6 +16,7 @@ import diffrax as dfrx
 import equinox as eqx
 import seaborn as sns
 import met_brewer as mb
+from scipy.spatial import cKDTree
 
 jax.config.update("jax_enable_x64", True)
 rng = np.random.default_rng(seed=1234)
@@ -120,6 +121,49 @@ def get_param_subsample(param_names, idata, n_traj, prior_or_post="post", rng=np
         param_samples.append(tmp)
  
     return np.array(param_samples)
+
+def kl_divergence_knn(X, Y, k=1):
+    """
+    Estimate the KL divergence D_KL(P || Q) using k-Nearest Neighbors.
+    
+    Parameters:
+    X : numpy array, shape (n_samples_p, n_features)
+        Samples from distribution P.
+    Y : numpy array, shape (n_samples_q, n_features)
+        Samples from distribution Q.
+    k : int
+        Number of nearest neighbors to use (default is 1).
+        
+    Returns:
+    float
+        Estimated KL divergence.
+
+    Estimator derived in: https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=4595271
+        (Eqn: 13)
+    """
+    n, d = X.shape
+    m, _ = Y.shape
+
+    # Build KD-Trees for efficient neighbor search
+    tree_p = cKDTree(X)
+    tree_q = cKDTree(Y)
+
+    # Distances to k-th nearest neighbor in P (excluding self)
+    rho = tree_p.query(X, k + 1, p=float('inf'))[0][:, -1]  # Skip the first neighbor (itself)
+    
+    # Distances to k-th nearest neighbor in Q
+    if k==1:
+        nu = tree_q.query(X, k, p=float('inf'))[0][:,]
+    else:
+        nu = tree_q.query(X, k, p=float('inf'))[0][:, -1]
+
+    # Avoid log(0) by replacing zero distances with a small value
+    nu[nu == 0] = 1e-16
+    rho[rho == 0] = 1e-16
+
+    # KL Divergence estimation
+    kl_estimate = (d / n) * np.sum(np.log(nu / rho)) + np.log(m / (n - 1))
+    return kl_estimate
 ###############################################################################
 #### Solving ODEs ####
 ###############################################################################
@@ -413,7 +457,8 @@ def build_pymc_model(param_names, prior_param_dict, data, sol_op, data_sigma=0.1
 ###############################################################################
 def plot_predictive(inf_data, data, times, plot_prior=True, plot_post=True,
                     add_t_0=True, n_traces=200, figsize=(6, 4), prior_color='blue',
-                    post_color='black', data_color='red', data_marker_size=10, cred_int=95, fig_ax = (None, None)):
+                    post_color='black', data_color='red', data_marker_size=10, 
+                    cred_int=95, fig_ax = (None, None), linestyle='-'):
     """"plots prior and posterior predictive checks for the given model 
     along with the data supplied for inference"""
 
@@ -498,7 +543,7 @@ def plot_predictive(inf_data, data, times, plot_prior=True, plot_post=True,
     elif plot_post:
         sns.lineplot(data=post_sims_df, x='time', y='y',
                     errorbar=("pi", cred_int), ax=ax, color=post_color, 
-                    label='Posterior predictive', linewidth=2.0)
+                    label='Posterior predictive', linewidth=2.0, linestyle=linestyle)
     
     # plot data
     ax.scatter(times, data, color=data_color, s=data_marker_size, 
