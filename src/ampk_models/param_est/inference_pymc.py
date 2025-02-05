@@ -64,7 +64,7 @@ def parse_args(raw_args=None):
     parser.add_argument("-seed", type=int, default=0, help="Random seed to use. Defaults to 0.")
     parser.add_argument("--sample_prior", action='store_true', help="Flag to sample from the prior.")
     parser.add_argument("--sample_posterior", action='store_true', help="Flag to sample from the posterior.")
-    parser.add_argument("--resample_ppc", action='store_true', help="Flag to resample the posterior predictive using previous param samples.")
+    parser.add_argument("--compute_llike", action='store_true', help="Flag to resample the posterior predictive using previous param samples.")
     parser.add_argument("-n_advi_iter", type=int, default=1000, help="Number of iterations for ADVI. Defaults to 1000.")
 
     
@@ -283,10 +283,9 @@ def main(raw_args=None):
     # posterior predictive REsampling #
     ####################################################
     # Block to generate new posterior predictive samples using the stored posterior samples
-    print(args.resample_ppc)
-    if args.resample_ppc:
+    if args.compute_llike:
         fname = os.path.join(args.savedir, args.model + '_' + args.compartment + '_mcmc_samples_' + args.sampler + '.nc')
-        print('Resampling posterior predictive samples using samples stored in {}'.format(fname))
+        print('Evaluating log likelihood using posterior samples stored in {}'.format(fname))
         posterior = az.from_netcdf(fname)
 
         posterior = compute_log_likelihood(posterior, model=pm_model, progressbar=True,
@@ -294,7 +293,7 @@ def main(raw_args=None):
 
         # save as netcdf file
         posterior.to_netcdf(os.path.join(args.savedir, args.model + '_' + \
-                                        args.compartment + '_mcmc_samples_loglike_' + args.sampler + '.nc'))
+                                        args.compartment + '_mcmc_samples_' + args.sampler + '.nc'))
                               
     print('Completed {}'.format(args.model))
 
