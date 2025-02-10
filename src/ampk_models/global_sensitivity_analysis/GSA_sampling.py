@@ -3,10 +3,6 @@ environ['OMP_NUM_THREADS'] = '1'
 
 import numpy as np
 from SALib.sample import sobol as sobol_samp
-from SALib.sample import morris as morris_samp
-from SALib.analyze import sobol as sobol_analyze
-from SALib.analyze import morris as morris_analyze
-from SALib.analyze.hdmr import analyze as hdmr_analyze
 import os, sys, time, json, argparse
 import pandas as pd
 import argparse
@@ -87,7 +83,7 @@ def main(raw_args=None):
     
     # get the names of the fixed parameters
     free_params = args.free_params.split(',')
-    param_names = model_info['nominal_params'].keys()
+    param_names = list(model_info['nominal_params'].keys())
     nominal_params = model_info['nominal_params']
 
     # parameters for the metabolic model
@@ -141,7 +137,7 @@ def main(raw_args=None):
     # - the order of parameters in the nominals json is the order in 
     #       which parameters are expected by the RHS of the model
     # temp is a n_sample x n_params (free + fixed) matrix
-    temp = np.empty(shape=(param_vals.shape[0], len(param_names))) # TODO check dims of paravals
+    temp = np.empty(shape=(param_vals.shape[0], len(param_names)))
 
     for i in range(param_vals.shape[0]):
         # copy the nominals dict
@@ -157,6 +153,36 @@ def main(raw_args=None):
             temp[i, j] = temp_dict[key]
 
     ######################################################
+    # initial conditions without LKB1 or CaMKK
+    ######################################################
+    if 'MA' in args.model:
+        y0_LKB1_KD = y0.copy()
+        y0_CaMKK_KD = y0.copy()
+
+        # # knockdown LKB1 or CaMKK by setting the initial conditions to 0
+        # y0_LKB1_KD[list(model_info['init_conds'].keys()).index('LKB1')] = 0
+        # y0_CaMKK_KD[list(model_info['init_conds'].keys()).index('CaMKK')] = 0
+
+        params_LKB1_KD = temp.copy() # do not need to change the params for MA models
+        params_CaMKK_KD = temp.copy()
+        params_LKB1_KD[:, param_names.index('kOnLKB1')] = 0
+        params_LKB1_KD[:, param_names.index('kPhosLKB1')] = 0
+        params_CaMKK_KD[:, param_names.index('kOnCaMKK')] = 0
+        params_CaMKK_KD[:, param_names.index('kPhosCaMKK')] = 0
+        
+    elif "MM" in args.model:
+        y0_LKB1_KD = y0.copy()
+        y0_CaMKK_KD = y0.copy()
+
+        # need to change the LKB1tot and CaMKKtot params for MM models
+        params_LKB1_KD = temp.copy()
+        params_CaMKK_KD = temp.copy()
+
+        # knockdown LKB1 or CaMKK by setting total concentrations to 0
+        params_LKB1_KD[:, param_names.index('LKB1tot')] = 0
+        params_CaMKK_KD[:, param_names.index('CaMKKtot')] = 0
+
+    ######################################################
     # Set up solver
     ######################################################
     times = np.linspace(0, args.tmax, 1000)
@@ -164,9 +190,22 @@ def main(raw_args=None):
                                       rtol=args.rtol, atol=args.atol, 
                                       evnt_rtol=args.evnt_rtol, evnt_atol=args.evnt_atol, 
                                       pcoeff=args.pcoeff, icoeff=args.icoeff, dcoeff=args.dcoeff))
+    
+    solve_LKB1_KD = jax.vmap(lambda params: solve_traj(rhs, rhs_stress, y0_LKB1_KD, 
+                                                       params, times,
+                                      rtol=args.rtol, atol=args.atol, 
+                                      evnt_rtol=args.evnt_rtol, evnt_atol=args.evnt_atol, 
+                                      pcoeff=args.pcoeff, icoeff=args.icoeff, dcoeff=args.dcoeff))
+    
+    solve_CaMKK_KD = jax.vmap(lambda params: solve_traj(rhs, rhs_stress, y0_CaMKK_KD, 
+                                                    params, times,
+                                    rtol=args.rtol, atol=args.atol, 
+                                    evnt_rtol=args.evnt_rtol, evnt_atol=args.evnt_atol, 
+                                    pcoeff=args.pcoeff, icoeff=args.icoeff, dcoeff=args.dcoeff))
 
     # run the vmapped simulations
-    expected_array_size = len(times)*param_vals.shape[0]*8 # 8 bytes per float64
+    expected_array_size = len(times)*param_vals.shape[0]*8*3 # 8 bytes per float64
+    # mult by 3 for the 3 sitatuations
     
     if expected_array_size > 250000000:
         print('Warning: chunking simulations to avoid memory error.')
@@ -178,19 +217,27 @@ def main(raw_args=None):
         # Initialize arrays to store the results
         all_sols_stressed = []
         all_sols_basal = []
+        all_sols_stressed_LKB1_KD = []
+        all_sols_stressed_CaMKK_KD = []
 
         # loop over the chunks
         for i in range(n_chunks):   
             tnow = time.time()
             if i == n_chunks-1:
                 sols = solve(temp[i*chunk_size:])
+                sols_LKB1_KD = solve_LKB1_KD(params_LKB1_KD[i*chunk_size:])
+                sols_CaMKK_KD = solve_CaMKK_KD(params_CaMKK_KD[i*chunk_size:])
             else:
                 sols = solve(temp[i*chunk_size:(i+1)*chunk_size])
+                sols_LKB1_KD = solve_LKB1_KD(params_LKB1_KD[i*chunk_size:(i+1)*chunk_size])
+                sols_CaMKK_KD = solve_CaMKK_KD(params_CaMKK_KD[i*chunk_size:(i+1)*chunk_size])
             tend = time.time()
 
             # append model evals to the lists
             all_sols_stressed.append(np.array(sols[0]))
             all_sols_basal.append(np.array(sols[1]))
+            all_sols_stressed_LKB1_KD.append(np.array(sols_LKB1_KD[0]))
+            all_sols_stressed_CaMKK_KD.append(np.array(sols_CaMKK_KD[0]))
 
             print('Simulations took {} seconds'.format(tend-tnow))
             print('Completed {} chunk {}'.format(args.model, i))
@@ -198,18 +245,26 @@ def main(raw_args=None):
         # Concatenate all chunks into single arrays
         all_sols_stressed = np.concatenate(all_sols_stressed, axis=0)
         all_sols_basal = np.concatenate(all_sols_basal, axis=0)
+        all_sols_stressed_LKB1_KD = np.concatenate(all_sols_stressed_LKB1_KD, axis=0)
+        all_sols_stressed_CaMKK_KD = np.concatenate(all_sols_stressed_CaMKK_KD, axis=0)
 
         # Save the concatenated results
         np.save(args.savedir + args.model + '_sols_stressed_GSA.npy', all_sols_stressed)
         np.save(args.savedir + args.model + '_sols_basal_GSA.npy', all_sols_basal)
+        np.save(args.savedir + args.model + '_sols_stressed_LKB1_KD_GSA.npy', all_sols_stressed_LKB1_KD)
+        np.save(args.savedir + args.model + '_sols_stressed_CaMKK_KD_GSA.npy', all_sols_stressed_CaMKK_KD)
     else:
         tnow = time.time()
         sols = solve(temp)
+        sols_LKB1_KD = solve_LKB1_KD(params_LKB1_KD)
+        sols_CaMKK_KD = solve_CaMKK_KD(params_CaMKK_KD)
         tend = time.time()
 
         # save model evals
         np.save(args.savedir + args.model + '_sols_stressed_GSA.npy', np.array(sols[0]))
         np.save(args.savedir + args.model + '_sols_basal_GSA.npy', np.array(sols[1]))
+        np.save(args.savedir + args.model + '_sols_stressed_LKB1_KD_GSA.npy', np.array(sols_LKB1_KD[0]))
+        np.save(args.savedir + args.model + '_sols_stressed_CaMKK_KD_GSA.npy', np.array(sols_CaMKK_KD[0]))
 
         print('Simulations took {} seconds'.format(tend-tnow))
         print('Completed {}'.format(args.model))
