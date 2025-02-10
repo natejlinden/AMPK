@@ -293,7 +293,7 @@ def main(raw_args=None):
 
         # save as netcdf file
         posterior.to_netcdf(os.path.join(args.savedir, args.model + '_' + \
-                                        args.compartment + '_mcmc_samples_' + args.sampler + '.nc'))
+                                        args.compartment + '_mcmc_samples_llike_' + args.sampler + '.nc'))
                               
     print('Completed {}'.format(args.model))
 
