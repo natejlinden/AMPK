@@ -1,6 +1,7 @@
 import multiprocessing
+print( multiprocessing.get_start_method())
 if multiprocessing.get_start_method() != 'spawn':
-    multiprocessing.set_start_method('spawn')
+    multiprocessing.set_start_method('spawn', force=True)
 
 import jax
 import jax.numpy as jnp
