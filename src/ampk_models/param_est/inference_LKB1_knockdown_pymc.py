@@ -271,7 +271,7 @@ def main(raw_args=None):
                 posterior = sample_numpyro_nuts(draws=args.nsamples, tune=args.nwarmup, 
                                 jitter=False, chains=args.nchains, 
                                 random_seed=args.seed, chain_method=args.chain_method_numpyro, 
-                                progressbar=True, data_kwargs={'log_likelihood': True})
+                                progressbar=True, idata_kwargs={'log_likelihood': True}, )
         elif args.sampler == "ADVI":
             with pm_model:
                 mean_field = pm.fit(n=args.n_advi_iter, method='advi', 
