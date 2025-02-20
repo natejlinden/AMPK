@@ -10,6 +10,7 @@ import nutpie
 from pymc.variational.callbacks import CheckParametersConvergence
 from pytensor.link.jax.dispatch import jax_funcify
 from pymc.stats.log_density import compute_log_likelihood
+import multiprocessing
 
 from jax import random
 import arviz as az
@@ -327,4 +328,6 @@ def main(raw_args=None):
     print('Completed {}'.format(args.model))
 
 if __name__ == '__main__':
+    if multiprocessing.get_start_method() != 'spawn':
+        multiprocessing.set_start_method('spawn')
     main()
