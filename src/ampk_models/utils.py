@@ -205,6 +205,44 @@ def solve_traj(rhs, rhs_stress, y0, params, times, rtol=1e-6, atol=1e-6,
     return jnp.squeeze(jnp.array(sol_stressed.ys)), jnp.squeeze(jnp.array(sol.ys))
 
 @jax.jit
+def solve_traj_forwardAdj(rhs, rhs_stress, y0, params, times, rtol=1e-6, atol=1e-6, 
+               evnt_rtol = 1e-12, evnt_atol = 1e-12, tmax_init = 1e3, 
+               pcoeff=0, icoeff=1, dcoeff=0, solver = dfrx.Kvaerno5(), dt0=1e-10):
+    """ simulates a model over the specified time interval and returns the 
+    calculated values.
+    Returns an array of shape (n_species, 1) 
+    TODO add way to specify autodiff method
+    """
+    stepsize_controller=dfrx.PIDController(rtol, atol, pcoeff=pcoeff, icoeff=icoeff, dcoeff=dcoeff)
+    cond_fn=dfrx.steady_state_event(rtol=evnt_rtol, atol=evnt_atol)
+    event = dfrx.Event(cond_fn=cond_fn)
+    t0 = 0.0
+    t1 = times[-1]
+    saveat=dfrx.SaveAt(ts=times)
+    max_steps=int(1e7)
+
+    # first solve the basal model to SS
+    sol = dfrx.diffeqsolve(
+        rhs, solver, 
+        t0, tmax_init, dt0, y0, 
+        args=params,
+        stepsize_controller=stepsize_controller,
+        event=event, adjoint=dfrx.ForwardMode(),
+        max_steps=max_steps, throw=True)
+    
+    # then use that solution as the initial condition for the stressed setting
+    sol_stressed = dfrx.diffeqsolve(
+        rhs_stress, solver, 
+        t0, t1, dt0, 
+        sol.ys, # use basal SS at IC
+        args=params, saveat=saveat,
+        stepsize_controller=stepsize_controller,
+        max_steps=max_steps, throw=True)
+    
+    return jnp.squeeze(jnp.array(sol_stressed.ys)), jnp.squeeze(jnp.array(sol.ys))
+
+
+@jax.jit
 def solve_SS(rhs, rhs_stress, y0, params, rtol=1e-6, atol=1e-6, 
              evnt_rtol = 1e-12, evnt_atol = 1e-12, tmax = 1e3,
              pcoeff=0, icoeff=1, dcoeff=0, solver = dfrx.Kvaerno5()):
@@ -458,13 +496,13 @@ def build_pymc_model(param_names, prior_param_dict, data, sol_op, data_sigma=0.1
 def plot_predictive(inf_data, data, times, plot_prior=True, plot_post=True,
                     add_t_0=True, n_traces=200, figsize=(6, 4), prior_color='blue',
                     post_color='black', data_color='red', data_marker_size=10, 
-                    cred_int=95, fig_ax = (None, None), linestyle='-'):
+                    cred_int=95, fig_ax = (None, None), linestyle='-',llike_name='llike'):
     """"plots prior and posterior predictive checks for the given model 
     along with the data supplied for inference"""
 
     # first create data frames for plotting of prior and posterior predictive checks
     if plot_prior: # if plotting prior, then convert prior predictive into a dataframe
-        prior_sims = inf_data.prior_predictive.llike.values
+        prior_sims = inf_data.prior_predictive[llike_name].values
         # Convert the nchains x ndraws x ntime Prior predictive into a dataframe
         nchains, ndraws, _, ntime = prior_sims.shape
         prior_sims_df = pd.DataFrame({
@@ -487,7 +525,7 @@ def plot_predictive(inf_data, data, times, plot_prior=True, plot_post=True,
     if plot_post:
         # convert posterior predictive into a dataframe
         if type(inf_data) == az.InferenceData:
-            post_sims = inf_data.posterior_predictive.llike.values
+            post_sims = inf_data.posterior_predictive[llike_name].values
             nchains, ndraws, _, ntime = post_sims.shape
         elif type(inf_data) == np.ndarray:
             post_sims = inf_data
