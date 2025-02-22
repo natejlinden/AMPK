@@ -1,6 +1,6 @@
 import multiprocessing
 if multiprocessing.get_start_method() != 'spawn':
-    multiprocessing.set_start_method('spawn')
+    multiprocessing.set_start_method('spawn', force=True)
 
 import jax
 import jax.numpy as jnp
@@ -28,7 +28,7 @@ from pymc_jax_ode import *
 sys.path.append("../models/")
 
 # tell jax to use 64bit floats
-jax.config.update('jax_platform_name', 'cpu')
+#jax.config.update('jax_platform_name', 'cpu')
 jax.config.update("jax_enable_x64", True)
 
 ##############################
