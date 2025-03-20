@@ -129,15 +129,9 @@ def main(raw_args=None):
         #  the second entry is the name of the qoi
         qoi_names = {
             "ratio":r'$\frac{[\rm pAMPKAR]}{[\rm AMPKAR]}$', # raw ratio
-            "delta_ratio":r'$\Delta\frac{[\rm pAMPKAR]}{[\rm AMPKAR]}$', # delta ratio
             "t_half": r'$t_{{\rm half-max}}$', # time to half max
-            "t_half_delta":r'$t_{{\rm half-max}}$', # delta time to half max
-            "ratio_basal":r'basal $\frac{[\rm pAMPKAR]}{[\rm AMPKAR]}$',
-            "initial_dpAPKAR_dt":r'\frac{d pAMPKAR(0)}{dt}',
-            "cyto_loss":r'$MSE_{cyto}$',
-            "lyso_loss":r'$MSE_{lyso}$',
-            "mito_loss":r'$MSE_{mito}$',
-            "total_loss":r'$MSE_{total}$'
+            "delta_LKB1_KD": r'$\Delta \frac{[\rm pAMPKAR]}{[\rm AMPKAR]} LKB1 KO$',
+            "delta_CaMKK_KD": 
         }
 
         for qoi in list(qoi_names.keys()):
