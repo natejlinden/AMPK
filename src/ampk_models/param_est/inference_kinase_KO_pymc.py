@@ -76,7 +76,7 @@ def parse_args(raw_args=None):
     parser.add_argument("--sample_posterior", action='store_true', help="Flag to sample from the posterior.")
     parser.add_argument("--compute_llike", action='store_true', help="Flag to resample the posterior predictive using previous param samples.")
     parser.add_argument("-n_advi_iter", type=int, default=1000, help="Number of iterations for ADVI. Defaults to 1000.")
-    parser.add_argument("-data_std_mult", type=float, default=1.0, help="Scaling factor to change WT data std.")
+    parser.add_argument("-data_std_max", type=float, default=1.0, help="Scaling factor to change WT data std.")
 
     
     args=parser.parse_args(raw_args)
@@ -150,21 +150,24 @@ def main(raw_args=None):
     data, data_std, times = load_data(args.data_file, to_seconds=True, 
                                       constant_std=False)
     data = data.reshape(1, len(data))
-    data_std = data_std.reshape(1, len(data_std))*args.data_std_mult
+    scale = args.data_std_max/np.max(data_std)
+    data_std = data_std.reshape(1, len(data_std))*scale
     
     # LKB1 KO
     data_LKB1_KO, data_std_LKB1_KO, _ = load_data(args.LKB1_KO_data_file,
                                                   to_seconds=True, 
                                                   constant_std=False)
     data_LKB1_KO = data_LKB1_KO.reshape(1, len(data_LKB1_KO))
-    data_std_LKB1_KO = data_std_LKB1_KO.reshape(1, len(data_std_LKB1_KO))
+    scale_lkb1 = args.data_std_max/np.max(data_std_LKB1_KO)
+    data_std_LKB1_KO = data_std_LKB1_KO.reshape(1, len(data_std_LKB1_KO))*scale_lkb1
 
     # CaMKK2 KO
     data_CaMKK2_KO, data_std_CaMKK2_KO, _ = load_data(args.CaMKK2_KO_data_file, 
                                                       to_seconds=True, 
                                                       constant_std=False)
     data_CaMKK2_KO = data_CaMKK2_KO.reshape(1, len(data_CaMKK2_KO))
-    data_std_CaMKK2_KO = data_std_CaMKK2_KO.reshape(1, len(data_std_CaMKK2_KO))
+    scale_camkk2 = args.data_std_max/np.max(data_std_CaMKK2_KO)
+    data_std_CaMKK2_KO = data_std_CaMKK2_KO.reshape(1, len(data_std_CaMKK2_KO))*scale_camkk2
 
     ############################################
     # Simulator func #
@@ -319,6 +322,7 @@ def main(raw_args=None):
             with pm_model:
                 posterior = pmx.fit(method='pathfinder',
                                     jitter=1e-2,
+                                    num_paths=args.nchains,
                                     num_draws=args.nsamples,
                                     random_seed=args.seed,
                                     inference_backend='pymc')
