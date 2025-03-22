@@ -182,7 +182,7 @@ def solve_traj(rhs, rhs_stress, y0, params, times, rtol=1e-6, atol=1e-6,
     t0 = 0.0
     t1 = times[-1]
     saveat=dfrx.SaveAt(ts=times)
-    max_steps=int(1e7)
+    max_steps=int(3e7)
 
     # first solve the basal model to SS
     sol = dfrx.diffeqsolve(

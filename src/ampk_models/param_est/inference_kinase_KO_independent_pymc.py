@@ -225,7 +225,21 @@ def main(raw_args=None):
     prior_dict = set_lognormal_priors(list(model_info["nominal_params"].keys()), 
                                   free_params, model_info["nominal_params"], 
                                   model_info['prior_params'])
+
+    # create copies of prior dict for LKB1 KO and CaMKK2 KO
+    prior_dict_LKB1_KO = prior_dict.copy()
+    for param in prior_dict_LKB1_KO.keys():
+        tmp = prior_dict_LKB1_KO[param].split('",')
+        tmp[0] = tmp[0] + '_LKB1_KO'
+        prior_dict_LKB1_KO[param] = '",'.join(tmp)
     
+    prior_dict_CaMKK2_KO = prior_dict.copy()
+    for param in prior_dict_CaMKK2_KO.keys():
+        tmp = prior_dict_CaMKK2_KO[param].split('",')
+        tmp[0] = tmp[0] + '_CaMKK2_KO'
+        prior_dict_CaMKK2_KO[param] = '",'.join(tmp)
+    
+    # names of LKB1 KO and CaMKK2 KO params
     # LKB1 KO params
     if 'MA' in args.model:
         LKB1_KO_params = ['kOnLKB1','kPhosLKB1']
@@ -242,34 +256,45 @@ def main(raw_args=None):
     pm_model = pm.Model()
     with pm_model:
         # loop over free params and construct the priors
-        priors = {}
+        priors_WT = {}
         for param in model_info['params']:
             # create PyMC variables for each parameters in the model
             prior = eval(prior_dict[param])
-            priors[param] = prior
+            priors_WT[param] = prior
+
+        priors_LKB1_KO = {}
+        for param in model_info['params']:
+            # create PyMC variables for each parameters in the model
+            prior = eval(prior_dict_LKB1_KO[param])
+            priors_LKB1_KO[param] = prior
+
+        priors_CaMKK2_KO = {}
+        for param in model_info['params']:
+            # create PyMC variables for each parameters in the model
+            prior = eval(prior_dict_CaMKK2_KO[param])
+            priors_CaMKK2_KO[param] = prior
 
         # predict response WT
-        prediction = pm.Deterministic('prediction', 
-                                      sol_op(*[priors[param] for param in model_info['params']]))
+        WT = pm.Deterministic('WT', 
+                                      sol_op(*[priors_WT[param] for param in model_info['params']]))
 
         # induce LKB1 KO by changing the parameters to the LKB1 KO values
-        prediction_LKB1_KO = pm.Deterministic('prediction_LKB1_KO', 
-                        sol_op(*[priors[param] if param not in LKB1_KO_params \
+        LKB1_KO = pm.Deterministic('LKB1_KO', 
+                        sol_op(*[priors_LKB1_KO[param] if param not in LKB1_KO_params \
                                  else 0.0 for param in model_info['params']]))
         
         # induce CaMKK2 KO by changing the parameters to the CaMKK2 KO values
-        prediction_CaMKK2_KO = pm.Deterministic('prediction_CaMKK2_KO', 
-                        sol_op(*[priors[param] if param not in CaMKK2_KO_params \
+        CaMKK2_KO = pm.Deterministic('CaMKK2_KO', 
+                        sol_op(*[priors_CaMKK2_KO[param] if param not in CaMKK2_KO_params \
                                  else 0.0 for param in model_info['params']]))
 
         # assume a normal model for the data
         # sigma specified by the data_sigma param to this function
-        llike_WT = pm.Normal("llike_WT", mu=prediction, sigma=data_std, observed=data)
-        llike_LKB1_KO = pm.Normal("llike_LKB1_KO", mu=prediction_LKB1_KO, 
+        llike_WT = pm.Normal("llike_WT", mu=WT, sigma=data_std, observed=data)
+        llike_LKB1_KO = pm.Normal("llike_LKB1_KO", mu=LKB1_KO, 
                                   sigma=data_std_LKB1_KO, observed=data_LKB1_KO)
-        llike_CaMKK2_KO = pm.Normal("llike_CaMKK2_KO", mu=prediction_CaMKK2_KO,
+        llike_CaMKK2_KO = pm.Normal("llike_CaMKK2_KO", mu=CaMKK2_KO,
                                   sigma=data_std_CaMKK2_KO, observed=data_CaMKK2_KO)
-
 
     ###################################################
     # prior sampling #
