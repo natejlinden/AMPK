@@ -39,7 +39,7 @@ models_free_params = {
         # "ampk_Coccimiglio": {'info_file': '../models/ampk_Coccimiglio.json'},
         "MA_single":  {'info_file': '../models/MA_single.json'},
         # "MA_nonessential":  {'info_file': '../models/MA_nonessential.json'},
-        # "MM_single":  {'info_file': '../models/MM_single.json'},
+        "MM_single":  {'info_file': '../models/MM_single.json'},
         "MM_nonessential":  {'info_file': '../models/MM_nonessential.json'},
         }
 
@@ -79,34 +79,23 @@ for i, model in enumerate(models_free_params.keys()):
             os.makedirs(save_dir)
 
         # load the idata
-        idata_cyto = az.from_netcdf(data_dir + model + '_cyto_mcmc_samples_' + sampler + '.nc')
-        # idata_lyso = az.from_netcdf(data_dir + model + '_lyso_mcmc_samples_' + sampler + '.nc')
-        # idata_mito = az.from_netcdf(data_dir + model + '_mito_mcmc_samples_' + sampler + '.nc')
+        if not os.path.exists(data_dir + model + '_cyto_mcmc_samples_' + sampler + '.nc'):
+            print(f"File {data_dir + model + '_cyto_mcmc_samples_' + sampler + '.nc'} does not exist. Skipping.")
+            idata_cyto = None
+        else:
+            idata_cyto = az.from_netcdf(data_dir + model + '_cyto_mcmc_samples_' + sampler + '.nc')
 
-        # # ########### plot traces
-        # az.plot_trace(idata_cyto)
-        # plt.savefig(save_dir + 'cyto_trace_' + sampler + '.png', dpi=500)
-        # az.plot_trace(idata_lyso)
-        # plt.savefig(save_dir + 'lyso_trace_' + sampler + '.png', dpi=500)
-        # az.plot_trace(idata_mito)
-        # plt.savefig(save_dir + 'mito_trace_' + sampler + '.png', dpi=500)
+        if not os.path.exists(data_dir + model + '_lyso_mcmc_samples_' + sampler + '.nc'):
+            print(f"File {data_dir + model + '_lyso_mcmc_samples_' + sampler + '.nc'} does not exist. Skipping.")
+            idata_lyso = None
+        else:
+            idata_lyso = az.from_netcdf(data_dir + model + '_lyso_mcmc_samples_' + sampler + '.nc')
 
-        # ########### convergence metrics
-        # with open(model + '_convergence_' + sampler + '.txt', 'w') as file:
-        #     summary = az.summary(idata_cyto)
-        #     file.write("Cytosol:\n")
-        #     file.write(summary.to_string())
-        #     file.write("\n\n")
-
-        #     summary = az.summary(idata_lyso)
-        #     file.write("Lysosome:\n")
-        #     file.write(summary.to_string())
-        #     file.write("\n\n")
-
-        #     summary = az.summary(idata_mito)
-        #     file.write("Mitochondria:\n")
-        #     file.write(summary.to_string())
-        #     file.write("\n\n")
+        if not os.path.exists(data_dir + model + '_mito_mcmc_samples_' + sampler + '.nc'):
+            print(f"File {data_dir + model + '_mito_mcmc_samples_' + sampler + '.nc'} does not exist. Skipping.")
+            idata_mito = None
+        else:
+            idata_mito = az.from_netcdf(data_dir + model + '_mito_mcmc_samples_' + sampler + '.nc')
 
         ############ plot posterior predictive for each model
         dat = {
@@ -118,36 +107,37 @@ for i, model in enumerate(models_free_params.keys()):
                     'data_camkk2_ko':mito_data_CaMKK2_KO, 'times': mito_times, 'color': mito_color},
         }
         for comp in dat.keys():
-            for llike in ['llike', 'llike_LKB1_KO', 'llike_CaMKK2_KO']:
+            for llike in ['llike_WT', 'llike_LKB1_KO', 'llike_CaMKK2_KO']:
                 fig, ax = get_sized_fig_ax(2,1)
 
-                if llike == 'llike':
+                if llike == 'llike_WT':
                     data = dat[comp]['data']
                 elif llike == 'llike_LKB1_KO':
                     data = dat[comp]['data_lkb1_ko']
                 elif llike == 'llike_CaMKK2_KO':
                     data = dat[comp]['data_camkk2_ko']
-        
-                fig, ax, leg = plot_predictive(dat[comp]['idata'], data, dat[comp]['times'], 
-                                plot_prior=False, add_t_0=True, n_traces=0, figsize=None, 
-                                prior_color='', post_color=dat[comp]['color'], data_color=dat[comp]['color'], 
-                                data_marker_size=10, fig_ax = (fig, ax), llike_name=llike)
-                
-                # add n_trajectories to the plot if n_trajectories > 0
-                if n_trajectories > 0:
-                    for i in range(n_trajectories):
-                        ax.plot(dat[comp]['times'], 
-                            jnp.squeeze(dat[comp]['idata'].posterior_predictive[llike][0,i,:].values), 
-                            color=dat[comp]['color'], alpha=0.2, linewidth=1.0)
-                        
-                export_legend(leg, save_dir + f'{comp}_ppc_legend_' + sampler + '.pdf')
-                leg.remove()
-                    
-                ax.set_xlabel("")
-                ax.set_ylabel("")
-                ax.set_ylim(0, 1.5)
 
-                plt.savefig(save_dir + f'{comp}_{llike}_ppc_' + sampler + '.pdf', transparent=True, bbox_inches='tight')
+                if dat[comp]['idata'] is not None:
+                    fig, ax, leg = plot_predictive(dat[comp]['idata'], data, dat[comp]['times'], 
+                                    plot_prior=False, add_t_0=True, n_traces=0, figsize=None, 
+                                    prior_color='', post_color=dat[comp]['color'], data_color=dat[comp]['color'], 
+                                    data_marker_size=10, fig_ax = (fig, ax), llike_name=llike)
+                    
+                    # add n_trajectories to the plot if n_trajectories > 0
+                    if n_trajectories > 0:
+                        for i in range(n_trajectories):
+                            ax.plot(dat[comp]['times'], 
+                                jnp.squeeze(dat[comp]['idata'].posterior_predictive[llike][0,i,:].values), 
+                                color=dat[comp]['color'], alpha=0.2, linewidth=1.0)
+                            
+                    export_legend(leg, save_dir + f'{comp}_ppc_legend_' + sampler + '.pdf')
+                    leg.remove()
+                        
+                    ax.set_xlabel("")
+                    ax.set_ylabel("")
+                    ax.set_ylim(0, 1.5)
+
+                    plt.savefig(save_dir + f'{comp}_{llike}_ppc_' + sampler + '.pdf', transparent=True, bbox_inches='tight')
 
 
         ############ plot posterior for each model
@@ -164,31 +154,32 @@ for i, model in enumerate(models_free_params.keys()):
                 elif pred == 'CaMKK2_KO':
                     data = dat[comp]['data_camkk2_ko']
 
-                trajectories = np.squeeze(dat[comp]['idata']['posterior'][pred].values)
-        
-                fig, ax, leg = plot_predictive(trajectories, data, dat[comp]['times'], 
-                                plot_prior=False, add_t_0=True, n_traces=0, figsize=None, 
-                                prior_color='', post_color=dat[comp]['color'], data_color=dat[comp]['color'], 
-                                data_marker_size=10, fig_ax = (fig, ax), llike_name=pred)
-                
-                # add n_trajectories to the plot if n_trajectories > 0
-                if n_trajectories > 0:
-                    for i in range(n_trajectories):
-                        ax.plot(dat[comp]['times'], 
-                            trajectories[i,:], 
-                            color=dat[comp]['color'], alpha=0.2, linewidth=1.0)
-                        
-                export_legend(leg, save_dir + f'{comp}_ppc_legend_' + sampler + '.pdf')
-                leg.remove()
+                if dat[comp]['idata'] is not None:
+                    trajectories = np.squeeze(dat[comp]['idata']['posterior'][pred].values)
+            
+                    fig, ax, leg = plot_predictive(trajectories, data, dat[comp]['times'], 
+                                    plot_prior=False, add_t_0=True, n_traces=0, figsize=None, 
+                                    prior_color='', post_color=dat[comp]['color'], data_color=dat[comp]['color'], 
+                                    data_marker_size=10, fig_ax = (fig, ax), llike_name=pred)
                     
-                ax.set_xlabel("")
-                ax.set_ylabel("")
-                ax.set_ylim(0, 1.5)
+                    # add n_trajectories to the plot if n_trajectories > 0
+                    if n_trajectories > 0:
+                        for i in range(n_trajectories):
+                            ax.plot(dat[comp]['times'], 
+                                trajectories[i,:], 
+                                color=dat[comp]['color'], alpha=0.2, linewidth=1.0)
+                            
+                    export_legend(leg, save_dir + f'{comp}_ppc_legend_' + sampler + '.pdf')
+                    leg.remove()
+                        
+                    ax.set_xlabel("")
+                    ax.set_ylabel("")
+                    ax.set_ylim(0, 1.5)
 
-                plt.savefig(save_dir + f'{comp}_{pred}_posterior_{sampler}.pdf', 
-                            transparent=True, bbox_inches='tight')
-                
-                sims[comp][pred]=trajectories
+                    plt.savefig(save_dir + f'{comp}_{pred}_posterior_{sampler}.pdf', 
+                                transparent=True, bbox_inches='tight')
+                    
+                    sims[comp][pred]=trajectories
 
                     
     # ####### t-half-max and change in max activation #######

@@ -104,22 +104,22 @@ models_free_params = {
         #                              r'$k_{7r}$',r'$K_{m12}$',r'$k_{pAMPK}$'],
         #                     'info_file': '../models/ampk_Coccimiglio.json',
         #                     },
-        "MA_single": {'free':["kOffAMP", "kOffADP","kOffATP","kOffAMPK", 
-                              "kPhosAMPK", "kOffPP1", "kDephosPP1"],
-                      'info_file':'../models/MA_single.json'
-                    },
+        # "MA_single": {'free':["kOffAMP", "kOffADP","kOffATP","kOffAMPK", 
+        #                       "kPhosAMPK", "kOffPP1", "kDephosPP1"],
+        #               'info_file':'../models/MA_single.json'
+        #             },
         "MM_single":  {'free':["kOffAMP","kOffADP","kOffATP"],
                        'info_file': '../models/MM_single.json'
                     },
-        "MA_nonessential": {'free':["kOffAMP","kOffADP","kOffATP","kPhosCaMKK",
-                                    "kOffPP","alphaPP","kOffAMPK","kPhosAMPK",
-                                    "betaAMP","kOffPP1","kDephosPP1"],
-                            'info_file': '../models/MA_nonessential.json',
-                    },
-        "MM_nonessential":  {'free':["kOffAMP","kOffADP","kOffATP","kCaMKK",
-                                     "KmCaMKK","kPP","KmPP","alphaPP","betaAMP"],
-                    'info_file': '../models/MM_nonessential.json',
-                   }
+        # "MA_nonessential": {'free':["kOffAMP","kOffADP","kOffATP","kPhosCaMKK",
+        #                             "kOffPP","alphaPP","kOffAMPK","kPhosAMPK",
+        #                             "betaAMP","kOffPP1","kDephosPP1"],
+        #                     'info_file': '../models/MA_nonessential.json',
+        #             },
+        # "MM_nonessential":  {'free':["kOffAMP","kOffADP","kOffATP","kCaMKK",
+        #                              "KmCaMKK","kPP","KmPP","alphaPP","betaAMP"],
+        #             'info_file': '../models/MM_nonessential.json',
+        #            }
         }
 
 data_dir = '../../../results/param_est/'
@@ -164,6 +164,8 @@ for i, model in enumerate(models_free_params.keys()):
         combined_posterior = pd.concat([posterior_idata_cyto, posterior_idata_lyso, posterior_idata_mito])
         # Reset index to avoid duplicate indices
         combined_posterior.reset_index(drop=True, inplace=True)
+
+        plot_larger = {'MM_single':['kOffAMP','kOffADP','kOffATP'],}
     
         # make the plots
         for i, param in enumerate(models_free_params[model]['free']): #combined_posterior.columns:
@@ -196,98 +198,123 @@ for i, model in enumerate(models_free_params.keys()):
                             transparent=True,
                             bbox_inches='tight')
                 plt.close()
+
+                if model in plot_larger.keys() and param in plot_larger[model]:
+                    fig, ax = get_sized_fig_ax(1.35, 0.9)
+                    sns.kdeplot(data=combined_posterior, x=param, hue='compartment', ax=ax,
+                                fill=True, palette={'cyto':cyto_color, 'lyso':lyso_color, 'mito':mito_color},
+                                legend=False, log_scale=(True, False), linewidth=1.0)
+                    ax.set_xlabel("", fontsize=8.0)
+                    ax.set_ylabel("", fontsize=8.0)
+                    ax.tick_params(axis='both', which='major', labelsize=8)
+
+                    leg = ax.legend(['Mitochondria', 'Lysosome', 'Cytoplasm'], loc='upper right', fontsize=8.0, bbox_to_anchor=(3, 1))
+                    leg.set_title("")
+                    export_legend(leg, save_dir_base + 'dist_legend.pdf')
+                    leg.remove()
+                    print(ax.get_xlim())
+
+                    ax.set_xlim(plot_settings[param]['xlim'])
+
+                    ax.set_title(plot_settings[param]['name'], fontsize=10.0,
+                                fontweight='normal', pad=0)
+
+                    plt.savefig(save_dir + f'{model}_{param}_{sampler}_LARGER.pdf', 
+                                transparent=True,
+                                bbox_inches='tight')
+                    plt.close()
                 
 
-                ############## stat sig. diff. ############
-                # Perform Kruskal-Wallis test to dermine if there are significant differences between compartments
-                data = {
-                    'cyto': posterior_idata_cyto[param].values.tolist(),
-                    'lyso': posterior_idata_lyso[param].values.tolist(),
-                    'mito': posterior_idata_mito[param].values.tolist()
-                }
+#                 ############## stat sig. diff. ############
+#                 # Perform Kruskal-Wallis test to dermine if there are significant differences between compartments
+#                 data = {
+#                     'cyto': posterior_idata_cyto[param].values.tolist(),
+#                     'lyso': posterior_idata_lyso[param].values.tolist(),
+#                     'mito': posterior_idata_mito[param].values.tolist()
+#                 }
 
-                # Convert data into DataFrame
-                df = pd.DataFrame(dict([(k, pd.Series(v)) for k, v in data.items()]))
+#                 # Convert data into DataFrame
+#                 df = pd.DataFrame(dict([(k, pd.Series(v)) for k, v in data.items()]))
 
-                # Perform Kruskal-Wallis Test
-                groups = [df[col].dropna() for col in df.columns]  # Ensure no NaNs
-                statistic, p_value = kruskal(*groups)
+#                 # Perform Kruskal-Wallis Test
+#                 groups = [df[col].dropna() for col in df.columns]  # Ensure no NaNs
+#                 statistic, p_value = kruskal(*groups)
 
-                kruskal_wallis_results[sampler][model][param] = (statistic, p_value)
+#                 kruskal_wallis_results[sampler][model][param] = (statistic, p_value)
 
-                ############## Pairwise KL divergence analysis ############
-                # Calculate KL divergence for each pair of compartments
-                kl_cyto_lyso = kl_divergence_knn(
-                    posterior_idata_cyto[param].values[:, np.newaxis],
-                    posterior_idata_lyso[param].values[:, np.newaxis],
-                    k=4 
-                )
+#                 ############## Pairwise KL divergence analysis ############
+#                 # Calculate KL divergence for each pair of compartments
+#                 kl_cyto_lyso = kl_divergence_knn(
+#                     posterior_idata_cyto[param].values[:, np.newaxis],
+#                     posterior_idata_lyso[param].values[:, np.newaxis],
+#                     k=4 
+#                 )
 
-                kl_cyto_mito = kl_divergence_knn(
-                    posterior_idata_cyto[param].values[:, np.newaxis],
-                    posterior_idata_mito[param].values[:, np.newaxis],
-                    k=4 
-                )
+#                 kl_cyto_mito = kl_divergence_knn(
+#                     posterior_idata_cyto[param].values[:, np.newaxis],
+#                     posterior_idata_mito[param].values[:, np.newaxis],
+#                     k=4 
+#                 )
 
-                kl_lyso_mito = kl_divergence_knn(
-                    posterior_idata_lyso[param].values[:, np.newaxis],
-                    posterior_idata_mito[param].values[:, np.newaxis],
-                    k=4 
-                )
+#                 kl_lyso_mito = kl_divergence_knn(
+#                     posterior_idata_lyso[param].values[:, np.newaxis],
+#                     posterior_idata_mito[param].values[:, np.newaxis],
+#                     k=4 
+#                 )
 
-                pariwise_KLs[sampler][model][param] = {
-                    'cyto_lyso': kl_cyto_lyso,      
-                    'cyto_mito': kl_cyto_mito,
-                    'lyso_mito': kl_lyso_mito
-                }
+#                 pariwise_KLs[sampler][model][param] = {
+#                     'cyto_lyso': kl_cyto_lyso,      
+#                     'cyto_mito': kl_cyto_mito,
+#                     'lyso_mito': kl_lyso_mito
+#                 }
 
-row_order = ['kOffAMP', 'kOffADP', 'kOffATP', 'kPhosCaMKK','kCaMKK', 'KmCaMKK',
-              'kOffPP', 'kPP', 'KmPP', 'alphaPP', 'kOffAMPK', 'kPhosAMPK',
-              'betaAMP', 'kOffPP1', 'kDephosPP1']
+# row_order = ['kOffAMP', 'kOffADP', 'kOffATP', 'kPhosCaMKK','kCaMKK', 'KmCaMKK',
+#               'kOffPP', 'kPP', 'KmPP', 'alphaPP', 'kOffAMPK', 'kPhosAMPK',
+#               'betaAMP', 'kOffPP1', 'kDephosPP1']
 
-kruskal_df = pd.DataFrame(kruskal_wallis_results['ADVI'])
+# kruskal_df = pd.DataFrame(kruskal_wallis_results['ADVI'])
 
-def tup_second_item(tup):
-    if isinstance(tup, tuple):
-        return tup[1]
-    return tup  # Return the original value if it's not a tuple
+# def tup_second_item(tup):
+#     if isinstance(tup, tuple):
+#         return tup[1]
+#     return tup  # Return the original value if it's not a tuple
 
-kruskal_df = kruskal_df.map(tup_second_item)
-kruskal_df = kruskal_df.loc[row_order] # reorder rows
-kruskal_df = kruskal_df.reset_index()
-kruskal_df = kruskal_df.rename(columns={'index': 'Parameter'})
+# kruskal_df = kruskal_df.map(tup_second_item)
+# kruskal_df = kruskal_df.loc[row_order] # reorder rows
+# kruskal_df = kruskal_df.reset_index()
+# kruskal_df = kruskal_df.rename(columns={'index': 'Parameter'})
 
-latex_table = kruskal_df.to_latex(index=False, 
-                                        caption="", 
-                                        label="tab:marginals_kruskal",
-                                        column_format="c|c|c|c|c",
-                                        bold_rows=True,
-                                        na_rep="--",
-                                        float_format="%.3f")
+# latex_table = kruskal_df.to_latex(index=False, 
+#                                         caption="", 
+#                                         label="tab:marginals_kruskal",
+#                                         column_format="c|c|c|c|c",
+#                                         bold_rows=True,
+#                                         na_rep="--",
+#                                         float_format="%.3f")
 
-print(latex_table)
+# print(latex_table)
 
 
-##### generate table of average pairwise KL divergences #####
-kl_df = pd.DataFrame(pariwise_KLs['ADVI']) # data frame with NaN entires and dicts w/ pariwise KLs
+# ##### generate table of average pairwise KL divergences #####
+# kl_df = pd.DataFrame(pariwise_KLs['ADVI']) # data frame with NaN entires and dicts w/ pariwise KLs
 
-# function to compute mean over values in the dicts
-def dict_mean(d):
-    if isinstance(d, dict):
-        return np.mean(list(d.values()))
-    return d  # Return the original value if it's not a dictionary
+# # function to compute mean over values in the dicts
+# def dict_mean(d):
+#     if isinstance(d, dict):
+#         return np.mean(list(d.values()))
+#     return d  # Return the original value if it's not a dictionary
 
-kl_df = kl_df.map(dict_mean)
-kl_df = kl_df.loc[row_order] # reorder rows
-kl_df = kl_df.reset_index()
-kl_df = kl_df.rename(columns={'index': 'Parameter'})
+# kl_df = kl_df.map(dict_mean)
+# kl_df = kl_df.loc[row_order] # reorder rows
+# kl_df = kl_df.reset_index()
+# kl_df = kl_df.rename(columns={'index': 'Parameter'})
 
-latex_table = kl_df.to_latex(index=False, 
-                                        caption="", 
-                                        label="tab:marginals_KL_div",
-                                        column_format="c|c|c|c|c",
-                                        bold_rows=True,
-                                        na_rep="--",
-                                        float_format="%.3f")
+# latex_table = kl_df.to_latex(index=False, 
+#                                         caption="", 
+#                                         label="tab:marginals_KL_div",
+#                                         column_format="c|c|c|c|c",
+#                                         bold_rows=True,
+#                                         na_rep="--",
+#                                         float_format="%.3f")
 
-print(latex_table)
+# print(latex_table)

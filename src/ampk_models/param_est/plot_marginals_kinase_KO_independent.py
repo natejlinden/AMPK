@@ -46,9 +46,27 @@ plot_settings = {
     "kOffATP":{'name':r'$k_{\text{OffATP}}$',
                 'tick_labs':[1e-3, 1e-1],
                 'xlim':[1e-4,9.99e-2]},
-    "kPhosCaMKK":{'name':r'$k_{\text{PhosCaMKK}}$',
+    "kLKB1":{'name':r'$k_{\text{kLKB1}}$', # TODO: update
+                'tick_labs':[1e-3, 1e0],
+                'xlim':[5e-3, 1e0]},
+    "KmLKB1":{'name':r'$k_{\text{Km,LKB1}}$', # TODO: update
+                'tick_labs':[1e-3, 1e0],
+                'xlim':[5e-3, 1e0]},
+    "kOffLKB1":{'name':r'$k_{\text{OffLKB1}}$',
+                'tick_labs':[1e-3, 1e-1],
+                'xlim':[4e-1,5e0]},
+    "kPhosLKB1":{'name':r'$k_{\text{PhosLKB1}}$',
                 'tick_labs':[1e-3, 1e-1],
                 'xlim':[9e-4,5e0]},
+    "alphaLKB1":{'name':r'$\alpha_{\text{LKB1}}$', # TODO: update
+                'tick_labs':[9e-3, 1e1],
+                'xlim':[9e-2,5e2]},
+    "kOffCaMKK":{'name':r'$k_{\text{OffCaMKK2}}$',
+                'tick_labs':[1e-3, 1e-1],
+                'xlim':[1e-2,5e-1]},
+    "kPhosCaMKK":{'name':r'$k_{\text{PhosCaMKK}}$',
+                'tick_labs':[1e-3, 1e-1],
+                'xlim':[9e-4,1e-1]},
     "kCaMKK":{'name':r'$k_{\text{CaMKK}}$', # TODO: update
                 'tick_labs':[1e-3, 1e0],
                 'xlim':[5e-3, 1e0]},
@@ -97,13 +115,13 @@ models_free_params = {
         # "MM_single":  {'free':["kOffAMP","kOffADP","kOffATP"],
         #                'info_file': '../models/MM_single.json'
         #             },
-        "MA_nonessential": {'free':[ "kOffAMP","kOffADP","kOffATP","kOffCaMKK",
-                                    "kPhosCaMKK","kOffLKB1","alphaLKB1",
-                                    "kPhosLKB1","kOffPP","alphaPP","kDephosPP",
-                                    "kOffAMPK","kPhosAMPK","betaAMP","kOffPP1",
-                                    "kDephosPP1"],
-                            'info_file': '../models/MA_nonessential.json',
-                    },
+        # "MA_nonessential": {'free':[ "kOffAMP","kOffADP","kOffATP","kOffCaMKK",
+        #                             "kPhosCaMKK","kOffLKB1","alphaLKB1",
+        #                             "kPhosLKB1","kOffPP","alphaPP","kDephosPP",
+        #                             "kOffAMPK","kPhosAMPK","betaAMP","kOffPP1",
+        #                             "kDephosPP1"],
+        #                     'info_file': '../models/MA_nonessential.json',
+        #             },
         "MM_nonessential":  {'free':["kOffAMP","kOffADP","kOffATP","kCaMKK",
                                      "KmCaMKK","kLKB1","KmLKB1","alphaLKB1",
                                      "kPP","KmPP","alphaPP","betaAMP"],
@@ -111,8 +129,8 @@ models_free_params = {
                    }
         }
 
-data_dir = '../../../results/param_est/kinase_KO/std_dcr/'
-save_dir_base = '../../../results/param_est/kinase_KO/std_dcr/figs/'
+data_dir = '../../../results/param_est/kinase_KO/std_dcr_indep/'
+save_dir_base = '../../../results/param_est/kinase_KO/std_dcr_indep/figs/'
 
 kruskal_wallis_results = {sampler:{model:{} for model in models_free_params.keys()} \
                         for sampler in samplers}
@@ -129,43 +147,40 @@ for i, model in enumerate(models_free_params.keys()):
         idata_cyto = az.from_netcdf(data_dir + model + '_cyto_mcmc_samples_' + sampler + '.nc')
         idata_lyso = az.from_netcdf(data_dir + model + '_lyso_mcmc_samples_' + sampler + '.nc')
         idata_mito = az.from_netcdf(data_dir + model + '_mito_mcmc_samples_' + sampler + '.nc')
-
-        print(az.summary(idata_cyto, var_names=["kOffAMP", "kOffADP","kOffATP",
-                                                "kOffAMPK","kPhosAMPK",
-                                                "kOffPP1","kDephosPP1"],))
-        print(az.summary(idata_lyso, var_names=["kOffAMP", "kOffADP","kOffATP",
-                                                "kOffAMPK","kPhosAMPK",
-                                                "kOffPP1","kDephosPP1"],))
-        print(az.summary(idata_mito, var_names=["kOffAMP", "kOffADP","kOffATP",
-                                                "kOffAMPK","kPhosAMPK",
-                                                "kOffPP1","kDephosPP1"],))
-
-        ############ plot 1D marginals for each model param colored by compartment
-        posterior_idata_cyto = \
-            idata_cyto.posterior.mean(dim='prediction_dim_1').squeeze('prediction_dim_0').to_dataframe()
-        posterior_idata_cyto['compartment'] = 'cyto'
-        posterior_idata_lyso = \
-            idata_lyso.posterior.mean(dim='prediction_dim_1').squeeze('prediction_dim_0').to_dataframe()
-        posterior_idata_lyso['compartment'] = 'lyso'
-        posterior_idata_mito = \
-            idata_mito.posterior.mean(dim='prediction_dim_1').squeeze('prediction_dim_0').to_dataframe()
-        posterior_idata_mito['compartment'] = 'mito'
-
-        # Combine the three dataframes into one
-        combined_posterior = pd.concat([posterior_idata_cyto, posterior_idata_lyso, posterior_idata_mito])
-        # Reset index to avoid duplicate indices
-        combined_posterior.reset_index(drop=True, inplace=True)
     
         # make the plots
         for i, param in enumerate(models_free_params[model]['free']): #combined_posterior.columns:
-            if param != 'compartment':
+            for cond in ['WT', 'LKB1_KO', 'CaMKK2_KO']:
+
+                if cond == 'WT':
+                    pname = param
+                else:
+                    pname = param + '_' + cond
+
+                posterior_idata_cyto = \
+                    idata_cyto.posterior[pname].to_dataframe()
+                posterior_idata_cyto['compartment'] = 'cyto'
+                posterior_idata_lyso = \
+                    idata_lyso.posterior[pname].to_dataframe()
+                posterior_idata_lyso['compartment'] = 'lyso'
+
+                posterior_idata_mito = \
+                    idata_mito.posterior[pname].to_dataframe()
+                posterior_idata_mito['compartment'] = 'mito'
+
+                # Combine the three dataframes into one
+                combined_posterior = pd.concat([posterior_idata_cyto, posterior_idata_lyso, posterior_idata_mito])
+                # Reset index to avoid duplicate indices
+                combined_posterior.reset_index(drop=True, inplace=True)
+                
+                print(combined_posterior)
 
                 save_dir = save_dir_base + param + '/'
                 if not os.path.exists(save_dir): # if the dir for the parameter doesn't exist, make it
                     os.makedirs(save_dir)
 
                 fig, ax = get_sized_fig_ax(0.6, 0.4)
-                sns.kdeplot(data=combined_posterior, x=param, hue='compartment', ax=ax,
+                sns.kdeplot(data=combined_posterior, x=pname, hue='compartment', ax=ax,
                             fill=True, palette={'cyto':cyto_color, 'lyso':lyso_color, 'mito':mito_color},
                             legend=False, log_scale=(True, False), linewidth=1.0)
                 ax.set_xlabel("", fontsize=8.0)
@@ -181,56 +196,56 @@ for i, model in enumerate(models_free_params.keys()):
                 ax.set_xlim(plot_settings[param]['xlim'])
 
                 ax.set_title(plot_settings[param]['name'], fontsize=10.0,
-                             fontweight='normal', pad=0)
+                                fontweight='normal', pad=0)
 
-                plt.savefig(save_dir + f'{model}_{param}_{sampler}.pdf', 
+                plt.savefig(save_dir + f'{model}_{param}_{sampler}_{cond}.pdf', 
                             transparent=True,
                             bbox_inches='tight')
                 plt.close()
                 
 
-                ############## stat sig. diff. ############
-                # Perform Kruskal-Wallis test to dermine if there are significant differences between compartments
-                data = {
-                    'cyto': posterior_idata_cyto[param].values.tolist(),
-                    'lyso': posterior_idata_lyso[param].values.tolist(),
-                    'mito': posterior_idata_mito[param].values.tolist()
-                }
+            #     ############## stat sig. diff. ############
+            #     # Perform Kruskal-Wallis test to dermine if there are significant differences between compartments
+            #     data = {
+            #         'cyto': posterior_idata_cyto[param].values.tolist(),
+            #         'lyso': posterior_idata_lyso[param].values.tolist(),
+            #         'mito': posterior_idata_mito[param].values.tolist()
+            #     }
 
-                # Convert data into DataFrame
-                df = pd.DataFrame(dict([(k, pd.Series(v)) for k, v in data.items()]))
+            #     # Convert data into DataFrame
+            #     df = pd.DataFrame(dict([(k, pd.Series(v)) for k, v in data.items()]))
 
-                # Perform Kruskal-Wallis Test
-                groups = [df[col].dropna() for col in df.columns]  # Ensure no NaNs
-                statistic, p_value = kruskal(*groups)
+            #     # Perform Kruskal-Wallis Test
+            #     groups = [df[col].dropna() for col in df.columns]  # Ensure no NaNs
+            #     statistic, p_value = kruskal(*groups)
 
-                kruskal_wallis_results[sampler][model][param] = (statistic, p_value)
+            #     kruskal_wallis_results[sampler][model][param] = (statistic, p_value)
 
-                ############## Pairwise KL divergence analysis ############
-                # Calculate KL divergence for each pair of compartments
-                kl_cyto_lyso = kl_divergence_knn(
-                    posterior_idata_cyto[param].values[:, np.newaxis],
-                    posterior_idata_lyso[param].values[:, np.newaxis],
-                    k=4 
-                )
+            #     ############## Pairwise KL divergence analysis ############
+            #     # Calculate KL divergence for each pair of compartments
+            #     kl_cyto_lyso = kl_divergence_knn(
+            #         posterior_idata_cyto[param].values[:, np.newaxis],
+            #         posterior_idata_lyso[param].values[:, np.newaxis],
+            #         k=4 
+            #     )
 
-                kl_cyto_mito = kl_divergence_knn(
-                    posterior_idata_cyto[param].values[:, np.newaxis],
-                    posterior_idata_mito[param].values[:, np.newaxis],
-                    k=4 
-                )
+            #     kl_cyto_mito = kl_divergence_knn(
+            #         posterior_idata_cyto[param].values[:, np.newaxis],
+            #         posterior_idata_mito[param].values[:, np.newaxis],
+            #         k=4 
+            #     )
 
-                kl_lyso_mito = kl_divergence_knn(
-                    posterior_idata_lyso[param].values[:, np.newaxis],
-                    posterior_idata_mito[param].values[:, np.newaxis],
-                    k=4 
-                )
+            #     kl_lyso_mito = kl_divergence_knn(
+            #         posterior_idata_lyso[param].values[:, np.newaxis],
+            #         posterior_idata_mito[param].values[:, np.newaxis],
+            #         k=4 
+            #     )
 
-                pariwise_KLs[sampler][model][param] = {
-                    'cyto_lyso': kl_cyto_lyso,      
-                    'cyto_mito': kl_cyto_mito,
-                    'lyso_mito': kl_lyso_mito
-                }
+            #     pariwise_KLs[sampler][model][param] = {
+            #         'cyto_lyso': kl_cyto_lyso,      
+            #         'cyto_mito': kl_cyto_mito,
+            #         'lyso_mito': kl_lyso_mito
+            #     }
 
 # row_order = ['kOffAMP', 'kOffADP', 'kOffATP', 'kPhosCaMKK','kCaMKK', 'KmCaMKK',
 #               'kOffPP', 'kPP', 'KmPP', 'alphaPP', 'kOffAMPK', 'kPhosAMPK',

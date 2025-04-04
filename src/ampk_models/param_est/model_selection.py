@@ -77,6 +77,10 @@ for i, model in enumerate(models_free_params.keys()):
         idata_lyso = az.from_netcdf(data_dir + model + '_lyso_mcmc_samples_' + sampler + '.nc')
         idata_mito = az.from_netcdf(data_dir + model + '_mito_mcmc_samples_' + sampler + '.nc')
 
+        print(idata_cyto)
+        break
+        
+
         # store idata
         idata_dict['cyto'][model][sampler] = idata_cyto
         idata_dict['lyso'][model][sampler] = idata_lyso

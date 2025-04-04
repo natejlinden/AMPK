@@ -41,6 +41,7 @@ models_free_params = {
         # "MA_nonessential":  {'info_file': '../models/MA_nonessential.json'},
         "MA_single":  {'info_file': '../models/MA_single.json'},
         # "MM_nonessential":  {'info_file': '../models/MM_nonessential.json'},
+        # "MA_amp_adp_dep":  {'info_file': '../models/MA_amp_adp_dep.json'},
         }
 
 data_dir = '../../../results/param_est/kinase_KO/std_dcr/'
@@ -83,6 +84,8 @@ for i, model in enumerate(models_free_params.keys()):
         # idata_lyso = az.from_netcdf(data_dir + model + '_lyso_mcmc_samples_' + sampler + '.nc')
         # idata_mito = az.from_netcdf(data_dir + model + '_mito_mcmc_samples_' + sampler + '.nc')
 
+        print(idata_cyto['posterior'])
+
         # # ########### plot traces
         # az.plot_trace(idata_cyto)
         # plt.savefig(save_dir + 'cyto_trace_' + sampler + '.png', dpi=500)
@@ -112,8 +115,8 @@ for i, model in enumerate(models_free_params.keys()):
         dat = {
             'cyto':{'idata': idata_cyto, 'data': cyto_data, 'data_lkb1_ko':cyto_data_LKB1_KO,
                     'data_camkk2_ko':cyto_data_CaMKK2_KO, 'times': cyto_times, 'color': cyto_color},
-            # 'lyso':{'idata': idata_lyso, 'data': lyso_data, 'data_lkb1_ko':lyso_data_LKB1_KO,
-            #         'data_camkk2_ko':lyso_data_CaMKK2_KO, 'times': lyso_times, 'color': lyso_color},
+                # 'lyso':{'idata': idata_lyso, 'data': lyso_data, 'data_lkb1_ko':lyso_data_LKB1_KO,
+                #         'data_camkk2_ko':lyso_data_CaMKK2_KO, 'times': lyso_times, 'color': lyso_color},
             # 'mito':{'idata': idata_mito, 'data': mito_data, 'data_lkb1_ko':mito_data_LKB1_KO,
             #         'data_camkk2_ko':mito_data_CaMKK2_KO, 'times': mito_times, 'color': mito_color},
         }
@@ -154,14 +157,14 @@ for i, model in enumerate(models_free_params.keys()):
         sims = {'cyto':{}, 'lyso':{}, 'mito':{}}
 
         for comp in dat.keys():
-            for pred in ['WT', 'LKB1_KO', 'CaMKK2_KO']:
+            for pred in ['prediction', 'prediction_LKB1_KO', 'prediction_CaMKK2_KO']:
                 fig, ax = get_sized_fig_ax(2,1)
 
-                if pred == 'WT':
+                if pred == 'prediction':
                     data = dat[comp]['data']
-                elif pred == 'LKB1_KO':
+                elif pred == 'prediction_LKB1_KO':
                     data = dat[comp]['data_lkb1_ko']
-                elif pred == 'CaMKK2_KO':
+                elif pred == 'prediction_CaMKK2_KO':
                     data = dat[comp]['data_camkk2_ko']
 
                 trajectories = np.squeeze(dat[comp]['idata']['posterior'][pred].values)

@@ -34,6 +34,7 @@ def main(raw_args=None):
     args = parse_args()
 
     colors = mb.met_brew(name="Veronese", n=7)
+    colors = colors[0:5]
 
     # list of models 
     models_free_params = { 
@@ -129,9 +130,9 @@ def main(raw_args=None):
         #  the second entry is the name of the qoi
         qoi_names = {
             "ratio":r'$\frac{[\rm pAMPKAR]}{[\rm AMPKAR]}$', # raw ratio
-            "t_half": r'$t_{{\rm half-max}}$', # time to half max
-            "delta_LKB1_KD": r'$\Delta \frac{[\rm pAMPKAR]}{[\rm AMPKAR]} LKB1 KO$',
-            "delta_CaMKK_KD": 
+            "t_half": r'$t_{{\rm 1/2}}$', # time to half max
+            # "delta_LKB1_KD": r'$\Delta \frac{[\rm pAMPKAR]}{[\rm AMPKAR]} LKB1 KO$',
+            # "delta_CaMKK_KD": 
         }
 
         for qoi in list(qoi_names.keys()):
@@ -227,42 +228,88 @@ def main(raw_args=None):
                  'Km_ATP_pAMPK', 'k_ATP_pAMPK', 'betaAMP'],
         'AMKPAR dephos.': ['kOffPP1', 'kDephosPP1', 'KmPP1', 'kPP1', 'Km_AMPKAR_PP', 'Vmax_AMPKAR_PP']
     }
+
+    model_names = {
+        'ampk_Coccimiglio': 'Coccimiglio et al. 2020',
+        'MA_single': 'Mass action (MA)',
+        'MM_single': 'Michealis Menten (MM)',
+        'MA_nonessential': 'MA - nonessential',
+        'MM_nonessential': 'MM - nonessential'
+    }
+
     # Make a heatmap of the ST values
     for qoi in list(qoi_names.keys()):
         tmp = {}
-        data_to_plot = np.zeros((len(ST_dict.keys()), len(param_function_dict.keys())))
+
+        # data_to_plot = np.zeros((len(ST_dict.keys()), len(param_function_dict.keys())))
+        data_to_plot = {}
         for i, model in enumerate(ST_dict.keys()):
             tmp[model] = ST_dict[model][qoi]
+
+            tmp_dict = {param_func:0 for param_func in param_function_dict.keys()}
 
             for j, param_func in enumerate(param_function_dict.keys()):
                 for param in param_function_dict[param_func]:
                     if param in tmp[model].keys(): # if that parameter is in the model
-                        data_to_plot[i,j] += tmp[model][param] # add ST value to the data_to_plot entry
+                        tmp_dict[param_func] += tmp[model][param] # add ST value to the data_to_plot entry
+
+            data_to_plot[model_names[model]] = tmp_dict
         
-        # anything that is still 0, set to np.nan
-        data_to_plot[data_to_plot == 0] = np.nan
+        # # anything that is still 0, set to np.nan
+        # data_to_plot[data_to_plot == 0] = np.nan
+
+        idxs_df = pd.DataFrame(data_to_plot)
+
+        idxs_df_long = idxs_df.reset_index().melt(id_vars='index', var_name='model', value_name='idx')
+        idxs_df_long.rename(columns={'index': 'param'}, inplace=True)
+        print(idxs_df_long)
+
+        fig, ax = get_sized_fig_ax(5.0, 1.5)
+        sns.barplot(x='param', y='idx', hue='model', data=idxs_df_long, ax=ax, palette=colors)
+        ax.set_ylabel(r'total sensitivity index', fontsize=10.0)
+        # ax.set_ylabel('')
+        ax.set_xlabel('')
+        ax.set_xticklabels(list(param_function_dict.keys()), rotation=45, ha='right', fontsize=10.0)
+
+        # update coloring
+        for patch in ax.patches:
+            face_color = patch.get_facecolor()
+            # Apply transparency to the face color only
+            patch.set_facecolor(mpl.colors.to_rgba(face_color, alpha=0.8))  
+
+            patch.set_edgecolor(face_color)  # Set edge color to match the fill
+
+        # legend and remove it
+        leg = ax.legend(loc='upper right', bbox_to_anchor=(1.75, 1.0), fontsize=8.0, ncols=2, title='')
+        export_legend(leg, args.fig_path + 'ST_legend.pdf')
+        leg.remove()
+        # save the figure
+        fig.savefig(args.fig_path + 'ST_barplot_' + qoi + '.pdf', bbox_inches='tight', transparent=True)
+
+        # print(np.array(data_to_plot).shape)
         
-        # fig, ax = get_sized_fig_ax(5.0, 2.0)
-        if np.any(data_to_plot > 1.5):
-            vmax=1.5
-        else:
-            vmax=np.nanmax(data_to_plot)
-        norm = mpl.colors.Normalize(vmin=0, vmax=vmax)
+        # # fig, ax = get_sized_fig_ax(5.0, 2.0)
+        # if np.any(data_to_plot > 1.5):
+        #     vmax=1.5
+        # else:
+        #     vmax=np.nanmax(data_to_plot)
+        # norm = mpl.colors.Normalize(vmin=0, vmax=vmax)
 
-        fig, ax = plt.subplots(figsize=(5.0, 1.5))
-        im, cbar = heatmap(data_to_plot, list(ST_dict.keys()), list(param_function_dict.keys()), 
-                        ax=ax, cmap="Blues", cbar_kw={'location':'right', 'pad':0.02},
-                        cbarlabel=r'$S_T$:  ' + qoi_names[qoi], aspect='auto', norm=norm)
-        # annotate
-        texts = annotate_heatmap(im, valfmt="{x:.2f}", fontsize=8.0)
+        # fig, ax = plt.subplots(figsize=(5.0, 1.5))
+        # print(data_to_plot)
+        # im, cbar = heatmap(data_to_plot, list(ST_dict.keys()), list(param_function_dict.keys()), 
+        #                 ax=ax, cmap="Blues", cbar_kw={'location':'right', 'pad':0.02},
+        #                 cbarlabel=r'$S_T$:  ' + qoi_names[qoi], aspect='auto', norm=norm)
+        # # annotate
+        # texts = annotate_heatmap(im, valfmt="{x:.2f}", fontsize=8.0)
 
-        # tick labels
-        ax.xaxis.set_ticks_position('bottom')  # Set ticks at the bottom
-        ax.xaxis.set_label_position('bottom') 
-        ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right', fontsize=10.0)
-        ax.set_yticklabels(['Coccimiglio et al. 2020', 'Mass action (MA)', 'Michealis Menten (MM)',  'MA - nonessential', 'MM - nonessential'], fontsize=10.0)
+        # # tick labels
+        # ax.xaxis.set_ticks_position('bottom')  # Set ticks at the bottom
+        # ax.xaxis.set_label_position('bottom') 
+        # ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right', fontsize=10.0)
+        # ax.set_yticklabels(['Coccimiglio et al. 2020', 'Mass action (MA)', 'Michealis Menten (MM)',  'MA - nonessential', 'MM - nonessential'], fontsize=10.0)
 
-        fig.savefig(args.fig_path + 'ST_heatmap_' + qoi + '.pdf', bbox_inches='tight', transparent=True)
+        # fig.savefig(args.fig_path + 'ST_heatmap_' + qoi + '.pdf', bbox_inches='tight', transparent=True)
     
 if __name__ == "__main__":
     main()
