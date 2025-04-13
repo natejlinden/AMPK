@@ -39,7 +39,8 @@ models_free_params = {
         # "ampk_Coccimiglio": {'info_file': '../models/ampk_Coccimiglio.json'},
         # "MM_single":  {'info_file': '../models/MM_single.json'},
         # "MA_nonessential":  {'info_file': '../models/MA_nonessential.json'},
-        "MA_single":  {'info_file': '../models/MA_single.json'},
+        # "MA_single":  {'info_file': '../models/MA_single.json'},
+        "MA_timeDepCaMKK2":  {'info_file': '../models/MA_timeDepCaMKK2.json'},
         # "MM_nonessential":  {'info_file': '../models/MM_nonessential.json'},
         # "MA_amp_adp_dep":  {'info_file': '../models/MA_amp_adp_dep.json'},
         }
@@ -84,8 +85,6 @@ for i, model in enumerate(models_free_params.keys()):
         # idata_lyso = az.from_netcdf(data_dir + model + '_lyso_mcmc_samples_' + sampler + '.nc')
         # idata_mito = az.from_netcdf(data_dir + model + '_mito_mcmc_samples_' + sampler + '.nc')
 
-        print(idata_cyto['posterior'])
-
         # # ########### plot traces
         # az.plot_trace(idata_cyto)
         # plt.savefig(save_dir + 'cyto_trace_' + sampler + '.png', dpi=500)
@@ -115,8 +114,8 @@ for i, model in enumerate(models_free_params.keys()):
         dat = {
             'cyto':{'idata': idata_cyto, 'data': cyto_data, 'data_lkb1_ko':cyto_data_LKB1_KO,
                     'data_camkk2_ko':cyto_data_CaMKK2_KO, 'times': cyto_times, 'color': cyto_color},
-                # 'lyso':{'idata': idata_lyso, 'data': lyso_data, 'data_lkb1_ko':lyso_data_LKB1_KO,
-                #         'data_camkk2_ko':lyso_data_CaMKK2_KO, 'times': lyso_times, 'color': lyso_color},
+            #     'lyso':{'idata': idata_lyso, 'data': lyso_data, 'data_lkb1_ko':lyso_data_LKB1_KO,
+            #             'data_camkk2_ko':lyso_data_CaMKK2_KO, 'times': lyso_times, 'color': lyso_color},
             # 'mito':{'idata': idata_mito, 'data': mito_data, 'data_lkb1_ko':mito_data_LKB1_KO,
             #         'data_camkk2_ko':mito_data_CaMKK2_KO, 'times': mito_times, 'color': mito_color},
         }

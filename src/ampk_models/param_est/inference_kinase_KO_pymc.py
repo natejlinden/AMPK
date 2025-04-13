@@ -9,7 +9,6 @@ import pandas as pd
 import diffrax as dfrx
 import equinox as eqx
 import pymc as pm
-from pymc.sampling.jax import sample_numpyro_nuts, sample_blackjax_nuts, get_jaxified_logp
 import nutpie
 from pymc.variational.callbacks import CheckParametersConvergence
 from pytensor.link.jax.dispatch import jax_funcify
@@ -18,7 +17,6 @@ import pymc_extras as pmx
 
 from jax import random
 import arviz as az
-from numpyro.infer import Predictive
 import sys, argparse, json, os
 
 sys.path.append("../")
@@ -26,6 +24,7 @@ from utils import *
 from pymc_jax_ode import *
 
 sys.path.append("../models/")
+from MA_timeDepCaMKK2_diffrax import * # import the model RHS
 
 # tell jax to use 64bit floats
 #jax.config.update('jax_platform_name', 'cpu')
@@ -84,6 +83,7 @@ def parse_args(raw_args=None):
 
 
 def main(raw_args=None):
+
     # jax.config.update("jax_enable_x64", True)
     """ Main function to execute command line script functionality. See the args parser for arguments
     """
@@ -127,6 +127,13 @@ def main(raw_args=None):
 
     basal_params = list(metab_params["metab_params_basal"].values())
     stress_params = list(metab_params["metab_params_stress"].values())
+
+    # if there are addtional stim params add them here
+    if 'Ca_stim_param' in model_info.keys():
+        for param in model_info['Ca_stim_param'].keys():
+            basal_params.append(model_info['Ca_stim_param'][param]['basal']) # basal value
+            stress_params.append(model_info['Ca_stim_param'][param]['stress']) # stressed value
+        
     ###############################################
     #                   Model RHS                  #
     ################################################
@@ -135,6 +142,7 @@ def main(raw_args=None):
             + ')')
         rhs_stress = eval(args.model + '(' + ','.join(str(elm) for elm in stress_params) \
              + ')')
+        
         rhs = dfrx.ODETerm(rhs)
         rhs_stress = dfrx.ODETerm(rhs_stress)
     except:
@@ -177,7 +185,7 @@ def main(raw_args=None):
     # runs the model in the stressed energy state using the SS from the basal state as the initial condition
     def simulator(params):
         # solve model
-        sol_stressed, _ = solve_traj(rhs, rhs_stress, y0, params, times, tmax_init=args.tmax_init, rtol=args.rtol, atol=args.atol, evnt_atol=args.evnt_atol, evnt_rtol=args.evnt_rtol, pcoeff=args.pcoeff, icoeff=args.icoeff, dcoeff=args.dcoeff, dt0=1e-10)
+        sol_stressed, _ = solve_traj(rhs, rhs_stress, y0, params, times, tmax_init=args.tmax_init, rtol=args.rtol, atol=args.atol, evnt_atol=args.evnt_atol, evnt_rtol=args.evnt_rtol, pcoeff=args.pcoeff, icoeff=args.icoeff, dcoeff=args.dcoeff, dt0=1e-10, adjoint=dfrx.RecursiveCheckpointAdjoint())
 
         # compute delta pAMPKAR/AMPKAR_tot
         AMPKAR_stressed = sol_stressed[jnp.array(ampkar_idxs), :].sum(axis=0)
