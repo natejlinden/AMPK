@@ -20,8 +20,6 @@
 """
 import jax.numpy as jnp
 import equinox as eqx
-import numpyro
-import numpyro.distributions as dist
 
 class MA_nonessential(eqx.Module):
     """Right hand side of the AMPK_ma_double_mech regulation model.
@@ -80,41 +78,51 @@ class MA_nonessential(eqx.Module):
         kOnPP1      = args[21] # Phosphatase AMPKAR binding
         kOffPP1     = args[22] 
         kDephosPP1  = args[23]
+        # updated params for Ca -> CaCaM -> CaMKK activation
+        kOnCaM      = args[24] # Ca binding
+        kOffCaM     = args[25]
+        kPhosCaM    = args[26] # CaMKK phosphorylation (using MM here b/c refs)
+        KmCaM      = args[27] # Km for CaMKK activation
+        kDephosCaMKK = args[28] # dephosphorylation of CaMKK
 
         # unpack states
         AMP                 = y[0]
         ADP                 = y[1]
         ATP                 = y[2]
         PCr                 = y[3]
-        AMPK                = y[4]
-        pAMPK               = y[5]
-        AMP_AMPK            = y[6]
-        ADP_AMPK            = y[7]
-        ATP_AMPK            = y[8]
-        AMP_pAMPK           = y[9]
-        ADP_pAMPK           = y[10]
-        ATP_pAMPK           = y[11]
-        CaMKK               = y[12]
-        CaMKK_AMPK          = y[13]
-        CaMKK_AMP_AMPK      = y[14]
-        CaMKK_ADP_AMPK      = y[15]
-        CaMKK_ATP_AMPK      = y[16]
-        LKB1                = y[17]
-        LKB1_AMPK           = y[18]
-        LKB1_AMP_AMPK       = y[19]
-        LKB1_ADP_AMPK       = y[20]
-        PP                  = y[21]
-        PP_pAMPK            = y[22]
-        PP_AMP_pAMPK        = y[23]
-        PP_ADP_pAMPK        = y[24]
-        PP_ATP_pAMPK        = y[25]
-        AMPKAR              = y[26]
-        pAMPKAR             = y[27]
-        AMPKAR_pAMPK        = y[28]
-        AMPKAR_AMP_pAMPK    = y[29]
-        AMPKAR_ADP_pAMPK    = y[30]
-        PP1                 = y[31]
-        PP1_pAMPKAR         = y[32]
+        Ca                  = y[4] # free calcium
+        AMPK                = y[5]
+        pAMPK               = y[6]
+        AMP_AMPK            = y[7]
+        ADP_AMPK            = y[8]
+        ATP_AMPK            = y[9]
+        AMP_pAMPK           = y[10]
+        ADP_pAMPK           = y[11]
+        ATP_pAMPK           = y[12]
+        CaM                 = y[13] # calmodulin
+        CaCaM               = y[14]
+        CaMKK               = y[15]
+        CaMKK_act           = y[16]
+        CaMKK_act_AMPK      = y[17]
+        CaMKK_act_AMP_AMPK  = y[18]
+        CaMKK_act_ADP_AMPK  = y[19]
+        CaMKK_act_ATP_AMPK  = y[20]
+        LKB1                = y[21]
+        LKB1_AMPK           = y[22]
+        LKB1_AMP_AMPK       = y[23]
+        LKB1_ADP_AMPK       = y[24]
+        PP                  = y[25]
+        PP_pAMPK            = y[26]
+        PP_AMP_pAMPK        = y[27]
+        PP_ADP_pAMPK        = y[28]
+        PP_ATP_pAMPK        = y[29]
+        AMPKAR              = y[30]
+        pAMPKAR             = y[31]
+        AMPKAR_pAMPK        = y[32]
+        AMPKAR_AMP_pAMPK    = y[33]
+        AMPKAR_ADP_pAMPK    = y[34]
+        PP1                 = y[35]
+        PP1_pAMPKAR         = y[36]
 
         # FLUXES
         J1 = kOnAMP*AMP*AMPK - kOffAMP*AMP_AMPK
@@ -123,17 +131,17 @@ class MA_nonessential(eqx.Module):
         J4 = kOnAMP*AMP*pAMPK - kOffAMP*AMP_pAMPK
         J5 = kOnADP*ADP*pAMPK - kOffADP*ADP_pAMPK
         J6 = kOnATP*ATP*pAMPK - kOffATP*ATP_pAMPK
-        J7 = kOnCaMKK*CaMKK*AMPK - kOffCaMKK*CaMKK_AMPK
-        J8 = kPhosCaMKK*CaMKK_AMPK
-        J9 = kOnCaMKK*CaMKK*AMP_AMPK - kOffCaMKK*CaMKK_AMP_AMPK
-        J10 = kOnAMP*AMP*CaMKK_AMPK - kOffAMP*CaMKK_AMP_AMPK
-        J11 = kPhosCaMKK*CaMKK_AMP_AMPK
-        J12 = kOnCaMKK*CaMKK*ADP_AMPK - kOffCaMKK*CaMKK_ADP_AMPK
-        J13 = kOnADP*ADP*CaMKK_AMPK - kOffADP*CaMKK_ADP_AMPK
-        J14 = kPhosCaMKK*CaMKK_ADP_AMPK
-        J15 = kOnCaMKK*CaMKK*ATP_AMPK - kOffCaMKK*CaMKK_ATP_AMPK
-        J16 = kOnATP*ATP*CaMKK_AMPK - kOffATP*CaMKK_ATP_AMPK
-        J17 = kPhosCaMKK*CaMKK_ATP_AMPK
+        J7 = kOnCaMKK*CaMKK_act*AMPK - kOffCaMKK*CaMKK_act_AMPK
+        J8 = kPhosCaMKK*CaMKK_act_AMPK
+        J9 = kOnCaMKK*CaMKK_act*AMP_AMPK - kOffCaMKK*CaMKK_act_AMP_AMPK
+        J10 = kOnAMP*AMP*CaMKK_act_AMPK - kOffAMP*CaMKK_act_AMP_AMPK
+        J11 = kPhosCaMKK*CaMKK_act_AMP_AMPK
+        J12 = kOnCaMKK*CaMKK_act*ADP_AMPK - kOffCaMKK*CaMKK_act_ADP_AMPK
+        J13 = kOnADP*ADP*CaMKK_act_AMPK - kOffADP*CaMKK_act_ADP_AMPK
+        J14 = kPhosCaMKK*CaMKK_act_ADP_AMPK
+        J15 = kOnCaMKK*CaMKK_act*ATP_AMPK - kOffCaMKK*CaMKK_act_ATP_AMPK
+        J16 = kOnATP*ATP*CaMKK_act_AMPK - kOffATP*CaMKK_act_ATP_AMPK
+        J17 = kPhosCaMKK*CaMKK_act_ATP_AMPK
         J18 = kOnLKB1*LKB1*AMPK - kOffLKB1*LKB1_AMPK
         J19 = kPhosLKB1*LKB1_AMPK
         J20 = kOnLKB1*LKB1*AMP_AMPK - alphaLKB1*kOffLKB1*LKB1_AMP_AMPK
@@ -186,11 +194,17 @@ class MA_nonessential(eqx.Module):
         num_revCK = ((VrevCK*ATP*(self.TCr - PCr))/(self.Kiq*self.Kp))
         JCK = (num_revCK - num_forCK)/den_ck # Pi forming direction
 
+        # Ca -> CaM -> CaMKK activation
+        JCa = kOnCaM*(Ca**3)*CaM - kOffCaM*CaCaM
+        JCaMKK_act = (kPhosCaM*(CaCaM**4)*CaMKK)/(KmCaM**4 + CaCaM**4) # CaMKK activation
+        JCaMKK_dephos = kDephosCaMKK*CaMKK_act
+
         # now return the odes for each state variable
         d_AMP = -J1-J4-J10-J21-J29-J40-JAK
         d_ADP =-J2-J5-J13-J24-J32-J43-Jgly+2*JAK+Jhydro-Joxphos + JCK 
         d_ATP =-J3-J6-J16-J35+Jgly-JAK-Jhydro+Joxphos - JCK
-        d_PCr = JCK 
+        d_PCr = JCK
+        d_Ca = -JCa
         d_AMPK = -J1-J2-J3-J7-J18+J27
         d_pAMPK =  -J4-J5-J6+J8+J19-J26-J37+J38
         d_AMP_AMPK = J1-J9-J20-J28+J30
@@ -199,11 +213,14 @@ class MA_nonessential(eqx.Module):
         d_AMP_pAMPK = J4+J11+J22-J39+J41
         d_ADP_pAMPK = J5+J14+J25-J31-J42+J44
         d_ATP_pAMPK = J6+J17-J34 
-        d_CaMKK = -J7+J8-J9+J11-J12+J14-J15+J17 
-        d_CaMKK_AMPK = J7-J8-J10-J13-J16
-        d_CaMKK_AMP_AMPK = J9+J10-J11
-        d_CaMKK_ADP_AMPK = J12+J13-J14 
-        d_CaMKK_ATP_AMPK = J15+J16-J17 
+        d_CaM = -JCa
+        d_CaCaM = JCa
+        d_CaMKK = -JCaMKK_act + JCaMKK_dephos
+        d_CaMKK_act = JCaMKK_act - JCaMKK_dephos -J7+J8-J9+J11-J12+J14-J15+J17 
+        d_CaMKK_act_AMPK = J7-J8-J10-J13-J16
+        d_CaMKK_act_AMP_AMPK = J9+J10-J11
+        d_CaMKK_act_ADP_AMPK = J12+J13-J14 
+        d_CaMKK_act_ATP_AMPK = J15+J16-J17 
         d_LKB1 = -J18+J19-J20+J22-J23+J25
         d_LKB1_AMPK = J18-J19-J21-J24
         d_LKB1_AMP_AMPK = J20+J21-J22 
@@ -221,7 +238,7 @@ class MA_nonessential(eqx.Module):
         d_PP1 = -J45+J46
         d_PP1_pAMPKAR = J45-J46
 
-        return [d_AMP,d_ADP,d_ATP,d_PCr,d_AMPK,d_pAMPK,d_AMP_AMPK,d_ADP_AMPK,d_ATP_AMPK,d_AMP_pAMPK,d_ADP_pAMPK,d_ATP_pAMPK,d_CaMKK,d_CaMKK_AMPK,d_CaMKK_AMP_AMPK,d_CaMKK_ADP_AMPK,d_CaMKK_ATP_AMPK,d_LKB1,d_LKB1_AMPK,d_LKB1_AMP_AMPK,d_LKB1_ADP_AMPK,d_PP,d_PP_pAMPK,d_PP_AMP_pAMPK,d_PP_ADP_pAMPK,d_PP_ATP_pAMPK,d_AMPKAR,d_pAMPKAR,d_AMPKAR_pAMPK,d_AMPKAR_AMP_pAMPK,d_AMPKAR_ADP_pAMPK,d_PP1,d_PP1_pAMPKAR]
+        return [d_AMP,d_ADP,d_ATP,d_PCr,d_Ca,d_AMPK,d_pAMPK,d_AMP_AMPK,d_ADP_AMPK,d_ATP_AMPK,d_AMP_pAMPK,d_ADP_pAMPK,d_ATP_pAMPK,d_CaM, d_CaCaM,d_CaMKK,d_CaMKK_act,d_CaMKK_act_AMPK,d_CaMKK_act_AMP_AMPK,d_CaMKK_act_ADP_AMPK,d_CaMKK_act_ATP_AMPK,d_LKB1,d_LKB1_AMPK,d_LKB1_AMP_AMPK,d_LKB1_ADP_AMPK,d_PP,d_PP_pAMPK,d_PP_AMP_pAMPK,d_PP_ADP_pAMPK,d_PP_ATP_pAMPK,d_AMPKAR,d_pAMPKAR,d_AMPKAR_pAMPK,d_AMPKAR_AMP_pAMPK,d_AMPKAR_ADP_pAMPK,d_PP1,d_PP1_pAMPKAR]
 
 
     def set_kGly(self, kGly):

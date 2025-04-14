@@ -23,7 +23,12 @@
         "betaAMP",
         "kOnPP1",
         "kOffPP1",
-        "kDephosPP1"
+        "kDephosPP1",
+        "kOnCaM",
+        "kOffCaM",
+        "kPhosCaM",
+        "KmCaM",
+        "kDephosCaMKK"
     ],
     "nominal_params": {
         "kOnAMP": 1.0,
@@ -49,13 +54,19 @@
         "betaAMP": 1.0,
         "kOnPP1": 1.0,
         "kOffPP1": 0.56,
-        "kDephosPP1": 0.00011
+        "kDephosPP1": 0.00011,
+        "kOnCaM":7.75,
+        "kOffCaM":1.0,
+        "kPhosCaM":120.0,
+        "KmCaM":4.0,
+        "kDephosCaMKK":0.05
     },
     "init_conds": {
         "AMP": 0.02,
         "ADP": 1.3,
         "ATP": 8.2,
         "PCr": 22.1,
+        "Ca": 0.1,
         "AMPK": 0.6,
         "pAMPK": 0.0,
         "AMP_AMPK": 0.0,
@@ -64,11 +75,14 @@
         "AMP_pAMPK": 0.0,
         "ADP_pAMPK": 0.0,
         "ATP_pAMPK": 0.0,
-        "CaMKK": 1.0,
-        "CaMKK_AMPK": 0.0,
-        "CaMKK_AMP_AMPK": 0.0,
-        "CaMKK_ADP_AMPK": 0.0,
-        "CaMKK_ATP_AMPK": 0.0,
+        "CaM": 10.0,
+        "CaCaM":0.0, 
+        "CaMKK": 10.0,
+        "CaMKK_act":0.0, 
+        "CaMKK_act_AMPK": 0.0,
+        "CaMKK_act_AMP_AMPK": 0.0,
+        "CaMKK_act_ADP_AMPK": 0.0,
+        "CaMKK_act_ATP_AMPK": 0.0,
         "LKB1": 1.0,
         "LKB1_AMPK": 0.0,
         "LKB1_AMP_AMPK": 0.0,
@@ -318,6 +332,26 @@
         "betaAMP": [
             0.0042209,
             52.84192868
+        ],
+        "kOnCaM": [
+            0.775,
+            775.0
+        ],
+        "kOffCaM": [
+            1.0,
+            1.0
+        ],
+        "kPhosCaM": [
+            12.0,
+            12000.0
+        ],
+        "KmCaM": [
+            0.4,
+            40.0
+        ],
+        "kDephosCaMKK": [
+            0.005,
+            0.5
         ]
     }
 }
