@@ -241,6 +241,48 @@ def solve_traj_forwardAdj(rhs, rhs_stress, y0, params, times, rtol=1e-6, atol=1e
     
     return jnp.squeeze(jnp.array(sol_stressed.ys)), jnp.squeeze(jnp.array(sol.ys))
 
+def solve_traj_timeDepCaMKK(rhs, rhs_stress, y0, Ca_stress, Ca_index, params, times, 
+        rtol=1e-6, atol=1e-6, tmax_init = 1e3, pcoeff=0, icoeff=1, dcoeff=0, 
+        solver = dfrx.Kvaerno5(), dt0=1e-10, n_chekpoints=1000):
+    """ simulates a model over the specified time interval and returns the 
+    calculated values.
+    Returns an array of shape (n_species, 1) 
+    TODO add way to specify autodiff method
+    """
+    stepsize_controller=dfrx.PIDController(rtol, atol, pcoeff=pcoeff, icoeff=icoeff, dcoeff=dcoeff)
+    t0 = 0.0
+    t1 = times[-1]
+    saveat=dfrx.SaveAt(ts=times)
+    max_steps=int(3e7)
+
+    # first solve the basal model to SS
+    sol = dfrx.diffeqsolve(
+        rhs, solver, 
+        t0, tmax_init, dt0, 
+        y0, 
+        args=params,
+        stepsize_controller=stepsize_controller,
+        max_steps=max_steps,
+        adjoint=dfrx.RecursiveCheckpointAdjoint(checkpoints=n_chekpoints),
+        throw=True)
+    
+    # set Ca2+ to stress value
+    y0_stress = sol.ys.copy()
+    y0_stress[Ca_index] = Ca_stress
+    
+    # then use that solution as the initial condition for the stressed setting
+    sol_stressed = dfrx.diffeqsolve(
+        rhs_stress, solver, 
+        t0, t1, dt0, 
+        y0_stress, # use basal SS at IC
+        args=params, 
+        saveat=saveat,
+        stepsize_controller=stepsize_controller,
+        adjoint=dfrx.RecursiveCheckpointAdjoint(checkpoints=n_chekpoints),
+        max_steps=max_steps, 
+        throw=True)
+    
+    return jnp.squeeze(jnp.array(sol_stressed.ys)), jnp.squeeze(jnp.array(sol.ys))
 
 @jax.jit
 def solve_SS(rhs, rhs_stress, y0, params, rtol=1e-6, atol=1e-6, 
