@@ -186,21 +186,18 @@ def main(raw_args=None):
     # Set up solver
     ######################################################
     times = np.linspace(0, args.tmax, 1000)
-    solve = jax.vmap(lambda params: solve_traj(rhs, rhs_stress, y0, params, times,
+    solve = jax.vmap(lambda params: solve_traj_timeDepCaMKK(rhs, rhs_stress, y0, params, times,
                                       rtol=args.rtol, atol=args.atol, 
-                                      evnt_rtol=args.evnt_rtol, evnt_atol=args.evnt_atol, 
                                       pcoeff=args.pcoeff, icoeff=args.icoeff, dcoeff=args.dcoeff))
     
-    solve_LKB1_KD = jax.vmap(lambda params: solve_traj(rhs, rhs_stress, y0_LKB1_KD, 
+    solve_LKB1_KD = jax.vmap(lambda params: solve_traj_timeDepCaMKK(rhs, rhs_stress, y0_LKB1_KD, 
                                                        params, times,
                                       rtol=args.rtol, atol=args.atol, 
-                                      evnt_rtol=args.evnt_rtol, evnt_atol=args.evnt_atol, 
                                       pcoeff=args.pcoeff, icoeff=args.icoeff, dcoeff=args.dcoeff))
     
-    solve_CaMKK_KD = jax.vmap(lambda params: solve_traj(rhs, rhs_stress, y0_CaMKK_KD, 
+    solve_CaMKK_KD = jax.vmap(lambda params: solve_traj_timeDepCaMKK(rhs, rhs_stress, y0_CaMKK_KD, 
                                                     params, times,
-                                    rtol=args.rtol, atol=args.atol, 
-                                    evnt_rtol=args.evnt_rtol, evnt_atol=args.evnt_atol, 
+                                    rtol=args.rtol, atol=args.atol,
                                     pcoeff=args.pcoeff, icoeff=args.icoeff, dcoeff=args.dcoeff))
 
     # run the vmapped simulations
