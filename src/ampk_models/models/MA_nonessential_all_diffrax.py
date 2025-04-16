@@ -2,7 +2,7 @@
     - AMP/ADP binding protect from pAMPK dephosphorylation 
         by a factor of alphaPP < 1.0
     - AMP binding promotes pAMPK activity by a factor of betaAMP > 1.0
-    - AMP/ADP binding promotes LKB1/CaMKK activity by a factor of betaKinase > 1.0
+    - AMP/ADP binding promotes LKB1/CaMKK activity by a factor of betaLKB1 > 1.0
 
 """
 import jax.numpy as jnp
@@ -70,7 +70,8 @@ class MA_nonessential_all(eqx.Module):
         kDephosCaMKK = args[25] # dephosphorylation of CaMKK
         alphaPP = args[26] # < 1; dephos reduction factor due to AMP/ADP
         betaAMP = args[27] # >1 pAMPK phos increase factor due to AMP 
-        betaKinase = args[28] # >1 AMPK phos increase factor due to AMP/ADP
+        betaLKB1 = args[28] # >1 AMPK phos increase factor due to AMP/ADP
+        betaCaMKK = args[28] # >1 AMPK phos increase factor due to AMP/ADP
 
         # unpack states
         AMP                = y[0]
@@ -131,17 +132,17 @@ class MA_nonessential_all(eqx.Module):
         J7 = kOnCaMKK*CaMKK_act*AMPK - kOffCaMKK*CaMKK_act_AMPK
         J8 = kPhosCaMKK*CaMKK_act_AMPK
         J9 = kOnCaMKK*CaMKK_act*AMP_AMPK - kOffCaMKK*CaMKK_act_AMP_AMPK  
-        J10 = betaKinase*kPhosCaMKK*CaMKK_act_AMP_AMPK 
+        J10 = betaCaMKK*kPhosCaMKK*CaMKK_act_AMP_AMPK 
         J11 = kOnCaMKK*CaMKK_act*ADP_AMPK - kOffCaMKK*CaMKK_act_ADP_AMPK
-        J12 = betaKinase*kPhosCaMKK*CaMKK_act_ADP_AMPK
+        J12 = betaCaMKK*kPhosCaMKK*CaMKK_act_ADP_AMPK
         J13 = kOnCaMKK*CaMKK_act*ATP_AMPK - kOffCaMKK*CaMKK_act_ATP_AMPK
         J14 = kPhosCaMKK*CaMKK_act_ATP_AMPK
 
         # LKB1 complexing and phosphorylation
         J15 = kOnLKB1*LKB1*AMP_AMPK - kOffLKB1*LKB1_AMP_AMPK
-        J16 = betaKinase*kPhosLKB1*LKB1_AMP_AMPK
+        J16 = betaLKB1*kPhosLKB1*LKB1_AMP_AMPK
         J17 = kOnLKB1*LKB1*ADP_AMPK -  kOffLKB1*LKB1_ADP_AMPK
-        J18 = betaKinase*kPhosLKB1*LKB1_ADP_AMPK
+        J18 = betaLKB1*kPhosLKB1*LKB1_ADP_AMPK
         J19 = kOnLKB1*LKB1*ATP_AMPK -  kOffLKB1*LKB1_ATP_AMPK
         J20 = kPhosLKB1*LKB1_ATP_AMPK
         J21 = kOnLKB1*LKB1*AMPK -  kOffLKB1*LKB1_AMPK

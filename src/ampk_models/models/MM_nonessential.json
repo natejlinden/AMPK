@@ -19,10 +19,14 @@
         "betaAMP",
         "kPP1",
         "KmPP1",
-        "CaMKKtot",
         "LKB1tot",
         "PPtot",
-        "PP1tot"
+        "PP1tot",
+        "kOnCaM",
+        "kOffCaM",
+        "kPhosCaM",
+        "KmCaM",
+        "kDephosCaMKK"
     ],
     "nominal_params_original": {
         "kOnAMP": 1.0,
@@ -44,10 +48,14 @@
         "betaAMP": 1.0,
         "kPP1": 0.00011,
         "KmPP1": 0.067,
-        "CaMKKtot": 1.0,
         "LKB1tot": 1.0,
         "PPtot": 1.0,
-        "PP1tot": 1.0
+        "PP1tot": 1.0,
+        "kOnCaM": 7.75,
+        "kOffCaM": 1.0,
+        "kPhosCaM": 120.0,
+        "KmCaM": 4.0,
+        "kDephosCaMKK": 0.05
     },
     "nominal_params": {
         "kOnAMP": 1.0,
@@ -69,16 +77,25 @@
         "betaAMP": 1.0,
         "kPP1": 0.00011,
         "KmPP1": 0.067,
-        "CaMKKtot": 1.0,
-        "LKB1tot": 1.0,
-        "PPtot": 1.0,
-        "PP1tot": 1.0
+        "LKB1tot": 0.1,
+        "PPtot": 0.1,
+        "PP1tot": 0.1,
+        "kOnCaM": 7.75e9,
+        "kOffCaM": 1.0,
+        "kPhosCaM": 120.0,
+        "KmCaM": 4.0e3,
+        "kDephosCaMKK": 0.05
     },
     "init_conds": {
         "AMP": 0.02,
         "ADP": 1.3,
         "ATP": 8.2,
         "PCr": 22.1,
+        "Ca": 0.0001,
+        "CaM": 0.01,
+        "CaCaM": 0.0,
+        "CaMKK": 0.02,
+        "CaMKK_act": 0.0,
         "AMPK": 0.6,
         "pAMPK": 0.0,
         "AMP_AMPK": 0.0,
@@ -165,10 +182,14 @@
             6.7e-06,
             5.71
         ],
-        "CaMKKtot": [],
         "LKB1tot": [],
         "PPtot": [],
-        "PP1tot": []
+        "PP1tot": [],
+        "kOnCaM": [],
+        "kOffCaM": [],
+        "kPhosCaM": [],
+        "KmCaM": [],
+        "kDephosCaMKK": []
     },
     "prior_params": {
         "kOnAMP": {},
