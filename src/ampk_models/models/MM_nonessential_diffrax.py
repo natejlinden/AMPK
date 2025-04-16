@@ -20,8 +20,6 @@
 """
 import jax.numpy as jnp
 import equinox as eqx
-import numpyro
-import numpyro.distributions as dist
 
 class MM_nonessential(eqx.Module):
     """Right hand side of the AMPK_ma_double_mech regulation model.
@@ -77,26 +75,35 @@ class MM_nonessential(eqx.Module):
         kDephosPP1  = args[17] # pAMPKAR Phosphatase
         KmPP1       = args[18] 
         # external enzyme concentrations
-        CaMKKtot    = args[19]
-        LKB1tot     = args[20]
-        PPtot       = args[21]
-        PP1tot      = args[22]
+        LKB1tot     = args[19]
+        PPtot       = args[20]
+        PP1tot      = args[21]
+        kOnCaM      = args[22] # Ca binding
+        kOffCaM     = args[23]
+        kPhosCaM    = args[24] # CaMKK phosphorylation (using MM here b/c refs)
+        KmCaM      = args[25] # Km for CaMKK activation
+        kDephosCaMKK = args[26] # dephosphorylation of CaMKK
 
         # unpack states
         AMP                 = y[0]
         ADP                 = y[1]
         ATP                 = y[2]
         PCr                 = y[3]
-        AMPK                = y[4]
-        pAMPK               = y[5]
-        AMP_AMPK            = y[6]
-        ADP_AMPK            = y[7]
-        ATP_AMPK            = y[8]
-        AMP_pAMPK           = y[9]
-        ADP_pAMPK           = y[10]
-        ATP_pAMPK           = y[11]
-        AMPKAR              = y[12]
-        pAMPKAR             = y[13]
+        Ca                  = y[4]
+        CaM                 = y[5] # calmodulin
+        CaCaM               = y[6] # calmodulin bound to calcium
+        CaMKK               = y[7] # CaMKK
+        CaMKK_act           = y[8] # CaMKK active
+        AMPK                = y[9]
+        pAMPK               = y[10]
+        AMP_AMPK            = y[11]
+        ADP_AMPK            = y[12]
+        ATP_AMPK            = y[13]
+        AMP_pAMPK           = y[14]
+        ADP_pAMPK           = y[15]
+        ATP_pAMPK           = y[16]
+        AMPKAR              = y[17]
+        pAMPKAR             = y[18]
         
         # FLUXES
         J1 = (kOnAMP*AMP*AMPK-kOffAMP*AMP_AMPK)
@@ -106,10 +113,10 @@ class MM_nonessential(eqx.Module):
         J5 = (kOnADP*ADP*pAMPK-kOffADP*ADP_pAMPK)
         J6 = (kOnATP*ATP*pAMPK-kOffATP*ATP_pAMPK)
         # CaMKK phosphorylation
-        J7 = ((kPhosCaMKK*CaMKKtot*AMPK)/(KmCaMKK + AMPK))
-        J8 = ((kPhosCaMKK*CaMKKtot*AMP_AMPK)/(KmCaMKK + AMP_AMPK))
-        J9 = ((kPhosCaMKK*CaMKKtot*ADP_AMPK)/(KmCaMKK + ADP_AMPK))
-        J10 = ((kPhosCaMKK*CaMKKtot*ATP_AMPK)/(KmCaMKK + ATP_AMPK))
+        J7 = ((kPhosCaMKK*CaMKK_act*AMPK)/(KmCaMKK + AMPK))
+        J8 = ((kPhosCaMKK*CaMKK_act*AMP_AMPK)/(KmCaMKK + AMP_AMPK))
+        J9 = ((kPhosCaMKK*CaMKK_act*ADP_AMPK)/(KmCaMKK + ADP_AMPK))
+        J10 = ((kPhosCaMKK*CaMKK_act*ATP_AMPK)/(KmCaMKK + ATP_AMPK))
         # LKB1 phosphorylation
         J11 = ((kPhosLKB1*LKB1tot*AMPK)/(KmLKB1 + AMPK))
         J12 = ((kPhosLKB1*LKB1tot*AMP_AMPK)/(alphaLKB1*KmLKB1 + AMP_AMPK))
@@ -125,6 +132,11 @@ class MM_nonessential(eqx.Module):
         J20 = (kPhosAMPK*ADP_pAMPK*AMPKAR)/(KmAMPK + AMPKAR)
         # PP1 dephos
         J21 = (kDephosPP1*PP1tot*pAMPKAR)/(KmPP1 + pAMPKAR)
+
+        # Ca -> CaM -> CaMKK activation
+        JCa = kOnCaM*(Ca**3)*CaM - kOffCaM*CaCaM
+        JCaMKK_act = (kPhosCaM*(CaCaM**4)*CaMKK)/(KmCaM**4 + CaCaM**4) # CaMKK activation
+        JCaMKK_dephos = kDephosCaMKK*CaMKK_act
 
         # Metabolic fluxes
         # glycolysis
@@ -153,6 +165,11 @@ class MM_nonessential(eqx.Module):
         d_ADP = -Jgly+2*JAK+Jhydro-Joxphos + JCK-J2-J5
         d_ATP = Jgly-JAK-Jhydro+Joxphos-JCK-J3-J6
         d_PCr = JCK
+        d_Ca = -JCa
+        d_CaM = -JCa
+        d_CaCaM = JCa
+        d_CaMKK = -JCaMKK_act + JCaMKK_dephos # CaMKK
+        d_CaMKK_act = JCaMKK_act - JCaMKK_dephos
         d_AMPK = -J1-J2-J3-J7-J11+J14
         d_pAMPK = -J4-J5-J6+J7+J11-J14
         d_AMP_AMPK = J1-J8-J12+J15
@@ -164,10 +181,9 @@ class MM_nonessential(eqx.Module):
         d_AMPKAR = -J18-J19-J20+J21
         d_pAMPKAR = J18+J19+J20-J21 
 
-        return [d_AMP, d_ADP, d_ATP, d_PCr, d_AMPK, d_pAMPK, d_AMP_AMPK, 
-                d_ADP_AMPK, d_ATP_AMPK, d_AMP_pAMPK, d_ADP_pAMPK, d_ATP_pAMPK, 
-                d_AMPKAR, d_pAMPKAR]
-
+        return [d_AMP, d_ADP, d_ATP, d_PCr, d_Ca, d_CaM, d_CaCaM, d_CaMKK, 
+                d_CaMKK_act, d_AMPK, d_pAMPK, d_AMP_AMPK, d_ADP_AMPK, d_ATP_AMPK, 
+                d_AMP_pAMPK, d_ADP_pAMPK, d_ATP_pAMPK, d_AMPKAR, d_pAMPKAR]
 
     def set_kGly(self, kGly):
             """Set the glycolysis rate parameter."""
