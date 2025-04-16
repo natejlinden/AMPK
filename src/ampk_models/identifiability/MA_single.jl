@@ -1,50 +1,130 @@
-using StructuralIdentifiability
+using StructuralIdentifiability, ModelingToolkit
 
-MA_single = @ODEmodel(
-        x1'(t) = -(kOnAMP*x1(t)*x5(t)-kOffAMP*x7(t))-(kOnAMP*x1(t)*x6(t)-kOffAMP*x10(t))-((((((((VforAK*(kmd*kmd))/(KeqAK*kmt*kmm))*(x2(t)*x2(t)))/(kmd*kmd))*x3(t)*x1(t))/(kmt*kmm))-((((VforAK*(kmd*kmd))/(KeqAK*kmt*kmm))*(x2(t)*x2(t)))/(kmd*kmd)))/(1+(x3(t)/kmt)+(x1(t)/kmm)+((x3(t)*x1(t))/(kmt*kmm))+((2*x2(t))/kmd)+((x2(t)*x2(t))/(kmd*kmd))))-(kOnAMP*x1(t)*x14(t)-kOffADP*x15(t)),
-        x2'(t) = -(kOnADP*x2(t)*x5(t)-kOffADP*x8(t))-(kOnADP*x2(t)*x6(t)-kOffADP*x11(t))-(kGly*x2(t))+2*((((((((VforAK*(kmd*kmd))/(KeqAK*kmt*kmm))*(x2(t)*x2(t)))/(kmd*kmd))*x3(t)*x1(t))/(kmt*kmm))-((((VforAK*(kmd*kmd))/(KeqAK*kmt*kmm))*(x2(t)*x2(t)))/(kmd*kmd)))/(1+(x3(t)/kmt)+(x1(t)/kmm)+((x3(t)*x1(t))/(kmt*kmm))+((2*x2(t))/kmd)+((x2(t)*x2(t))/(kmd*kmd))))+(kHydro*x3(t))-((VmaxOxPhos*(((x2(t)*x2(t))/(Kadp*Kadp))))/(1+(((x2(t)*x2(t))/(Kadp*Kadp)))))+((((((VforCK*Kiq*Kp)/(KeqCK*Kia*Kb))*x3(t)*(TCr-x4(t)))/(Kiq*Kp))-((VforCK*x2(t)*x4(t))/(Kia*Kb)))/(1+(x2(t)/Kia)+(x4(t)/Kib)+(x3(t)/Kiq)+((x2(t)*x4(t))/(Kia*Kb))+(((TCr-x4(t))*x3(t))/(Kiq*Kp))))-(kOnADP*x2(t)*x14(t)-kOffADP*x16(t)),
-        x3'(t) = -(kOnATP*x3(t)*x5(t)-kOffATP*x9(t))-(kOnATP*x3(t)*x6(t)-kOffATP*x12(t))+(kGly*x2(t))-((((((((VforAK*(kmd*kmd))/(KeqAK*kmt*kmm))*(x2(t)*x2(t)))/(kmd*kmd))*x3(t)*x1(t))/(kmt*kmm))-((((VforAK*(kmd*kmd))/(KeqAK*kmt*kmm))*(x2(t)*x2(t)))/(kmd*kmd)))/(1+(x3(t)/kmt)+(x1(t)/kmm)+((x3(t)*x1(t))/(kmt*kmm))+((2*x2(t))/kmd)+((x2(t)*x2(t))/(kmd*kmd))))-(kHydro*x3(t))+((VmaxOxPhos*(((x2(t)*x2(t))/(Kadp*Kadp))))/(1+(((x2(t)*x2(t))/(Kadp*Kadp)))))-((((((VforCK*Kiq*Kp)/(KeqCK*Kia*Kb))*x3(t)*(TCr-x4(t)))/(Kiq*Kp))-((VforCK*x2(t)*x4(t))/(Kia*Kb)))/(1+(x2(t)/Kia)+(x4(t)/Kib)+(x3(t)/Kiq)+((x2(t)*x4(t))/(Kia*Kb))+(((TCr-x4(t))*x3(t))/(Kiq*Kp))))-(kOnATP*x3(t)*x14(t)-kOffATP*x17(t))-(kOnATP*x3(t)*x22(t)-kOffATP*x23(t)),
-        x4'(t) = ((((((VforCK*Kiq*Kp)/(KeqCK*Kia*Kb))*x3(t)*(TCr-x4(t)))/(Kiq*Kp))-((VforCK*x2(t)*x4(t))/(Kia*Kb)))/(1+(x2(t)/Kia)+(x4(t)/Kib)+(x3(t)/Kiq)+((x2(t)*x4(t))/(Kia*Kb))+(((TCr-x4(t))*x3(t))/(Kiq*Kp)))),
-        x5'(t) = -(kOnAMP*x1(t)*x5(t)-kOffAMP*x7(t))-(kOnADP*x2(t)*x5(t)-kOffADP*x8(t))-(kOnATP*x3(t)*x5(t)-kOffATP*x9(t))-(kOnCaMKK*x13(t)*x5(t)-kOffCaMKK*x14(t))+(kDephosPP*x22(t)),
-        x6'(t) = -(kOnAMP*x1(t)*x6(t)-kOffAMP*x10(t))-(kOnADP*x2(t)*x6(t)-kOffADP*x11(t))-(kOnATP*x3(t)*x6(t)-kOffATP*x12(t))+(kPhosCaMKK*x14(t))-(kOnPP*x21(t)*x6(t)-kOffPP*x22(t)),
-        x7'(t) = (kOnAMP*x1(t)*x5(t)-kOffAMP*x7(t))-(kOnCaMKK*x13(t)*x7(t)-kOffCaMKK*x15(t))-(kOnLKB1*x18(t)*x7(t)-kOffLKB1*x19(t)),
-        x8'(t) = (kOnADP*x2(t)*x5(t)-kOffADP*x8(t))-(kOnCaMKK*x13(t)*x8(t)-kOffCaMKK*x16(t))-(kOnLKB1*x18(t)*x8(t)- kOffLKB1*x20(t)),
-        x9'(t) = (kOnATP*x3(t)*x5(t)-kOffATP*x9(t))-(kOnCaMKK*x13(t)*x9(t)-kOffCaMKK*x17(t))+(kDephosPP*x23(t)),
-        x10'(t) = (kOnAMP*x1(t)*x6(t)-kOffAMP*x10(t))+(kPhosCaMKK*x15(t))+(kPhosLKB1*x19(t))-(kOnAMPK*x24(t)*x10(t)-kOffAMPK*x26(t))+(kPhosAMPK*x26(t)),
-        x11'(t) = (kOnADP*x2(t)*x6(t)-kOffADP*x11(t))+(kPhosCaMKK*x16(t))+(kPhosLKB1*x20(t)),
-        x12'(t) = (kOnATP*x3(t)*x6(t)-kOffATP*x12(t))+(kPhosCaMKK*x17(t))-(kOnPP*x21(t)*x12(t)-kOffPP*x23(t)),
-        x13'(t) = -(kOnCaMKK*x13(t)*x5(t)-kOffCaMKK*x14(t))+(kPhosCaMKK*x14(t))-(kOnCaMKK*x13(t)*x7(t)-kOffCaMKK*x15(t))+(kPhosCaMKK*x15(t))-(kOnCaMKK*x13(t)*x8(t)-kOffCaMKK*x16(t))+(kPhosCaMKK*x16(t))-(kOnCaMKK*x13(t)*x9(t)-kOffCaMKK*x17(t))+(kPhosCaMKK*x17(t)),
-        x14'(t) = (kOnCaMKK*x13(t)*x5(t)-kOffCaMKK*x14(t))-(kPhosCaMKK*x14(t))-(kOnAMP*x1(t)*x14(t)-kOffADP*x15(t))-(kOnADP*x2(t)*x14(t)-kOffADP*x16(t))-(kOnATP*x3(t)*x14(t)-kOffATP*x17(t)),
-        x15'(t) = (kOnCaMKK*x13(t)*x7(t)-kOffCaMKK*x15(t))-(kPhosCaMKK*x15(t))+(kOnAMP*x1(t)*x14(t)-kOffADP*x15(t)),
-        x16'(t) = (kOnCaMKK*x13(t)*x8(t)-kOffCaMKK*x16(t))-(kPhosCaMKK*x16(t))+(kOnADP*x2(t)*x14(t)-kOffADP*x16(t)),
-        x17'(t) = (kOnCaMKK*x13(t)*x9(t)-kOffCaMKK*x17(t))-(kPhosCaMKK*x17(t))+(kOnATP*x3(t)*x14(t)-kOffATP*x17(t)),
-        x18'(t) = -(kOnLKB1*x18(t)*x7(t)-kOffLKB1*x19(t))+(kPhosLKB1*x19(t))-(kOnLKB1*x18(t)*x8(t)- kOffLKB1*x20(t))+(kPhosLKB1*x20(t)),
-        x19'(t) = (kOnLKB1*x18(t)*x7(t)-kOffLKB1*x19(t))-(kPhosLKB1*x19(t)),
-        x20'(t) = (kOnLKB1*x18(t)*x8(t)- kOffLKB1*x20(t))-(kPhosLKB1*x20(t)),
-        x21'(t) = -(kOnPP*x21(t)*x6(t)-kOffPP*x22(t))+(kDephosPP*x22(t))-(kOnPP*x21(t)*x12(t)-kOffPP*x23(t))+(kDephosPP*x23(t)),
-        x22'(t) = (kOnPP*x21(t)*x6(t)-kOffPP*x22(t))-(kDephosPP*x22(t))-(kOnATP*x3(t)*x22(t)-kOffATP*x23(t)),
-        x23'(t) = (kOnPP*x21(t)*x12(t)-kOffPP*x23(t))-(kDephosPP*x23(t))+(kOnATP*x3(t)*x22(t)-kOffATP*x23(t)),
-        x24'(t) = -(kOnAMPK*x24(t)*x10(t)-kOffAMPK*x26(t))+(kDephosxPP1*x28(t)),
-        x25'(t) = (kPhosAMPK*x26(t))-(kOnPP1*x27(t)*x25(t)-kOffPP1*x28(t)),
-        x26'(t) = (kOnAMPK*x24(t)*x10(t)-kOffAMPK*x26(t))-(kPhosAMPK*x26(t)),
-        x27'(t) = -(kOnPP1*x27(t)*x25(t)-kOffPP1*x28(t))+(kDephosPP1*x28(t)),
-        x28'(t) = (kOnPP1*x27(t)*x25(t)-kOffPP1*x28(t))-(kDephosPP1*x28(t)),
-        y1(t) = (x28(t) + x25(t))/(x26(t) + x24(t))
-)
+# model parameters
+@parameters kGly, kHydro, VforAK, KeqAK, kmm, kmd, kmt, VmaxOxPhos, Kadp, n, VforCK, Kb, Kia, Kib, Kiq, Kp, KeqCK, TCr, kOnAMP, kOffAMP, kOnADP, kOffADP, kOnATP, kOffATP, kOnCaMKK, kOffCaMKK, kPhosCaMKK, kOnLKB1, kOffLKB1, kPhosLKB1, kOnPP, kOffPP, kDephosPP, kOnAMPK, kOffAMPK, kPhosAMPK, kOnPP1, kOffPP1, kDephosPP1, kOnCaM, kOffCaM, kPhosCaM, KmCaM, kDephosCaMKK
+
+@independent_variables t
+
+# state variables
+@variables AMP(t), ADP(t), ATP(t), PCr(t), Ca(t), AMPK(t), pAMPK(t), AMP_AMPK(t), ADP_AMPK(t), ATP_AMPK(t), AMP_pAMPK(t), ADP_pAMPK(t), ATP_pAMPK(t), CaM(t), CaCaM(t), CaMKK(t), CaMKK_act(t), CaMKK_act_AMPK(t), CaMKK_act_AMP_AMPK(t), CaMKK_act_ADP_AMPK(t), CaMKK_act_ATP_AMPK(t), LKB1(t), LKB1_AMP_AMPK(t), LKB1_ADP_AMPK(t), PP(t), PP_pAMPK(t), PP_ATP_pAMPK(t), AMPKAR(t), pAMPKAR(t), AMPKAR_AMP_pAMPK(t), PP1(t), PP1_pAMPKAR(t), y(t)
+
+# differential operator
+D = Differential(t)
+
+# model equations
+eqns = [
+    D(AMP) ~ -(kOnAMP*AMP*AMPK-kOffAMP*AMP_AMPK)-(kOnAMP*AMP*pAMPK-kOffAMP*AMP_pAMPK)-((((VforAK*ATP*AMP)/(kmt*kmm)) - ((((VforAK*(kmd*kmd))/(KeqAK*kmt*kmm))*(ADP*ADP))/(kmd*kmd)))/(1 + (ATP/kmt) + (AMP/kmm) + ((ATP*AMP)/(kmt*kmm)) + 
+    ((2*ADP)/kmd) + ((ADP*ADP)/(kmd*kmd))))-(kOnAMP*AMP*CaMKK_act_AMPK-kOffADP*CaMKK_act_AMP_AMPK),
+    D(ADP) ~ -(kOnADP*ADP*AMPK-kOffADP*ADP_AMPK)-(kOnADP*ADP*pAMPK-kOffADP*ADP_pAMPK)-kGly*ADP+2*((((VforAK*ATP*AMP)/(kmt*kmm)) - ((((VforAK*(kmd*kmd))/(KeqAK*kmt*kmm))*(ADP*ADP))/(kmd*kmd)))/(1 + (ATP/kmt) + (AMP/kmm) + ((ATP*AMP)/(kmt*kmm)) + 
+    ((2*ADP)/kmd) + ((ADP*ADP)/(kmd*kmd))))+kHydro*ATP-((VmaxOxPhos * ((ADP/Kadp)*(ADP/Kadp)))/(1 + ((ADP/Kadp)*(ADP/Kadp))))+(((((VforCK*Kiq*Kp)/(KeqCK*Kia*Kb))*ATP*(TCr - PCr))/(Kiq*Kp)) - ((VforCK*ADP*PCr)/(Kia*Kb)))/(1 + (ADP/Kia) + (PCr/Kib) + (ATP/Kiq) + ((ADP*PCr)/(Kia*Kb)) + (((TCr - PCr)*ATP)/(Kiq*Kp)))-(kOnADP*ADP*CaMKK_act_AMPK-kOffADP*CaMKK_act_ADP_AMPK),
+    D(ATP) ~ -(kOnATP*ATP*AMPK-kOffATP*ATP_AMPK)-(kOnATP*ATP*pAMPK-kOffATP*ATP_pAMPK)+kGly*ADP-((((VforAK*ATP*AMP)/(kmt*kmm)) - ((((VforAK*(kmd*kmd))/(KeqAK*kmt*kmm))*(ADP*ADP))/(kmd*kmd)))/(1 + (ATP/kmt) + (AMP/kmm) + ((ATP*AMP)/(kmt*kmm)) + 
+    ((2*ADP)/kmd) + ((ADP*ADP)/(kmd*kmd))))-kHydro*ATP+((VmaxOxPhos * ((ADP/Kadp)*(ADP/Kadp)))/(1 + ((ADP/Kadp)*(ADP/Kadp))))-(((((VforCK*Kiq*Kp)/(KeqCK*Kia*Kb))*ATP*(TCr - PCr))/(Kiq*Kp)) - ((VforCK*ADP*PCr)/(Kia*Kb)))/(1 + (ADP/Kia) + (PCr/Kib) + (ATP/Kiq) + ((ADP*PCr)/(Kia*Kb)) + (((TCr - PCr)*ATP)/(Kiq*Kp)))-(kOnATP*ATP*CaMKK_act_AMPK-kOffATP*CaMKK_act_ATP_AMPK)-(kOnATP*ATP*PP_pAMPK-kOffATP*PP_ATP_pAMPK),
+    D(PCr) ~ (((((VforCK*Kiq*Kp)/(KeqCK*Kia*Kb))*ATP*(TCr - PCr))/(Kiq*Kp)) - ((VforCK*ADP*PCr)/(Kia*Kb)))/(1 + (ADP/Kia) + (PCr/Kib) + (ATP/Kiq) + ((ADP*PCr)/(Kia*Kb)) + (((TCr - PCr)*ATP)/(Kiq*Kp))),
+    D(AMPK) ~ -(kOnAMP*AMP*AMPK-kOffAMP*AMP_AMPK)-(kOnADP*ADP*AMPK-kOffADP*ADP_AMPK)-(kOnATP*ATP*AMPK-kOffATP*ATP_AMPK)-(kOnCaMKK*CaMKK_act*AMPK-kOffCaMKK*CaMKK_act_AMPK)+(kDephosPP*PP_pAMPK),
+    D(pAMPK) ~ -(kOnAMP*AMP*pAMPK-kOffAMP*AMP_pAMPK)-(kOnADP*ADP*pAMPK-kOffADP*ADP_pAMPK)-(kOnATP*ATP*pAMPK-kOffATP*ATP_pAMPK)+(kPhosCaMKK*CaMKK_act_AMPK)-(kOnPP*PP*pAMPK-kOffPP*PP_pAMPK),
+    D(AMP_AMPK) ~ (kOnAMP*AMP*AMPK-kOffAMP*AMP_AMPK)-(kOnCaMKK*CaMKK_act*AMP_AMPK-kOffCaMKK*CaMKK_act_AMP_AMPK)-(kOnLKB1*LKB1*AMP_AMPK-kOffLKB1*LKB1_AMP_AMPK),
+    D(ADP_AMPK) ~ (kOnADP*ADP*AMPK-kOffADP*ADP_AMPK)-(kOnCaMKK*CaMKK_act*ADP_AMPK-kOffCaMKK*CaMKK_act_ADP_AMPK)-(kOnLKB1*LKB1*ADP_AMPK- kOffLKB1*LKB1_ADP_AMPK),
+    D(ATP_AMPK) ~ (kOnATP*ATP*AMPK-kOffATP*ATP_AMPK)-(kOnCaMKK*CaMKK_act*ATP_AMPK-kOffCaMKK*CaMKK_act_ATP_AMPK)+(kDephosPP*PP_ATP_pAMPK),
+    D(AMP_pAMPK) ~ (kOnAMP*AMP*pAMPK-kOffAMP*AMP_pAMPK)+(kPhosCaMKK*CaMKK_act_AMP_AMPK)+(kPhosLKB1*LKB1_AMP_AMPK)-(kOnAMPK*AMPKAR*AMP_pAMPK-kOffAMPK*AMPKAR_AMP_pAMPK)+(kPhosAMPK*AMPKAR_AMP_pAMPK),
+    D(ADP_pAMPK) ~ (kOnADP*ADP*pAMPK-kOffADP*ADP_pAMPK)+(kPhosCaMKK*CaMKK_act_ADP_AMPK)+(kPhosLKB1*LKB1_ADP_AMPK),
+    D(ATP_pAMPK) ~ (kOnATP*ATP*pAMPK-kOffATP*ATP_pAMPK)+(kPhosCaMKK*CaMKK_act_ATP_AMPK)-(kOnPP*PP*ATP_pAMPK-kOffPP*PP_ATP_pAMPK),
+    D(Ca) ~ -(kOnCaM*(Ca*Ca*Ca)*CaM-kOffCaM*CaCaM),
+    D(CaM) ~ -(kOnCaM*(Ca*Ca*Ca)*CaM-kOffCaM*CaCaM),
+    D(CaCaM) ~ (kOnCaM*(Ca*Ca*Ca)*CaM-kOffCaM*CaCaM),
+    D(CaMKK) ~ -((kPhosCaM*(CaCaM*CaCaM*CaCaM*CaCaM)*CaMKK)/(KmCaM*KmCaM*KmCaM*KmCaM + CaCaM*CaCaM*CaCaM*CaCaM)) + (kDephosCaMKK*CaMKK_act),
+    D(CaMKK_act) ~ ((kPhosCaM*(CaCaM*CaCaM*CaCaM*CaCaM)*CaMKK)/(KmCaM*KmCaM*KmCaM*KmCaM + CaCaM*CaCaM*CaCaM*CaCaM)) - (kDephosCaMKK*CaMKK_act)-(kOnCaMKK*CaMKK_act*AMPK-kOffCaMKK*CaMKK_act_AMPK)+(kPhosCaMKK*CaMKK_act_AMPK)-(kOnCaMKK*CaMKK_act*AMP_AMPK-kOffCaMKK*CaMKK_act_AMP_AMPK)+(kPhosCaMKK*CaMKK_act_AMP_AMPK)-(kOnCaMKK*CaMKK_act*ADP_AMPK-kOffCaMKK*CaMKK_act_ADP_AMPK)+(kPhosCaMKK*CaMKK_act_ADP_AMPK)-(kOnCaMKK*CaMKK_act*ATP_AMPK-kOffCaMKK*CaMKK_act_ATP_AMPK)+(kPhosCaMKK*CaMKK_act_ATP_AMPK),
+    D(CaMKK_act_AMPK) ~ (kOnCaMKK*CaMKK_act*AMPK-kOffCaMKK*CaMKK_act_AMPK)-(kPhosCaMKK*CaMKK_act_AMPK)-(kOnAMP*AMP*CaMKK_act_AMPK-kOffADP*CaMKK_act_AMP_AMPK)-(kOnADP*ADP*CaMKK_act_AMPK-kOffADP*CaMKK_act_ADP_AMPK)-(kOnATP*ATP*CaMKK_act_AMPK-kOffATP*CaMKK_act_ATP_AMPK),
+    D(CaMKK_act_AMP_AMPK) ~ (kOnCaMKK*CaMKK_act*AMP_AMPK-kOffCaMKK*CaMKK_act_AMP_AMPK)-(kPhosCaMKK*CaMKK_act_AMP_AMPK)+(kOnAMP*AMP*CaMKK_act_AMPK-kOffADP*CaMKK_act_AMP_AMPK),
+    D(CaMKK_act_ADP_AMPK) ~ (kOnCaMKK*CaMKK_act*ADP_AMPK-kOffCaMKK*CaMKK_act_ADP_AMPK)-(kPhosCaMKK*CaMKK_act_ADP_AMPK)+(kOnADP*ADP*CaMKK_act_AMPK-kOffADP*CaMKK_act_ADP_AMPK),
+    D(CaMKK_act_ATP_AMPK) ~ (kOnCaMKK*CaMKK_act*ATP_AMPK-kOffCaMKK*CaMKK_act_ATP_AMPK)-(kPhosCaMKK*CaMKK_act_ATP_AMPK)+(kOnATP*ATP*CaMKK_act_AMPK-kOffATP*CaMKK_act_ATP_AMPK),
+    D(LKB1) ~ -(kOnLKB1*LKB1*AMP_AMPK-kOffLKB1*LKB1_AMP_AMPK)+(kPhosLKB1*LKB1_AMP_AMPK)-(kOnLKB1*LKB1*ADP_AMPK- kOffLKB1*LKB1_ADP_AMPK)+(kPhosLKB1*LKB1_ADP_AMPK),
+    D(LKB1_AMP_AMPK) ~ (kOnLKB1*LKB1*AMP_AMPK-kOffLKB1*LKB1_AMP_AMPK)-(kPhosLKB1*LKB1_AMP_AMPK),
+    D(LKB1_ADP_AMPK) ~ (kOnLKB1*LKB1*ADP_AMPK- kOffLKB1*LKB1_ADP_AMPK)-(kPhosLKB1*LKB1_ADP_AMPK),
+    D(PP) ~ -(kOnPP*PP*pAMPK-kOffPP*PP_pAMPK)+(kDephosPP*PP_pAMPK)-(kOnPP*PP*ATP_pAMPK-kOffPP*PP_ATP_pAMPK)+(kDephosPP*PP_ATP_pAMPK),
+    D(PP_pAMPK) ~ (kOnPP*PP*pAMPK-kOffPP*PP_pAMPK)-(kDephosPP*PP_pAMPK)-(kOnATP*ATP*PP_pAMPK-kOffATP*PP_ATP_pAMPK),
+    D(PP_ATP_pAMPK) ~ (kOnPP*PP*ATP_pAMPK-kOffPP*PP_ATP_pAMPK)-(kDephosPP*PP_ATP_pAMPK)+(kOnATP*ATP*PP_pAMPK-kOffATP*PP_ATP_pAMPK),
+    D(AMPKAR) ~ -(kOnAMPK*AMPKAR*AMP_pAMPK-kOffAMPK*AMPKAR_AMP_pAMPK)+(kDephosPP1*PP1_pAMPKAR),
+    D(pAMPKAR) ~ (kPhosAMPK*AMPKAR_AMP_pAMPK)-(kOnPP1*PP1*pAMPKAR-kOffPP1*PP1_pAMPKAR),
+    D(AMPKAR_AMP_pAMPK) ~ (kOnAMPK*AMPKAR*AMP_pAMPK-kOffAMPK*AMPKAR_AMP_pAMPK)-(kPhosAMPK*AMPKAR_AMP_pAMPK),
+    D(PP1) ~ -(kOnPP1*PP1*pAMPKAR-kOffPP1*PP1_pAMPKAR)+(kDephosPP1*PP1_pAMPKAR),
+    D(PP1_pAMPKAR) ~ (kOnPP1*PP1*pAMPKAR-kOffPP1*PP1_pAMPKAR)-(kDephosPP1*PP1_pAMPKAR)
+]
+
+measured_quantities = [
+    y ~ (pAMPKAR + PP1_pAMPKAR) / (AMPKAR + AMPKAR_AMP_pAMPK + pAMPKAR + PP1_pAMPKAR)
+]
+
+MA_single = ODESystem(eqns, t, name = :MA_single)
 
 # Assess local identifiability with all parameters free, including metabolism parameters
-local_id_all_free = assess_local_identifiability(MA_single, funcs_to_check = [kOnAMP,kOffAMP,kOnADP,kOffADP,kOnATP,kOffATP,kOnCaMKK,kOffCaMKK,kPhosCaMKK,kOnLKB1,kOffLKB1,kPhosLKB1,kOnPP,kOffPP,kDephosPP,kOnAMPK,kOffAMPK,kPhosAMPK,kOnPP1,kOffPP1,kDephosPP1])
+local_id_all_free = assess_local_identifiability(MA_single, funcs_to_check = [kOnAMP,kOffAMP,kOnADP,kOffADP,kOnATP,kOffATP,kOnCaMKK,kOffCaMKK,kPhosCaMKK,kOnLKB1,kOffLKB1,kPhosLKB1,kOnPP,kOffPP,kDephosPP,kOnAMPK,kOffAMPK,kPhosAMPK,kOnPP1,kOffPP1,kDephosPP1],
+measured_quantities = measured_quantities)
 
 # now fix the metabolism parameters and reassess
+# need to covnert MTK to SI system & then fix the values of the parameters
+MA_single_SI = mtk_to_si(MA_single, measured_quantities)
+
 # Note: n in the Oxphos eqn is fixed at 2 for all calculations bc the computer algebra system
 # can't handle the symbolic calculations with exponents as a variable
-metabolism_parameters = Dict(kGly => 0.5,kHydro => 0.15,VforAK => 14.66,KeqAK => 2.221,kmm => 0.32,kmd => 0.35,kmt => 0.27,VmaxOxPhos => 0.5,Kadp => 5.8e-2,VforCK => 1e2,Kb => 1.11,Kia => 0.135,Kib => 3.9,Kiq => 3.5,Kp => 3.8,KeqCK => 1.77e2,TCr => 39.0)   
+# # set_parameters is a function from StructuralIdentifiability that fixes the 
+# # specified values of the parameters in the model
+# MA_single_fixed_metab = set_parameter_values(MA_single, known_parameters)
+known_params = Dict(
+    MA_single_SI[2][kGly] => 0.5,
+    MA_single_SI[2][kHydro] => 0.15,
+    MA_single_SI[2][VforAK] => 14.66,
+    MA_single_SI[2][KeqAK] => 2.221,
+    MA_single_SI[2][kmm] => 0.32,
+    MA_single_SI[2][kmd] => 0.35,
+    MA_single_SI[2][kmt] => 0.27,
+    MA_single_SI[2][VmaxOxPhos] => 0.5,
+    MA_single_SI[2][Kadp] => 5.8e-2,
+    MA_single_SI[2][VforCK] => 1e2,
+    MA_single_SI[2][Kb] => 1.11,
+    MA_single_SI[2][Kia] => 0.135,
+    MA_single_SI[2][Kib] => 3.9,
+    MA_single_SI[2][Kiq] => 3.5,
+    MA_single_SI[2][Kp] => 3.8,
+    MA_single_SI[2][KeqCK] => 1.77e2,
+    MA_single_SI[2][TCr] => 39.0,
+    MA_single_SI[2][kOnCaM] => 7.75,
+    MA_single_SI[2][kOffCaM] => 1.0,
+    MA_single_SI[2][kPhosCaM] => 120.0,
+    MA_single_SI[2][KmCaM] => 4.0,
+    MA_single_SI[2][kDephosCaMKK] => 0.05 
+)
+
 
 # set_parameters is a function from StructuralIdentifiability that fixes the 
-# specified values of the parameters in the model
-MA_single_fixed_metab = set_parameter_values(MA_single, metabolism_parameters)
+# # specified values of the parameters in the model
+MA_single_fixed_metab = set_parameter_values(MA_single_SI[1], known_params)
 
-local_id_fixed_metab = assess_local_identifiability(MA_single_fixed_metab, funcs_to_check = [kOnAMP,kOffAMP,kOnADP,kOffADP,kOnATP,kOffATP,kOnCaMKK,kOffCaMKK,kPhosCaMKK,kOnLKB1,kOffLKB1,kPhosLKB1,kOnPP,kOffPP,kDephosPP,kOnAMPK,kOffAMPK,kPhosAMPK,kOnPP1,kOffPP1,kDephosPP1])
+funcs_to_check = [
+    MA_single_SI[2][kOnAMP],
+    MA_single_SI[2][kOffAMP],
+    MA_single_SI[2][kOnADP],
+    MA_single_SI[2][kOffADP],
+    MA_single_SI[2][kOnATP],
+    MA_single_SI[2][kOffATP],
+    MA_single_SI[2][kOnCaMKK],
+    MA_single_SI[2][kOffCaMKK],
+    MA_single_SI[2][kPhosCaMKK],
+    MA_single_SI[2][kOnLKB1],
+    MA_single_SI[2][kOffLKB1],
+    MA_single_SI[2][kPhosLKB1],
+    MA_single_SI[2][kOnPP],
+    MA_single_SI[2][kOffPP],
+    MA_single_SI[2][kDephosPP],
+    MA_single_SI[2][kOnAMPK],
+    MA_single_SI[2][kOffAMPK],
+    MA_single_SI[2][kPhosAMPK],
+    MA_single_SI[2][kOnPP1],
+    MA_single_SI[2][kOffPP1],
+    MA_single_SI[2][kDephosPP1]
+]
+
+local_id_fixed_metab = assess_local_identifiability(MA_single_fixed_metab, funcs_to_check = funcs_to_check)
+
 
 # write everything to a file 
 fname = "../../../results/identifiability/local_ID_MA_single.txt"
