@@ -24,7 +24,7 @@ from utils import *
 from pymc_jax_ode import *
 
 sys.path.append("../models/")
-from MA_timeDepCaMKK2_diffrax import * # import the model RHS
+from MM_simple1_diffrax import * # import the model RHS
 
 # tell jax to use 64bit floats
 #jax.config.update('jax_platform_name', 'cpu')
@@ -64,8 +64,6 @@ def parse_args(raw_args=None):
     parser.add_argument("-tmax_init", type=float, default=1e3, help="Maximum time to run the simulation. Defaults to 1e3.")
     parser.add_argument("-rtol", type=float,default=1e-6)
     parser.add_argument("-atol", type=float,default=1e-6)
-    parser.add_argument("-evnt_rtol", type=float,default=1e-12)
-    parser.add_argument("-evnt_atol", type=float,default=1e-12)
     parser.add_argument('-pcoeff', type=float, default=0, help='pcoeff for PID time stepper')
     parser.add_argument('-dcoeff', type=float, default=0, help='dcoeff for PID time stepper')
     parser.add_argument('-icoeff', type=float, default=1.0, help='icoeff for PID time stepper')
@@ -180,17 +178,22 @@ def main(raw_args=None):
     ############################################
     # Simulator func #
     ############################################
+    ca_index = 4
+    ca_stress = jnp.array([0.25,])
+    total_AMPKAR = jnp.array(model_info['init_conds']['AMPKAR'])
+
     # def simulation function that solves ODE and computes proper qoi
     # the solve_traj function first runs the model to SS in the basal energy state, and then 
     # runs the model in the stressed energy state using the SS from the basal state as the initial condition
     def simulator(params):
         # solve model
-        sol_stressed, _ = solve_traj(rhs, rhs_stress, y0, params, times, tmax_init=args.tmax_init, rtol=args.rtol, atol=args.atol, evnt_atol=args.evnt_atol, evnt_rtol=args.evnt_rtol, pcoeff=args.pcoeff, icoeff=args.icoeff, dcoeff=args.dcoeff, dt0=1e-10, adjoint=dfrx.RecursiveCheckpointAdjoint())
+        sol_stressed, _ = solve_traj_timeDepCaMKK(rhs, rhs_stress, y0, ca_stress, ca_index,
+            params, times, tmax_init=args.tmax_init, rtol=args.rtol, atol=args.atol, pcoeff=args.pcoeff, icoeff=args.icoeff, dcoeff=args.dcoeff, dt0=1e-10)
 
         # compute delta pAMPKAR/AMPKAR_tot
-        AMPKAR_stressed = sol_stressed[jnp.array(ampkar_idxs), :].sum(axis=0)
+        # AMPKAR_stressed = sol_stressed[jnp.array(ampkar_idxs), :].sum(axis=0)
         pAMPKAR_stressed = sol_stressed[jnp.array(pampkar_idxs), :].sum(axis=0)
-        result = pAMPKAR_stressed / AMPKAR_stressed
+        result = pAMPKAR_stressed / total_AMPKAR
         
         return jnp.reshape(result, (1, len(result)))
     
@@ -244,7 +247,7 @@ def main(raw_args=None):
     if 'MA' in args.model:
         CaMKK2_KO_params = ['kOnCaMKK','kPhosCaMKK']
     elif 'MM' in args.model:
-         CaMKK2_KO_params = ['CaMKKtot']
+         CaMKK2_KO_params = ['kCaMKK']
 
     # we will build a custom PM model that does not use the build_pymc_model func
     pm_model = pm.Model()

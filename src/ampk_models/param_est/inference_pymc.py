@@ -10,10 +10,10 @@ import nutpie
 from pymc.variational.callbacks import CheckParametersConvergence
 from pytensor.link.jax.dispatch import jax_funcify
 from pymc.stats.log_density import compute_log_likelihood
+import pymc_extras as pmx
 
 from jax import random
 import arviz as az
-from numpyro.infer import Predictive
 import sys, argparse, json, os
 
 sys.path.append("../")
@@ -21,6 +21,9 @@ from utils import *
 from pymc_jax_ode import *
 
 sys.path.append("../models/")
+from MA_single_diffrax import *
+from MM_single_diffrax import *
+from MM_simple1_diffrax import *
 
 # tell jax to use 64bit floats
 jax.config.update('jax_platform_name', 'cpu')
@@ -66,6 +69,7 @@ def parse_args(raw_args=None):
     parser.add_argument("--sample_posterior", action='store_true', help="Flag to sample from the posterior.")
     parser.add_argument("--compute_llike", action='store_true', help="Flag to resample the posterior predictive using previous param samples.")
     parser.add_argument("-n_advi_iter", type=int, default=1000, help="Number of iterations for ADVI. Defaults to 1000.")
+    parser.add_argument("-n_checkpointss", type=int, default=1000, help="Number of checkpoints for backprop through ODE solution. Defaults to 1000.")
 
     
     args=parser.parse_args(raw_args)
@@ -152,9 +156,13 @@ def main(raw_args=None):
     # def simulation function that solves ODE and computes proper qoi
     # the solve_traj function first runs the model to SS in the basal energy state, and then 
     # runs the model in the stressed energy state using the SS from the basal state as the initial condition
+    ca_index = 4
+    ca_stress = jnp.array([0.25,])
+
     def simulator(params):
         # solve model
-        sol_stressed, sol_basal = solve_traj(rhs, rhs_stress, y0, params, times, tmax_init=args.tmax_init, rtol=args.rtol, atol=args.atol, evnt_atol=args.evnt_atol, evnt_rtol=args.evnt_rtol, pcoeff=args.pcoeff, icoeff=args.icoeff, dcoeff=args.dcoeff, dt0=1e-10)
+        sol_stressed, sol_basal = solve_traj_timeDepCaMKK(rhs, rhs_stress, y0, ca_stress, ca_index,
+                params, times, tmax_init=args.tmax_init, rtol=args.rtol, atol=args.atol, pcoeff=args.pcoeff, icoeff=args.icoeff, dcoeff=args.dcoeff, dt0=1e-10)
 
         # compute delta pAMPKAR/AMPKAR_tot
         AMPKAR_basal = sol_basal[jnp.array(ampkar_idxs)].sum(axis=0)
@@ -177,7 +185,7 @@ def main(raw_args=None):
 
     vjp_sol_op_jax_jitted = eqx.filter_jit(vjp_sol_op_jax)
 
-    if args.sampler in ['NUTS', 'NUTS-ADVI', 'Nutpie', 'ADVI']:
+    if args.sampler in ['NUTS', 'NUTS-ADVI', 'Nutpie', 'ADVI',"Pathfinder"]:
         # if using Pymc or Nutpie samplers, then we need the Pytensor op for the grads
         vjp_sol_op = VJPSolOp(vjp_sol_op_jax_jitted)
         sol_op = SolOp(sol_op_jax_jitted, vjp_sol_op)
@@ -244,9 +252,6 @@ def main(raw_args=None):
                 mean_field = pm.fit(n=args.n_advi_iter, method='advi', 
                                 callbacks=[CheckParametersConvergence(diff='absolute', tolerance=1e-3)], 
                                 obj_optimizer=pm.adam)
-                
-                
-
             # make convergence plot
             fig, ax = plt.subplots()
             ax.plot(mean_field.hist)
@@ -261,6 +266,15 @@ def main(raw_args=None):
             posterior = nutpie.sample(nutpie_compiled_model, draws=args.nsamples, 
                                       tune=args.nwarmup, chains=args.nchains, 
                                       cores=args.ncores_nutpie, seed=args.seed)
+        elif args.sampler == "Pathfinder":
+            with pm_model:
+                posterior = pmx.fit(method='pathfinder',
+                                    jitter=1e-2,
+                                    num_paths=args.nchains,
+                                    num_draws=args.nsamples,
+                                    random_seed=args.seed,
+                                    inference_backend='pymc')
+                                    # idata_kwargs={'log_likelihood': True})
             
         ####################################################
         # posterior predictive sampling #
