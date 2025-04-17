@@ -61,18 +61,18 @@ class MM_nonessential(eqx.Module):
         kOffADP     = args[3]
         kOnATP      = args[4] # ATP binding
         kOffATP     = args[5]
-        kPhosCaMKK  = args[6] # CaMKK
+        kCaMKK      = args[6] # CaMKK
         KmCaMKK     = args[7]
-        kPhosLKB1   = args[8] # LKB1 binding
+        kLKB1       = args[8] # LKB1 binding
         KmLKB1      = args[9]
         alphaLKB1   = args[10] # < 1; binding enhancement factor due to AMP/ADP
-        kDephosPP   = args[11] # AMPK Phosphatase
+        kPP         = args[11] # AMPK Phosphatase
         KmPP        = args[12]
         alphaPP     = args[13] # > 1; binding reduction factor due to AMP/ADP
-        kPhosAMPK   = args[14] # AMPK kinase
+        kAMPK       = args[14] # AMPK kinase
         KmAMPK      = args[15]
         betaAMP     = args[16] # > 1 phos enhancement factor due to AMP allo act
-        kDephosPP1  = args[17] # pAMPKAR Phosphatase
+        kPP1        = args[17] # pAMPKAR Phosphatase
         KmPP1       = args[18] 
         # external enzyme concentrations
         LKB1tot     = args[19]
@@ -113,25 +113,25 @@ class MM_nonessential(eqx.Module):
         J5 = (kOnADP*ADP*pAMPK-kOffADP*ADP_pAMPK)
         J6 = (kOnATP*ATP*pAMPK-kOffATP*ATP_pAMPK)
         # CaMKK phosphorylation
-        J7 = ((kPhosCaMKK*CaMKK_act*AMPK)/(KmCaMKK + AMPK))
-        J8 = ((kPhosCaMKK*CaMKK_act*AMP_AMPK)/(KmCaMKK + AMP_AMPK))
-        J9 = ((kPhosCaMKK*CaMKK_act*ADP_AMPK)/(KmCaMKK + ADP_AMPK))
-        J10 = ((kPhosCaMKK*CaMKK_act*ATP_AMPK)/(KmCaMKK + ATP_AMPK))
+        J7 = ((kCaMKK*CaMKK_act*AMPK)/(KmCaMKK + AMPK))
+        J8 = ((kCaMKK*CaMKK_act*AMP_AMPK)/(KmCaMKK + AMP_AMPK))
+        J9 = ((kCaMKK*CaMKK_act*ADP_AMPK)/(KmCaMKK + ADP_AMPK))
+        J10 = ((kCaMKK*CaMKK_act*ATP_AMPK)/(KmCaMKK + ATP_AMPK))
         # LKB1 phosphorylation
-        J11 = ((kPhosLKB1*LKB1tot*AMPK)/(KmLKB1 + AMPK))
-        J12 = ((kPhosLKB1*LKB1tot*AMP_AMPK)/(alphaLKB1*KmLKB1 + AMP_AMPK))
-        J13 = ((kPhosLKB1*LKB1tot*ADP_AMPK)/(alphaLKB1*KmLKB1 + ADP_AMPK))
+        J11 = ((kLKB1*LKB1tot*AMPK)/(KmLKB1 + AMPK))
+        J12 = ((kLKB1*LKB1tot*AMP_AMPK)/(alphaLKB1*KmLKB1 + AMP_AMPK))
+        J13 = ((kLKB1*LKB1tot*ADP_AMPK)/(alphaLKB1*KmLKB1 + ADP_AMPK))
         # PP dephos
-        J14 = ((kDephosPP*PPtot*pAMPK)/(KmPP + pAMPK))
-        J15 = ((kDephosPP*PPtot*AMP_pAMPK)/(alphaPP*KmPP + AMP_pAMPK))
-        J16 = ((kDephosPP*PPtot*ADP_pAMPK)/(alphaPP*KmPP + ADP_pAMPK))
-        J17 = ((kDephosPP*PPtot*ATP_pAMPK)/(KmPP + ATP_pAMPK))
+        J14 = ((kPP*PPtot*pAMPK)/(KmPP + pAMPK))
+        J15 = ((kPP*PPtot*AMP_pAMPK)/(alphaPP*KmPP + AMP_pAMPK))
+        J16 = ((kPP*PPtot*ADP_pAMPK)/(alphaPP*KmPP + ADP_pAMPK))
+        J17 = ((kPP*PPtot*ATP_pAMPK)/(KmPP + ATP_pAMPK))
         # AMPKAR phos
-        J18 = (kPhosAMPK*pAMPK*AMPKAR)/(KmAMPK + AMPKAR)
-        J19 = (betaAMP*kPhosAMPK*AMP_pAMPK*AMPKAR)/(KmAMPK + AMPKAR)
-        J20 = (kPhosAMPK*ADP_pAMPK*AMPKAR)/(KmAMPK + AMPKAR)
+        J18 = (kAMPK*pAMPK*AMPKAR)/(KmAMPK + AMPKAR)
+        J19 = (betaAMP*kAMPK*AMP_pAMPK*AMPKAR)/(KmAMPK + AMPKAR)
+        J20 = (kAMPK*ADP_pAMPK*AMPKAR)/(KmAMPK + AMPKAR)
         # PP1 dephos
-        J21 = (kDephosPP1*PP1tot*pAMPKAR)/(KmPP1 + pAMPKAR)
+        J21 = (kPP1*PP1tot*pAMPKAR)/(KmPP1 + pAMPKAR)
 
         # Ca -> CaM -> CaMKK activation
         JCa = kOnCaM*(Ca**3)*CaM - kOffCaM*CaCaM
