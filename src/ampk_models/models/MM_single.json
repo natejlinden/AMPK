@@ -25,7 +25,7 @@
         "KmCaM",
         "kDephosCaMKK"
     ],
-    "nominal_params": {
+    "nominal_params_original": {
         "kOnAMP": 1.0,
         "kOffAMP": 0.0025,
         "kOnADP": 1.0,
@@ -38,17 +38,43 @@
         "KmLKB1": 1.4,
         "kPP": 0.00011,
         "KmPP": 0.67,
-        "kAMPK": 0.00192,
-        "KmAMPK": 0.00849,
+        "kAMPK": 1.92e-05,
+        "KmAMPK": 0.0849,
         "kPP1": 0.00011,
         "KmPP1": 0.067,
         "LKB1tot": 0.1,
         "PPtot": 0.1,
         "PP1tot": 0.1,
-        "kOnCaM": 7.75e9,
+        "kOnCaM": 7750000000.0,
         "kOffCaM": 1.0,
         "kPhosCaM": 120.0,
-        "KmCaM": 4.0e3,
+        "KmCaM": 4000.0,
+        "kDephosCaMKK": 0.05
+    },
+    "nominal_params": {
+        "kOnAMP": 1.0,
+        "kOffAMP": 0.0025,
+        "kOnADP": 1.0,
+        "kOffADP": 0.0015,
+        "kOnATP": 1.0,
+        "kOffATP": 0.018,
+        "kCaMKK": 0.81,
+        "KmCaMKK": 0.015,
+        "kLKB1": 0.00392,
+        "KmLKB1": 1.4,
+        "kPP": 0.00011,
+        "KmPP": 0.67,
+        "kAMPK": 0.192,
+        "KmAMPK": 0.00849,
+        "kPP1": 0.0011,
+        "KmPP1": 670.0,
+        "LKB1tot": 0.1,
+        "PPtot": 0.1,
+        "PP1tot": 0.1,
+        "kOnCaM": 7750000000.0,
+        "kOffCaM": 1.0,
+        "kPhosCaM": 120.0,
+        "KmCaM": 4000.0,
         "kDephosCaMKK": 0.05
     },
     "init_conds": {
@@ -147,7 +173,7 @@
     "prior_params": {
         "kOnAMP": {},
         "kOffAMP": {
-            "mu": -5.5,
+            "mu": -4.5,
             "sigma": 1.0
         },
         "kOnADP": {},
@@ -160,29 +186,26 @@
             "mu": -5.5,
             "sigma": 1.0
         },
-        "kCaMKK": {
-            "mu": -0.75,
-            "sigma": 1.0
-        },
+        "kCaMKK": {},
         "KmCaMKK": {
             "mu": -0.5,
             "sigma": 1.0
         },
         "kLKB1": {
-            "mu": 0.0,
-            "sigma": 1.5
-        },
-        "KmLKB1": {
-            "mu": 4,
-            "sigma": 1.0
-        },
-        "kPP": {
             "mu": -2.0,
             "sigma": 1.0
         },
-        "KmPP": {
-            "mu": 6.0,
+        "KmLKB1": {
+            "mu": 6,
             "sigma": 1.0
+        },
+        "kPP": {
+            "mu": -3.0,
+            "sigma": 1.0
+        },
+        "KmPP": {
+            "mu": 0.75,
+            "sigma": 3.0
         },
         "kAMPK": {},
         "KmAMPK": {},
@@ -195,29 +218,13 @@
         "kOffCaM": {},
         "kPhosCaM": {},
         "KmCaM": {},
-        "kDephosCaMKK": {},
-        "betaAMPK": {
-            "mu": 3.0,
-            "sigma": 1.0
-        },
-        "betaLKB1": {
-            "mu": 1.5,
-            "sigma": 1.0
-        },
-        "betaCaMKK": {
-            "mu": 1.0,
-            "sigma": 1.0
-        },
-        "alphaPP": {
-            "mu": -3.0,
-            "sigma": 1.0
-        }
+        "kDephosCaMKK": {}
     },
     "param_bounds": {
         "kOnAMP": [],
         "kOffAMP": [
-            0.00010636,
-            0.0211976
+            0.00028913,
+            0.05762106
         ],
         "kOnADP": [],
         "kOffADP": [
@@ -229,29 +236,26 @@
             0.00010636,
             0.0211976
         ],
-        "kCaMKK": [
-            0.01232411,
-            2.45014076
-        ],
+        "kCaMKK": [],
         "KmCaMKK": [
             0.0158242,
             3.1460425
         ],
         "kLKB1": [
-            0.00094136,
-            11.79062742
-        ],
-        "KmLKB1": [
-            1.42448192,
-            283.19777546
-        ],
-        "kPP": [
             0.00352722,
             0.70197321
         ],
-        "KmPP": [
+        "KmLKB1": [
             10.52665754,
             2092.56533079
+        ],
+        "kPP": [
+            0.00129573,
+            0.25823964
+        ],
+        "KmPP": [
+            0.0,
+            294.28847001
         ],
         "kAMPK": [],
         "KmAMPK": [],
@@ -264,22 +268,6 @@
         "kOffCaM": [],
         "kPhosCaM": [],
         "KmCaM": [],
-        "kDephosCaMKK": [],
-        "betaAMPK": [
-            0.52403472,
-            104.18263648
-        ],
-        "betaLKB1": [
-            0.11692841,
-            23.24628882
-        ],
-        "betaCaMKK": [
-            0.07092002,
-            14.09958601
-        ],
-        "alphaPP": [
-            0.00129573,
-            0.25823964
-        ]
+        "kDephosCaMKK": []
     }
 }

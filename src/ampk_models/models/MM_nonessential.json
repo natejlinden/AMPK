@@ -64,7 +64,7 @@
         "kOffADP": 0.0015,
         "kOnATP": 1.0,
         "kOffATP": 0.018,
-        "kCaMKK": 0.00081,
+        "kCaMKK": 0.81,
         "KmCaMKK": 0.015,
         "kLKB1": 0.00392,
         "KmLKB1": 1.4,
@@ -72,18 +72,18 @@
         "kPP": 0.00011,
         "KmPP": 0.67,
         "alphaPP": 1.0,
-        "kAMPK": 0.00192,
+        "kAMPK": 0.192,
         "KmAMPK": 0.00849,
         "betaAMP": 1.0,
-        "kPP1": 0.00011,
-        "KmPP1": 0.067,
+        "kPP1": 0.0011,
+        "KmPP1": 670.0,
         "LKB1tot": 0.1,
         "PPtot": 0.1,
         "PP1tot": 0.1,
-        "kOnCaM": 7.75e9,
+        "kOnCaM": 7750000000.0,
         "kOffCaM": 1.0,
         "kPhosCaM": 120.0,
-        "KmCaM": 4.0e3,
+        "KmCaM": 4000.0,
         "kDephosCaMKK": 0.05
     },
     "init_conds": {
@@ -194,69 +194,70 @@
     "prior_params": {
         "kOnAMP": {},
         "kOffAMP": {
-            "mu": -5.5,
-            "sigma": 1
+            "mu": -4.5,
+            "sigma": 1.0
         },
         "kOnADP": {},
         "kOffADP": {
             "mu": -5.5,
-            "sigma": 1
+            "sigma": 1.0
         },
         "kOnATP": {},
         "kOffATP": {
             "mu": -5.5,
-            "sigma": 1
+            "sigma": 1.0
         },
-        "kCaMKK": {
-            "mu": -3,
-            "sigma": 1
-        },
+        "kCaMKK": {},
         "KmCaMKK": {
-            "mu": 0,
-            "sigma": 1
+            "mu": -0.5,
+            "sigma": 1.0
         },
         "kLKB1": {
-            "mu": -3,
-            "sigma": 1
+            "mu": -2.0,
+            "sigma": 1.0
         },
         "KmLKB1": {
-            "mu": 5,
-            "sigma": 1
+            "mu": 6,
+            "sigma": 1.0
+        },
+        "alphaLKB1": {
+            "mu": -0.9999062012627679,
+            "sigma": 0.7802305900070742
         },
         "kPP": {
-            "mu": -2,
-            "sigma": 1
+            "mu": -3.0,
+            "sigma": 1.0
         },
         "KmPP": {
-            "mu": 1,
-            "sigma": 3
+            "mu": 0.75,
+            "sigma": 3.0
+        },
+        "alphaPP": {
+            "mu": 3.60543972225317,
+            "sigma": 0.780086942115598
         },
         "kAMPK": {},
         "KmAMPK": {},
+        "betaAMP": {
+            "mu": 3.60543972225317,
+            "sigma": 0.780086942115598
+        },
         "kPP1": {},
         "KmPP1": {},
-        "CaMKKtot": {},
         "LKB1tot": {},
         "PPtot": {},
         "PP1tot": {},
-        "alphaLKB1": {
-            "mu": 0,
-            "sigma": 3
-        },
-        "alphaPP": {
-            "mu": 1.5,
-            "sigma": 1.5
-        },
-        "betaAMP": {
-            "mu": 1.5,
-            "sigma": 1.5
-        }
+        "kOnCaM": {},
+        "kOffCaM": {},
+        "kPhosCaM": {},
+        "KmCaM": {},
+        "kDephosCaMKK": {}
     },
     "param_bounds": {
         "kOnAMP": [],
         "kOffAMP": [
-            0.00010636,
-            0.0211976
+            0.00028913,
+            0.05762106
         ],
         "kOnADP": [],
         "kOffADP": [
@@ -268,49 +269,50 @@
             0.00010636,
             0.0211976
         ],
-        "kCaMKK": [
-            0.00129573,
-            0.25823964
-        ],
+        "kCaMKK": [],
         "KmCaMKK": [
-            0.02608997,
-            5.18694786
+            0.0158242,
+            3.1460425
         ],
         "kLKB1": [
-            0.00129573,
-            0.25823964
-        ],
-        "KmLKB1": [
-            3.8721268,
-            769.81134978
-        ],
-        "kPP": [
             0.00352722,
             0.70197321
         ],
+        "KmLKB1": [
+            10.52665754,
+            2092.56533079
+        ],
+        "alphaLKB1": [
+            0.03002229,
+            1.33439226
+        ],
+        "kPP": [
+            0.00129573,
+            0.25823964
+        ],
         "KmPP": [
             0.0,
-            377.87387533
+            294.28847001
+        ],
+        "alphaPP": [
+            3.00480159,
+            133.43168352
         ],
         "kAMPK": [],
         "KmAMPK": [],
+        "betaAMP": [
+            3.00480159,
+            133.43168352
+        ],
         "kPP1": [],
         "KmPP1": [],
-        "CaMKKtot": [],
         "LKB1tot": [],
         "PPtot": [],
         "PP1tot": [],
-        "alphaLKB1": [
-            0.0,
-            139.01203009
-        ],
-        "alphaPP": [
-            0.0042209,
-            52.84192868
-        ],
-        "betaAMP": [
-            0.0042209,
-            52.84192868
-        ]
+        "kOnCaM": [],
+        "kOffCaM": [],
+        "kPhosCaM": [],
+        "KmCaM": [],
+        "kDephosCaMKK": []
     }
 }

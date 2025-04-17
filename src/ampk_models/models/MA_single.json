@@ -49,10 +49,10 @@
         "kOnPP1": 1.0,
         "kOffPP1": 0.56,
         "kDephosPP1": 0.11,
-        "kOnCaM": 7.75e9,
+        "kOnCaM": 7750000000.0,
         "kOffCaM": 1.0,
         "kPhosCaM": 120.0,
-        "KmCaM": 4.0e3,
+        "KmCaM": 4000.0,
         "kDephosCaMKK": 0.05
     },
     "init_conds": {
@@ -72,7 +72,7 @@
         "CaM": 0.01,
         "CaCaM": 0.0,
         "CaMKK": 0.02,
-        "CaMKK_act":0.0, 
+        "CaMKK_act": 0.0,
         "CaMKK_act_AMPK": 0.0,
         "CaMKK_act_AMP_AMPK": 0.0,
         "CaMKK_act_ADP_AMPK": 0.0,
@@ -160,8 +160,8 @@
             1.1e-06,
             0.11
         ],
-        "kOnCaM": [ ],
-        "kOffCaM": [ ],
+        "kOnCaM": [],
+        "kOffCaM": [],
         "kPhosCaM": [],
         "KmCaM": [],
         "kDephosCaMKK": []
@@ -227,8 +227,8 @@
             "mu": -14.0,
             "sigma": 4.0
         },
-        "kOnCaM":{},
-        "kOffCaM":{},
+        "kOnCaM": {},
+        "kOffCaM": {},
         "kPhosCaM": {},
         "KmCaM": {},
         "kDephosCaMKK": {}
