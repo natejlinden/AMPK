@@ -4,17 +4,20 @@ environ['OMP_NUM_THREADS'] = '1'
 import numpy as np
 from SALib.sample import sobol as sobol_samp
 import os, sys, time, json, argparse
-import pandas as pd
 import argparse
 from gsa_utils import * # GSA utility functions
 import jax
 import jax.numpy as jnp
-from jax import lax
-import equinox as eqx
 import diffrax as dfrx
 
 # import models
 sys.path.append("../models/")
+from MA_single_diffrax import *
+from MM_single_diffrax import *
+from MA_nonessential_diffrax import *
+from MM_nonessential_diffrax import *
+from MA_nonessential_all_diffrax import *
+from MM_nonessential_all_diffrax import *
 
 # import utils functions
 sys.path.append("../")
@@ -37,16 +40,14 @@ def parse_args(raw_args=None):
     # optional parameters
     parser.add_argument("-metab_params_file", type=str, help="Metabolism model parameters. Should be a JSON")
     parser.add_argument("-nsamples", type=int, default=256, help="Number of samples to draw in each parameter direction. Defaults to 256")
-    parser.add_argument("-gsa_method", type=str, default="sobol", help="GSA method to use. Defaults to sobol. Options are sobol, morris, and hdmr.")
     parser.add_argument("-savedir", type=str, help="Path to save results. Defaults to current directory.", default="./")
     parser.add_argument("-tmax", type=float, default=1e3, help="Maximum time to run the simulation. Defaults to 1e3.")
     parser.add_argument("-rtol", type=float,default=1e-6)
     parser.add_argument("-atol", type=float,default=1e-6)
-    parser.add_argument("-evnt_rtol", type=float,default=1e-12)
-    parser.add_argument("-evnt_atol", type=float,default=1e-12)
     parser.add_argument('-pcoeff', type=float, default=0, help='pcoeff for PID time stepper')
     parser.add_argument('-dcoeff', type=float, default=0, help='dcoeff for PID time stepper')
     parser.add_argument('-icoeff', type=float, default=1.0, help='icoeff for PID time stepper')
+    parser.add_argument('-ca_stress', type=float, default=1.0, help='calcium stress level')
     args=parser.parse_args(raw_args)
     return args
 
@@ -55,13 +56,6 @@ def main(raw_args=None):
     """
     args = parse_args(raw_args) # parse the arguments
     print('Processing model {}.'.format(args.model))
-
-    # import the model
-    try:
-        exec('from ' + args.model + '_diffrax import *')
-    except:
-        print('Warning Model {} not found. Quitting.'.format(args.model))
-        quit()
     
     # random seed for reproducibility
     seed = np.random.default_rng(12345)
@@ -100,7 +94,7 @@ def main(raw_args=None):
         rhs = eval(args.model + '(' + ','.join(str(elm) for elm in basal_params) \
             + ')')
         rhs_stress = eval(args.model + '(' + ','.join(str(elm) for elm in stress_params) \
-             + ')')
+                + ')')
         rhs = dfrx.ODETerm(rhs)
         rhs_stress = dfrx.ODETerm(rhs_stress)
     except:
@@ -120,13 +114,9 @@ def main(raw_args=None):
     ######################################################
     # # generate samples using specified method #
     ######################################################
-    # use sobol sampling for hdmr since it is sampling agnostic
-    if args.gsa_method in ['sobol', 'hdmr']:
-        param_vals = sobol_samp.sample(bounds, args.nsamples, \
-                                       calc_second_order=False, seed=seed)
-    elif args.gsa_method == "morris":
-        pass
-        # TODO implement morris sampling
+    # use sobol sampling
+    param_vals = sobol_samp.sample(bounds, args.nsamples, \
+                                    calc_second_order=False, seed=seed)
 
     np.save(args.savedir + args.model + '_param_vals_GSA.npy', np.array(param_vals))
 
@@ -159,10 +149,6 @@ def main(raw_args=None):
         y0_LKB1_KD = y0.copy()
         y0_CaMKK_KD = y0.copy()
 
-        # # knockdown LKB1 or CaMKK by setting the initial conditions to 0
-        # y0_LKB1_KD[list(model_info['init_conds'].keys()).index('LKB1')] = 0
-        # y0_CaMKK_KD[list(model_info['init_conds'].keys()).index('CaMKK')] = 0
-
         params_LKB1_KD = temp.copy() # do not need to change the params for MA models
         params_CaMKK_KD = temp.copy()
         params_LKB1_KD[:, param_names.index('kOnLKB1')] = 0
@@ -179,78 +165,87 @@ def main(raw_args=None):
         params_CaMKK_KD = temp.copy()
 
         # knockdown LKB1 or CaMKK by setting total concentrations to 0
+        params_LKB1_KD[:, param_names.index('kLKB1')] = 0
         params_LKB1_KD[:, param_names.index('LKB1tot')] = 0
-        params_CaMKK_KD[:, param_names.index('CaMKKtot')] = 0
+        params_CaMKK_KD[:, param_names.index('kCaMKK')] = 0
+
+    # get Ca index
+    ca_index = list(model_info['init_conds'].keys()).index('Ca')
 
     ######################################################
     # Set up solver
     ######################################################
     times = np.linspace(0, args.tmax, 1000)
-    solve = jax.vmap(lambda params: solve_traj_timeDepCaMKK(rhs, rhs_stress, y0, params, times,
-                                      rtol=args.rtol, atol=args.atol, 
-                                      pcoeff=args.pcoeff, icoeff=args.icoeff, dcoeff=args.dcoeff))
+    solve = jax.vmap(lambda params: solve_traj_timeDepCaMKK(rhs, rhs_stress, y0, 
+                                    jnp.array([args.ca_stress,]), ca_index, params, times,
+                                    rtol=args.rtol, atol=args.atol, 
+                                    pcoeff=args.pcoeff, icoeff=args.icoeff, dcoeff=args.dcoeff))
     
     solve_LKB1_KD = jax.vmap(lambda params: solve_traj_timeDepCaMKK(rhs, rhs_stress, y0_LKB1_KD, 
-                                                       params, times,
-                                      rtol=args.rtol, atol=args.atol, 
-                                      pcoeff=args.pcoeff, icoeff=args.icoeff, dcoeff=args.dcoeff))
+                                    jnp.array([args.ca_stress,]), ca_index, params, times,
+                                    rtol=args.rtol, atol=args.atol, 
+                                    pcoeff=args.pcoeff, icoeff=args.icoeff, dcoeff=args.dcoeff))
     
     solve_CaMKK_KD = jax.vmap(lambda params: solve_traj_timeDepCaMKK(rhs, rhs_stress, y0_CaMKK_KD, 
-                                                    params, times,
+                                    jnp.array([args.ca_stress,]), ca_index, params, times,
                                     rtol=args.rtol, atol=args.atol,
                                     pcoeff=args.pcoeff, icoeff=args.icoeff, dcoeff=args.dcoeff))
 
     # run the vmapped simulations
-    expected_array_size = len(times)*param_vals.shape[0]*8*3 # 8 bytes per float64
-    # mult by 3 for the 3 sitatuations
     
-    if expected_array_size > 250000000:
-        print('Warning: chunking simulations to avoid memory error.')
+    # If running on GPU, check if the expected array size is too large and if so, chunk the simulations
+    # Check if JAX is running on CPU or GPU
+    if jax.devices()[0].device_kind == 'gpu':
+        expected_array_size = len(times)*param_vals.shape[0]*8*3 # 8 bytes per float64
+        # mult by 3 for the 3 sims
 
-        # chunk the simulations
-        n_chunks = int(np.ceil(expected_array_size/100000000))
-        chunk_size = int(np.ceil(param_vals.shape[0]/n_chunks))
+        if expected_array_size > 250000000:
+            print('Warning: chunking simulations to avoid memory error.')
 
-        # Initialize arrays to store the results
-        all_sols_stressed = []
-        all_sols_basal = []
-        all_sols_stressed_LKB1_KD = []
-        all_sols_stressed_CaMKK_KD = []
+            # chunk the simulations
+            n_chunks = int(np.ceil(expected_array_size/100000000))
+            chunk_size = int(np.ceil(param_vals.shape[0]/n_chunks))
 
-        # loop over the chunks
-        for i in range(n_chunks):   
-            tnow = time.time()
-            if i == n_chunks-1:
-                sols = solve(temp[i*chunk_size:])
-                sols_LKB1_KD = solve_LKB1_KD(params_LKB1_KD[i*chunk_size:])
-                sols_CaMKK_KD = solve_CaMKK_KD(params_CaMKK_KD[i*chunk_size:])
-            else:
-                sols = solve(temp[i*chunk_size:(i+1)*chunk_size])
-                sols_LKB1_KD = solve_LKB1_KD(params_LKB1_KD[i*chunk_size:(i+1)*chunk_size])
-                sols_CaMKK_KD = solve_CaMKK_KD(params_CaMKK_KD[i*chunk_size:(i+1)*chunk_size])
-            tend = time.time()
+            # Initialize arrays to store the results
+            all_sols_stressed = []
+            all_sols_basal = []
+            all_sols_stressed_LKB1_KD = []
+            all_sols_stressed_CaMKK_KD = []
 
-            # append model evals to the lists
-            all_sols_stressed.append(np.array(sols[0]))
-            all_sols_basal.append(np.array(sols[1]))
-            all_sols_stressed_LKB1_KD.append(np.array(sols_LKB1_KD[0]))
-            all_sols_stressed_CaMKK_KD.append(np.array(sols_CaMKK_KD[0]))
+            # loop over the chunks
+            for i in range(n_chunks):   
+                tnow = time.time()
+                if i == n_chunks-1:
+                    sols = solve(temp[i*chunk_size:])
+                    sols_LKB1_KD = solve_LKB1_KD(params_LKB1_KD[i*chunk_size:])
+                    sols_CaMKK_KD = solve_CaMKK_KD(params_CaMKK_KD[i*chunk_size:])
+                else:
+                    sols = solve(temp[i*chunk_size:(i+1)*chunk_size])
+                    sols_LKB1_KD = solve_LKB1_KD(params_LKB1_KD[i*chunk_size:(i+1)*chunk_size])
+                    sols_CaMKK_KD = solve_CaMKK_KD(params_CaMKK_KD[i*chunk_size:(i+1)*chunk_size])
+                tend = time.time()
 
-            print('Simulations took {} seconds'.format(tend-tnow))
-            print('Completed {} chunk {}'.format(args.model, i))
+                # append model evals to the lists
+                all_sols_stressed.append(np.array(sols[0]))
+                all_sols_basal.append(np.array(sols[1]))
+                all_sols_stressed_LKB1_KD.append(np.array(sols_LKB1_KD[0]))
+                all_sols_stressed_CaMKK_KD.append(np.array(sols_CaMKK_KD[0]))
 
-        # Concatenate all chunks into single arrays
-        all_sols_stressed = np.concatenate(all_sols_stressed, axis=0)
-        all_sols_basal = np.concatenate(all_sols_basal, axis=0)
-        all_sols_stressed_LKB1_KD = np.concatenate(all_sols_stressed_LKB1_KD, axis=0)
-        all_sols_stressed_CaMKK_KD = np.concatenate(all_sols_stressed_CaMKK_KD, axis=0)
+                print('Simulations took {} seconds'.format(tend-tnow))
+                print('Completed {} chunk {}'.format(args.model, i))
 
-        # Save the concatenated results
-        np.save(args.savedir + args.model + '_sols_stressed_GSA.npy', all_sols_stressed)
-        np.save(args.savedir + args.model + '_sols_basal_GSA.npy', all_sols_basal)
-        np.save(args.savedir + args.model + '_sols_stressed_LKB1_KD_GSA.npy', all_sols_stressed_LKB1_KD)
-        np.save(args.savedir + args.model + '_sols_stressed_CaMKK_KD_GSA.npy', all_sols_stressed_CaMKK_KD)
-    else:
+            # Concatenate all chunks into single arrays
+            all_sols_stressed = np.concatenate(all_sols_stressed, axis=0)
+            all_sols_basal = np.concatenate(all_sols_basal, axis=0)
+            all_sols_stressed_LKB1_KD = np.concatenate(all_sols_stressed_LKB1_KD, axis=0)
+            all_sols_stressed_CaMKK_KD = np.concatenate(all_sols_stressed_CaMKK_KD, axis=0)
+
+            # Save the concatenated results
+            np.save(args.savedir + args.model + '_sols_stressed_GSA.npy', all_sols_stressed)
+            np.save(args.savedir + args.model + '_sols_basal_GSA.npy', all_sols_basal)
+            np.save(args.savedir + args.model + '_sols_stressed_LKB1_KD_GSA.npy', all_sols_stressed_LKB1_KD)
+            np.save(args.savedir + args.model + '_sols_stressed_CaMKK_KD_GSA.npy', all_sols_stressed_CaMKK_KD)
+    else: # if cpu or not too big, just run all at once
         tnow = time.time()
         sols = solve(temp)
         sols_LKB1_KD = solve_LKB1_KD(params_LKB1_KD)

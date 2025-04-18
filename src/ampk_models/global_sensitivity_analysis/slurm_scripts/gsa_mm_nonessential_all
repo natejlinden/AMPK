@@ -17,10 +17,10 @@
 cd /tscc/nfs/home/nlinden/AMPK/src/ampk_models/global_sensitivity_analysis/
 
 # mkdir for results
-mkdir -p /tscc/lustre/ddn/scratch/nlinden/ampk/MM_nonessential/
+mkdir -p /tscc/lustre/ddn/scratch/nlinden/ampk/MM_nonessential_all/
 
 # run sampling
-/tscc/nfs/home/nlinden/miniforge3/envs/pymc/bin/python GSA_sampling.py -model MM_nonessential -free_params kOffAMP,kOffADP,kOffATP,KmCaMKK,kLKB1,KmLKB1,alphaLKB1,kPP,KmPP,alphaPP,betaAMP -model_info_file ../models/MM_nonessential.json -metab_params_file ../models/metabolism_params_Coccimiglio.json -nsamples 2048 -savedir /tscc/lustre/ddn/scratch/nlinden/ampk/MM_nonessential/ -tmax 1800 -ca_stress 0.00025
+/tscc/nfs/home/nlinden/miniforge3/envs/pymc/bin/python GSA_sampling.py -model MM_nonessential_all -free_params kOffAMP,kOffADP,kOffATP,KmCaMKK,kLKB1,KmLKB1,kPP,KmPP,betaAMPK,betaLKB1,betaCaMKK,alphaPP -model_info_file ../models/MM_nonessential_all.json -metab_params_file ../models/metabolism_params_Coccimiglio.json -nsamples 2048 -savedir /tscc/lustre/ddn/scratch/nlinden/ampk/MM_nonessential_all/ -tmax 1800 -ca_stress 0.00025
 
 # # rsync results to Engram via Cortex
 # rsync -av /tscc/lustre/ddn/scratch/nlinden/ampk/MM_nonessential cortex:/net/engram/nlinden/AMPK/results/GSA/

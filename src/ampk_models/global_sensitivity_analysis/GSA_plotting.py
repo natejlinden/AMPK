@@ -1,11 +1,5 @@
 import numpy as np
-from SALib.sample import sobol as sobol_samp
-from SALib.sample import morris as morris_samp
-from SALib.analyze import sobol as sobol_analyze
-from SALib.analyze import morris as morris_analyze
-from SALib.analyze.hdmr import analyze as hdmr_analyze
-import os, sys, json
-
+import sys
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import seaborn as sns
@@ -34,29 +28,10 @@ def main(raw_args=None):
     args = parse_args()
 
     colors = mb.met_brew(name="Veronese", n=7)
-    colors = colors[0:5]
+    # colors = colors[0:5]
 
     # list of models 
     models_free_params = { 
-        "ampk_Coccimiglio": {'free':["k6r","k7r","k8r","k9r","k10r","k11r","Km12",
-                            "Km13","Km14","Km15","Km16","Km17","Km18","Km19",
-                            "Vmaxkinase","VmaxkinaseATP","VmaxkinaseADP",
-                            "VmaxkinaseAMP","Vmaxppase","VmaxppaseATP",
-                            "VmaxppaseADP","VmaxppaseAMP","Km_pAMPK","k_pAMPK",
-                            "Km_AMP_pAMPK","k_AMP_pAMPK","Km_ADP_pAMPK",
-                            "k_ADP_pAMPK","Km_ATP_pAMPK","k_ATP_pAMPK"],
-                    'names':[r'$k_{6r}$',r'$k_{7r}$',r'$k_{8r}$',r'$k_{9r}$',
-                             r'$k_{10r}$',r'$k_{11r}$',r'$K_{m12}$',r'$K_{m13}$',
-                             r'$K_{m14}$',r'$K_{m15}$',r'$K_{m16}$',r'$K_{m17}$',
-                             r'$K_{m18}$',r'$K_{m19}$',r'$V_{max,kinase}$',
-                            r'$V_{max,kinase,ATP}$',r'$V_{max,kinase,ADP}$',
-                            r'$V_{max,kinase,AMP}$',r'$V_{max,ppase}$',
-                            r'$V_{max,ppase,ATP}$',r'$V_{max,ppase,ADP}$',
-                            r'$V_{max,ppase,AMP}$',r'$K_{m,pAMPK}$',
-                            r'$k_{pAMPK}$',r'$K_{m,AMP,pAMPK}$',r'$k_{AMP,pAMPK}$',
-                            r'$K_{m,ADP,pAMPK}$',r'$k_{ADP,pAMPK}$',r'$K_{m,ATP,pAMPK}$',
-                            r'$k_{ATP,pAMPK}$'],
-                    },
         "MA_single": {'free':["kOffAMP","kOffADP","kOffATP","kOffCaMKK","kPhosCaMKK",
                               "kOffLKB1","kPhosLKB1","kOffPP","kDephosPP","kOffAMPK",
                               "kPhosAMPK","kOffPP1","kDephosPP1"],
@@ -67,12 +42,12 @@ def main(raw_args=None):
                              r'$k_{DephosPP}$',r'$k_{OffAMPK}$',
                              r'$k_{PhosAMPK}$',r'$k_{OffPP1}$',
                              r'$k_{DephosPP1}$']}, 
-         "MM_single":  {'free':["kOffAMP","kOffADP","kOffATP","kCaMKK","KmCaMKK",
+         "MM_single":  {'free':["kOffAMP","kOffADP","kOffATP","KmCaMKK",
                                 "kLKB1","KmLKB1","kPP","KmPP"],
                      'names':[r'$k_{\text{OffAMP}}$',r'$k_{\text{OffADP}}$',
-                              r'$k_{\text{OffATP}}$',r'$k_{\text{PhosCaMKK}}$',
-                              r'$K_{m,\text{CaMKK}}$',r'$k_{\text{PhosLKB1}}$',
-                              r'$K_{\text{m,LKB1}}$',r'$k_{\text{DephosPP}}$',
+                              r'$k_{\text{OffATP}}$',
+                              r'$K_{m,\text{CaMKK}}$',r'$k_{\text{LKB1}}$',
+                              r'$K_{\text{m,LKB1}}$',r'$k_{\text{PP}}$',
                               r'$K_{\text{m,PP}}$'],
                      },
          "MA_nonessential": {'free':["kOffAMP","kOffADP","kOffATP","kOffCaMKK",
@@ -88,16 +63,38 @@ def main(raw_args=None):
                               r'$k_{\text{Dephos,PP1}}$',r'$\alpha_{\text{LKB1}}$',
                               r'$\alpha_{\text{PP}}$',r'$\beta_{\text{AMP}}$'],
                      }, 
-         "MM_nonessential":  {'free':["kOffAMP","kOffADP","kOffATP","kPhosCaMKK","KmCaMKK",
-                                      "kPhosLKB1","KmLKB1","kDephosPP","KmPP","alphaLKB1",
+         "MM_nonessential":  {'free':["kOffAMP","kOffADP","kOffATP","KmCaMKK",
+                                      "LKB1","KmLKB1","kPP","KmPP","alphaLKB1",
                                       "alphaPP","betaAMP"],
                      'names':[r'$k_{\text{OffAMP}}$',r'$k_{\text{OffADP}}$',
-                              r'$k_{\text{OffATP}}$',r'$k_{\text{PhosCaMKK}}$',
-                              r'$K_{m,\text{CaMKK}}$',r'$k_{\text{PhosLKB1}}$',
-                              r'$K_{\text{m,LKB1}}$',r'$k_{\text{DephosPP}}$',
+                              r'$k_{\text{OffATP}}$',
+                              r'$K_{m,\text{CaMKK}}$',r'$k_{\text{LKB1}}$',
+                              r'$K_{\text{m,LKB1}}$',r'$k_{\text{PP}}$',
                               r'$K_{\text{M,PP}}$',r'$\alpha_{\text{LKB1}}$',
                               r'$\alpha_{\text{PP}}$',r'$\beta_{\text{AMP}}$'],
-                     }
+                     },
+        "MA_nonessential_all": {'free':["kOffAMP","kOffADP","kOffATP","kOffCaMKK",
+                                "kPhosCaMKK", "kOffLKB1","kPhosLKB1","kOffPP",
+                                "kDephosPP","kOffAMPK", "kPhosAMPK","kOffPP1",
+                                "kDephosPP1","alphaPP","betaAMP","betaLKB1","betaCaMKK"],
+                    'names':[r'$k_{OffAMP}$',r'$k_{OffADP}$',
+                             r'$k_{OffATP}$',r'$k_{OffCaMKK}$',
+                             r'$k_{PhosCaMKK}$',r'$k_{OffLKB1}$',
+                             r'$k_{PhosLKB1}$',r'$k_{OffPP}$',
+                             r'$k_{DephosPP}$',r'$k_{OffAMPK}$',
+                             r'$k_{PhosAMPK}$',r'$k_{OffPP1}$',
+                             r'$k_{DephosPP1}$', r'$\alpha_{PP}$',r'$\beta_{AMP}$',
+                             r'$\beta_{LKB1}$',r'$\beta_{CaMKK}$']}, 
+        "MM_nonessential_all":  {'free':["kOffAMP","kOffADP","kOffATP","KmCaMKK",
+                                "LKB1","KmLKB1","kPP","KmPP","alphaPP",
+                                "betaAMP","betaLKB1","betaCaMKK"],
+                    'names':[r'$k_{\text{OffAMP}}$',r'$k_{\text{OffADP}}$',
+                                r'$k_{\text{OffATP}}$',
+                                r'$K_{m,\text{CaMKK}}$',r'$k_{\text{LKB1}}$',
+                                r'$K_{\text{m,LKB1}}$',r'$k_{\text{PP}}$',
+                                r'$K_{\text{M,PP}}$',r'$\alpha_{\text{PP}}$',
+                                r'$\beta_{\text{AMP}}$',r'$\beta_{\text{LKB1}}$',
+                                r'$\beta_{\text{CaMKK}}$']}
         }
 
     ST_dict = {}
@@ -111,28 +108,22 @@ def main(raw_args=None):
 
         fig_path = args.fig_path + m_name + '/'
 
-        # Load JSON files with param, state, and initial condition info
-        # states and initial conditions
-        info_file = '../models/' + m_name + '.json'
-        with open(info_file, 'r') as file:
-            model_info = json.load(file)
-
         # free parameters and nominal values
         free_params = models_free_params[model]['free']
-        nominal_params = model_info['nominal_params']
         param_names = models_free_params[model]['names']
 
         # define the bounds for the AMPK parameters
-        bounds = [model_info['param_bounds'] for param in free_params]
-
+      
         # load qoi samples
         qoi_samples = np.load(args.results_path  +  m_name + '/'+  m_name + '_qois.npz')
         #  the second entry is the name of the qoi
         qoi_names = {
             "ratio":r'$\frac{[\rm pAMPKAR]}{[\rm AMPKAR]}$', # raw ratio
             "t_half": r'$t_{{\rm 1/2}}$', # time to half max
-            # "delta_LKB1_KD": r'$\Delta \frac{[\rm pAMPKAR]}{[\rm AMPKAR]} LKB1 KO$',
-            # "delta_CaMKK_KD": 
+            "ratio_LKB1_KD": r'$\frac{[\rm pAMPKAR]}{[\rm AMPKAR]} LKB1 KO$',
+            "ratio_CaMKK_KD": r'$\frac{[\rm pAMPKAR]}{[\rm AMPKAR]} CaMKK KO$',
+            "t_half_LKB1_KD": r'$t_{{\rm 1/2}}$ LKB1 KO',
+            "t_half_CaMKK_KD": r'$t_{{\rm 1/2}}$ CaMKK KO',
         }
 
         for qoi in list(qoi_names.keys()):
@@ -220,7 +211,7 @@ def main(raw_args=None):
         'AMPK phos.': ['kOffCaMK', 'kPhosCaMKK', 'KmCaMKK', 'kCaMKK','kOffLKB1', 
                   'kPhosLKB1', 'KmLKB1', 'kLKB1', 'Km12', 'Km14', 'Km16', 'Km18', 
                   'Vmaxkinase', 'VmaxkinaseATP', 'VmaxkinaseADP', 'VmaxkinaseAMP', 
-                  'alphaLKB1'],
+                  'alphaLKB1', 'betaLKB1', 'betaCaMKK'],
         'AMPK dephos.': ['kOffPP', 'kDephosPP', 'KmPP', 'kPP', 'Km13', 'Km15', 'Km17', 'Km19',
                 'Vmaxppase', 'VmaxppaseATP', 'VmaxppaseADP', 'VmaxppaseAMP', 'alphaPP'],
         'AMPK kinase act.': ['kOffAMPK', 'kPhosAMPK', 'KmAMPK', 'kAMPK', 'Km_pAMPK','k_pAMPK', 
@@ -230,11 +221,12 @@ def main(raw_args=None):
     }
 
     model_names = {
-        'ampk_Coccimiglio': 'Coccimiglio et al. 2020',
         'MA_single': 'Mass action (MA)',
         'MM_single': 'Michealis Menten (MM)',
         'MA_nonessential': 'MA - nonessential',
-        'MM_nonessential': 'MM - nonessential'
+        'MM_nonessential': 'MM - nonessential',
+        'MA_nonessential_all': 'MA - nonessential all',
+        'MM_nonessential_all': 'MM - nonessential all'
     }
 
     # Make a heatmap of the ST values

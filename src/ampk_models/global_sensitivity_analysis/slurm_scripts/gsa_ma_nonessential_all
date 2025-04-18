@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name  gsa-mm-single
+#SBATCH --job-name  gsa-ma-nonessential  
 #SBATCH --output slurm-%j.out-%N            # Standard output file
 #SBATCH --output slurm-%j.err-%N        # Optional, for separating standard error
 #SBATCH --partition rtx3090                                   # Partition name
@@ -17,10 +17,10 @@
 cd /tscc/nfs/home/nlinden/AMPK/src/ampk_models/global_sensitivity_analysis/
 
 # mkdir for results
-mkdir -p /tscc/lustre/ddn/scratch/nlinden/ampk/MM_single/
+mkdir -p /tscc/lustre/ddn/scratch/nlinden/ampk/MA_nonessential_all/
 
 # run sampling
-/tscc/nfs/home/nlinden/miniforge3/envs/pymc/bin/python GSA_sampling.py -model MM_single -free_params kOffAMP,kOffADP,kOffATP,KmCaMKK,kLKB1,KmLKB1,kPP,KmPP -model_info_file ../models/MM_single.json -metab_params_file ../models/metabolism_params_Coccimiglio.json -nsamples 2048 -savedir /tscc/lustre/ddn/scratch/nlinden/ampk/MM_single -tmax 1800 -ca_stress 0.00025
+/tscc/nfs/home/nlinden/miniforge3/envs/pymc/bin/python GSA_sampling.py -model MA_nonessential_all -free_params kOffAMP,kOffADP,kOffATP,kOffCaMKK,kPhosCaMKK,kOffLKB1,kPhosLKB1,kOffPP,kDephosPP,kOffAMPK,kPhosAMPK,kOffPP1,kDephosPP1,alphaPP,betaAMP,betaLKB1,betaCaMKK -model_info_file ../models/MA_nonessential_all.json -metab_params_file ../models/metabolism_params_Coccimiglio.json -nsamples 2048 -savedir /tscc/lustre/ddn/scratch/nlinden/ampk/MA_nonessential_all/ -tmax 1800 -ca_stress 0.00025
 
 # # rsync results to Engram via Cortex
-# rsync -av /tscc/lustre/ddn/scratch/nlinden/ampk/MM_single cortex:/net/engram/nlinden/AMPK/results/GSA/
+# rsync -av /tscc/lustre/ddn/scratch/nlinden/ampk/MA_nonessential cortex:/net/engram/nlinden/AMPK/results/GSA/

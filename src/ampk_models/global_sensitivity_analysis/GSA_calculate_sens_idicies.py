@@ -32,66 +32,69 @@ def main(raw_args=None):
 
     # list of models 
     models_free_params = { 
-    #    "ampk_Coccimiglio": {'free':["k6r","k7r","k8r","k9r","k10r","k11r","Km12",
-    #                        "Km13","Km14","Km15","Km16","Km17","Km18","Km19",
-    #                        "Vmaxkinase","VmaxkinaseATP","VmaxkinaseADP",
-    #                        "VmaxkinaseAMP","Vmaxppase","VmaxppaseATP",
-    #                        "VmaxppaseADP","VmaxppaseAMP","Km_pAMPK","k_pAMPK",
-    #                        "Km_AMP_pAMPK","k_AMP_pAMPK","Km_ADP_pAMPK",
-    #                        "k_ADP_pAMPK","Km_ATP_pAMPK","k_ATP_pAMPK"],
-    #                'names':[r'$k_{6r}$',r'$k_{7r}$',r'$k_{8r}$',r'$k_{9r}$',
-    #                         r'$k_{10r}$',r'$k_{11r}$',r'$K_{m12}$',r'$K_{m13}$',
-    #                         r'$K_{m14}$',r'$K_{m15}$',r'$K_{m16}$',r'$K_{m17}$',
-    #                         r'$K_{m18}$',r'$K_{m19}$',r'$V_{max,kinase}$',
-    #                        r'$V_{max,kinase,ATP}$',r'$V_{max,kinase,ADP}$',
-    #                        r'$V_{max,kinase,AMP}$',r'$V_{max,ppase}$',
-    #                        r'$V_{max,ppase,ATP}$',r'$V_{max,ppase,ADP}$',
-    #                        r'$V_{max,ppase,AMP}$',r'$K_{m,pAMPK}$',
-    #                        r'$k_{pAMPK}$',r'$K_{m,AMP,pAMPK}$',r'$k_{AMP,pAMPK}$',
-    #                        r'$K_{m,ADP,pAMPK}$',r'$k_{ADP,pAMPK}$',r'$K_{m,ATP,pAMPK}$',
-    #                        r'$k_{ATP,pAMPK}$'],
-    #                },
-    #    "MA_single": {'free':["kOffAMP","kOffADP","kOffATP","kOffCaMKK","kPhosCaMKK",
-    #                          "kOffLKB1","kPhosLKB1","kOffPP","kDephosPP","kOffAMPK",
-    #                          "kPhosAMPK","kOffPP1","kDephosPP1"],
-    #                'names':[r'$k_{\text{OffAMP}}$',r'$k_{\text{OffADP}}$',
-    #                         r'$k_{\text{OffATP}}$',r'$k_{\text{OffCaMKK}}$',
-    #                         r'k_{\text{PhosCaMKK}}',r'k_{\text{OffLKB1}}',
-    #                         r'k_{\text{PhosLKB1}}',r'k_{\text{OffPP}}',
-    #                         r'$k_{\text{DephosPP}}$',r'$k_{\text{OffAMPK}}$',
-    #                         r'$k_{\text{PhosAMPK}}$',r'$k_{\text{OffPP1}}$',
-    #                         r'$k_{\text{Dephos,PP1}}$']}, 
-        "MM_single":  {'free':["kOffAMP","kOffADP","kOffATP","kCaMKK","KmCaMKK",
-                               "kLKB1","KmLKB1","kPP","KmPP"],
+        "MA_single": {'free':["kOffAMP","kOffADP","kOffATP","kOffCaMKK","kPhosCaMKK",
+                              "kOffLKB1","kPhosLKB1","kOffPP","kDephosPP","kOffAMPK",
+                              "kPhosAMPK","kOffPP1","kDephosPP1"],
+                    'names':[r'$k_{OffAMP}$',r'$k_{OffADP}$',
+                             r'$k_{OffATP}$',r'$k_{OffCaMKK}$',
+                             r'$k_{PhosCaMKK}$',r'$k_{OffLKB1}$',
+                             r'$k_{PhosLKB1}$',r'$k_{OffPP}$',
+                             r'$k_{DephosPP}$',r'$k_{OffAMPK}$',
+                             r'$k_{PhosAMPK}$',r'$k_{OffPP1}$',
+                             r'$k_{DephosPP1}$']}, 
+         "MM_single":  {'free':["kOffAMP","kOffADP","kOffATP","KmCaMKK",
+                                "kLKB1","KmLKB1","kPP","KmPP"],
+                     'names':[r'$k_{\text{OffAMP}}$',r'$k_{\text{OffADP}}$',
+                              r'$k_{\text{OffATP}}$',
+                              r'$K_{m,\text{CaMKK}}$',r'$k_{\text{LKB1}}$',
+                              r'$K_{\text{m,LKB1}}$',r'$k_{\text{PP}}$',
+                              r'$K_{\text{m,PP}}$'],
+                     },
+         "MA_nonessential": {'free':["kOffAMP","kOffADP","kOffATP","kOffCaMKK",
+                                     "kPhosCaMKK","kOffLKB1","kPhosLKB1","kOffPP",
+                                     "kDephosPP","kOffAMPK","kPhosAMPK","kOffPP1",
+                                     "kDephosPP1","alphaLKB1","alphaPP","betaAMP"],
+                     'names':[r'$k_{\text{OffAMP}}$',r'$k_{\text{OffADP}}$',
+                              r'$k_{\text{OffATP}}$',r'$k_{\text{OffCaMKK}}$',
+                              r'$k_{\text{PhosCaMKK}}$',r'$k_{\text{OffLKB1}}$',
+                              r'$k_{\text{PhosLKB1}}$',r'$k_{\text{OffPP}}$',
+                              r'$k_{\text{DephosPP}}$',r'$k_{\text{OffAMPK}}$',
+                              r'$k_{\text{PhosAMPK}}$',r'$k_{\text{OffPP1}}$',
+                              r'$k_{\text{Dephos,PP1}}$',r'$\alpha_{\text{LKB1}}$',
+                              r'$\alpha_{\text{PP}}$',r'$\beta_{\text{AMP}}$'],
+                     }, 
+         "MM_nonessential":  {'free':["kOffAMP","kOffADP","kOffATP","KmCaMKK",
+                                      "LKB1","KmLKB1","kPP","KmPP","alphaLKB1",
+                                      "alphaPP","betaAMP"],
+                     'names':[r'$k_{\text{OffAMP}}$',r'$k_{\text{OffADP}}$',
+                              r'$k_{\text{OffATP}}$',
+                              r'$K_{m,\text{CaMKK}}$',r'$k_{\text{LKB1}}$',
+                              r'$K_{\text{m,LKB1}}$',r'$k_{\text{PP}}$',
+                              r'$K_{\text{M,PP}}$',r'$\alpha_{\text{LKB1}}$',
+                              r'$\alpha_{\text{PP}}$',r'$\beta_{\text{AMP}}$'],
+                     },
+        "MA_nonessential_all": {'free':["kOffAMP","kOffADP","kOffATP","kOffCaMKK",
+                                "kPhosCaMKK", "kOffLKB1","kPhosLKB1","kOffPP",
+                                "kDephosPP","kOffAMPK", "kPhosAMPK","kOffPP1",
+                                "kDephosPP1","alphaPP","betaAMP","betaLKB1","betaCaMKK"],
+                    'names':[r'$k_{OffAMP}$',r'$k_{OffADP}$',
+                             r'$k_{OffATP}$',r'$k_{OffCaMKK}$',
+                             r'$k_{PhosCaMKK}$',r'$k_{OffLKB1}$',
+                             r'$k_{PhosLKB1}$',r'$k_{OffPP}$',
+                             r'$k_{DephosPP}$',r'$k_{OffAMPK}$',
+                             r'$k_{PhosAMPK}$',r'$k_{OffPP1}$',
+                             r'$k_{DephosPP1}$', r'$\alpha_{PP}$',r'$\beta_{AMP}$',
+                             r'$\beta_{LKB1}$',r'$\beta_{CaMKK}$']}, 
+        "MM_nonessential_all":  {'free':["kOffAMP","kOffADP","kOffATP","KmCaMKK",
+                                "LKB1","KmLKB1","kPP","KmPP","alphaPP",
+                                "betaAMP","betaLKB1","betaCaMKK"],
                     'names':[r'$k_{\text{OffAMP}}$',r'$k_{\text{OffADP}}$',
-                             r'$k_{\text{OffATP}}$',r'$k_{\text{PhosCaMKK}}$',
-                             r'$K_{m,\text{CaMKK}}$',r'$k_{\text{PhosLKB1}}$',
-                             r'$K_{\text{m,LKB1}}$',r'$k_{\text{DephosPP}}$',
-                             r'$K_{\text{M,PP}}$'],
-                    },
-        # "MA_nonessential": {'free':["kOffAMP","kOffADP","kOffATP","kOffCaMKK",
-        #                             "kPhosCaMKK","kOffLKB1","kPhosLKB1","kOffPP",
-        #                             "kDephosPP","kOffAMPK","kPhosAMPK","kOffPP1",
-        #                             "kDephosPP1","alphaLKB1","alphaPP","betaAMP"],
-        #             'names':[r'$k_{\text{OffAMP}}$',r'$k_{\text{OffADP}}$',
-        #                      r'$k_{\text{OffATP}}$',r'$k_{\text{OffCaMKK}}$',
-        #                      r'$k_{\text{PhosCaMKK}}$',r'$k_{\text{OffLKB1}}$',
-        #                      r'$k_{\text{PhosLKB1}}$',r'$k_{\text{OffPP}}$',
-        #                      r'$k_{\text{DephosPP}}$',r'$k_{\text{OffAMPK}}$',
-        #                      r'$k_{\text{PhosAMPK}}$',r'$k_{\text{OffPP1}}$',
-        #                      r'$k_{\text{Dephos,PP1}}$',r'$\alpha_{\text{LKB1}}$',
-        #                      r'$\alpha_{\text{PP}}$',r'$\beta_{\text{AMP}}$'],
-        #             }, 
-        #  "MM_nonessential":  {'free':["kOffAMP","kOffADP","kOffATP","kPhosCaMKK","KmCaMKK",
-        #                               "kPhosLKB1","KmLKB1","kDephosPP","KmPP","alphaLKB1",
-        #                               "alphaPP","betaAMP"],
-        #                       'names':[r'k_{\text{OffAMP}}',r'k_{\text{OffADP}}',
-        #                       r'$k_{\text{OffATP}}$',r'$k_{\text{PhosCaMKK}}$',
-        #                       r'$K_{m,\text{CaMKK}}$',r'$k_{\text{PhosLKB1}}$',
-        #                       r'$K_{\text{m,LKB1}}$',r'$k_{\text{DephosPP}}$',
-        #                       r'$K_{\text{M,PP}}$',r'$\alpha_{\text{LKB1}}$',
-        #                      r'$\alpha_{\text{PP}}$',r'$\beta_{\text{AMP}}$'],
-        #              }
+                                r'$k_{\text{OffATP}}$',
+                                r'$K_{m,\text{CaMKK}}$',r'$k_{\text{LKB1}}$',
+                                r'$K_{\text{m,LKB1}}$',r'$k_{\text{PP}}$',
+                                r'$K_{\text{M,PP}}$',r'$\alpha_{\text{PP}}$',
+                                r'$\beta_{\text{AMP}}$',r'$\beta_{\text{LKB1}}$',
+                                r'$\beta_{\text{CaMKK}}$']}
         }
 
     # loop through each model and analyze GSA results
@@ -131,9 +134,7 @@ def main(raw_args=None):
         pampkar_idxs = [state_names.index(item) for item in model_info['pampkar_states']]
         
         AMPKAR_stressed = sol_samples_stressed[: ,ampkar_idxs, :].sum(axis=1)
-        AMPKAR_basal = sol_samples_basal[: ,ampkar_idxs].sum(axis=1)
         pAMPKAR_stressed = sol_samples_stressed[: ,pampkar_idxs, :].sum(axis=1)
-        pAMPKAR_basal = sol_samples_basal[: ,pampkar_idxs].sum(axis=1)
 
         pAMPKAR_stressed_LKB1_KD = all_sols_stressed_LKB1_KD[: ,pampkar_idxs, :].sum(axis=1)
         pAMPKAR_stressed_CaMKK_KD = all_sols_stressed_CaMKK_KD[: ,pampkar_idxs, :].sum(axis=1)
@@ -158,11 +159,19 @@ def main(raw_args=None):
         # define dict of the qoi's -- there are multiple, so we need to run sobol analysis for each
         # the items in the dict are tuples, where the first entry is the vector of qoi's
         # the second entry is the name of the qoi
+        # qois = {
+        #     "ratio":(pAMPKAR_stressed/AMPKAR_stressed).max(axis=1), # raw ratio
+        #     "t_half": np.array(time_to_half_max), # time to half max
+        #     "ratio_LKB1_KD":(pAMPKAR_stressed_LKB1_KD/AMPKAR_stressed_LKB1_KD).max(axis=1), # difference in max ratio # difference in max ratio 
+        #     "ratio_CaMKK_KD": (pAMPKAR_stressed_CaMKK_KD/AMPKAR_stressed_CaMKK_KD).max(axis=1), # difference in max ratio
+        #     "t_half_LKB1_KD": np.array(time_to_half_max_idx_LKB1_KD), # time to half max
+        #     "t_half_CaMKK_KD": np.array(time_to_half_max_idx_CaMKK_KD), # time to half max
+        # }
         qois = {
-            "ratio":(pAMPKAR_stressed/AMPKAR_stressed).max(axis=1), # raw ratio
+            "ratio":pAMPKAR_stressed[:,-1]/AMPKAR_stressed[:,-1], # raw ratio
             "t_half": np.array(time_to_half_max), # time to half max
-            "delta_LKB1_KD":(pAMPKAR_stressed/AMPKAR_stressed).max(axis=1)-(pAMPKAR_stressed_LKB1_KD/AMPKAR_stressed_LKB1_KD).max(axis=1), # difference in max ratio # difference in max ratio 
-            "delta_CaMKK_KD": (pAMPKAR_stressed/AMPKAR_stressed).max(axis=1)-(pAMPKAR_stressed_CaMKK_KD/AMPKAR_stressed_CaMKK_KD).max(axis=1), # difference in max ratio
+            "ratio_LKB1_KD":pAMPKAR_stressed_LKB1_KD[:,-1]/AMPKAR_stressed_LKB1_KD[:,-1], # difference in max ratio # difference in max ratio 
+            "ratio_CaMKK_KD": pAMPKAR_stressed_CaMKK_KD[:,-1]/AMPKAR_stressed_CaMKK_KD[:,-1], # difference in max ratio
             "t_half_LKB1_KD": np.array(time_to_half_max_idx_LKB1_KD), # time to half max
             "t_half_CaMKK_KD": np.array(time_to_half_max_idx_CaMKK_KD), # time to half max
         }
@@ -170,7 +179,7 @@ def main(raw_args=None):
         # save to npz file
         np.savez(args.results_path +  m_name + '/'+ m_name + '_qois.npz', **qois)
 
-        qoi_names = ['ratio', 't_half', 'delta_LKB1_KD', 'delta_CaMKK_KD', 't_half_LKB1_KD', 't_half_CaMKK_KD']
+        qoi_names = ['ratio', 't_half', 'ratio_LKB1_KD', 'ratio_CaMKK_KD', 't_half_LKB1_KD', 't_half_CaMKK_KD']
 
         # loop over QoIs and compute Sens idxs
         for qoi in qoi_names:
