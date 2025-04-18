@@ -195,57 +195,56 @@ def main(raw_args=None):
     
     # If running on GPU, check if the expected array size is too large and if so, chunk the simulations
     # Check if JAX is running on CPU or GPU
-    if jax.devices()[0].device_kind == 'gpu':
-        expected_array_size = len(times)*param_vals.shape[0]*8*3 # 8 bytes per float64
-        # mult by 3 for the 3 sims
+    expected_array_size = len(times)*param_vals.shape[0]*8*3 # 8 bytes per float64
+    # mult by 3 for the 3 sims
 
-        if expected_array_size > 250000000:
-            print('Warning: chunking simulations to avoid memory error.')
+    if expected_array_size > 250000000:
+        print('Warning: chunking simulations to avoid memory error.')
 
-            # chunk the simulations
-            n_chunks = int(np.ceil(expected_array_size/100000000))
-            chunk_size = int(np.ceil(param_vals.shape[0]/n_chunks))
+        # chunk the simulations
+        n_chunks = int(np.ceil(expected_array_size/100000000))
+        chunk_size = int(np.ceil(param_vals.shape[0]/n_chunks))
 
-            # Initialize arrays to store the results
-            all_sols_stressed = []
-            all_sols_basal = []
-            all_sols_stressed_LKB1_KD = []
-            all_sols_stressed_CaMKK_KD = []
+        # Initialize arrays to store the results
+        all_sols_stressed = []
+        all_sols_basal = []
+        all_sols_stressed_LKB1_KD = []
+        all_sols_stressed_CaMKK_KD = []
 
-            # loop over the chunks
-            for i in range(n_chunks):   
-                tnow = time.time()
-                if i == n_chunks-1:
-                    sols = solve(temp[i*chunk_size:])
-                    sols_LKB1_KD = solve_LKB1_KD(params_LKB1_KD[i*chunk_size:])
-                    sols_CaMKK_KD = solve_CaMKK_KD(params_CaMKK_KD[i*chunk_size:])
-                else:
-                    sols = solve(temp[i*chunk_size:(i+1)*chunk_size])
-                    sols_LKB1_KD = solve_LKB1_KD(params_LKB1_KD[i*chunk_size:(i+1)*chunk_size])
-                    sols_CaMKK_KD = solve_CaMKK_KD(params_CaMKK_KD[i*chunk_size:(i+1)*chunk_size])
-                tend = time.time()
+        # loop over the chunks
+        for i in range(n_chunks):   
+            tnow = time.time()
+            if i == n_chunks-1:
+                sols = solve(temp[i*chunk_size:])
+                sols_LKB1_KD = solve_LKB1_KD(params_LKB1_KD[i*chunk_size:])
+                sols_CaMKK_KD = solve_CaMKK_KD(params_CaMKK_KD[i*chunk_size:])
+            else:
+                sols = solve(temp[i*chunk_size:(i+1)*chunk_size])
+                sols_LKB1_KD = solve_LKB1_KD(params_LKB1_KD[i*chunk_size:(i+1)*chunk_size])
+                sols_CaMKK_KD = solve_CaMKK_KD(params_CaMKK_KD[i*chunk_size:(i+1)*chunk_size])
+            tend = time.time()
 
-                # append model evals to the lists
-                all_sols_stressed.append(np.array(sols[0]))
-                all_sols_basal.append(np.array(sols[1]))
-                all_sols_stressed_LKB1_KD.append(np.array(sols_LKB1_KD[0]))
-                all_sols_stressed_CaMKK_KD.append(np.array(sols_CaMKK_KD[0]))
+            # append model evals to the lists
+            all_sols_stressed.append(np.array(sols[0]))
+            all_sols_basal.append(np.array(sols[1]))
+            all_sols_stressed_LKB1_KD.append(np.array(sols_LKB1_KD[0]))
+            all_sols_stressed_CaMKK_KD.append(np.array(sols_CaMKK_KD[0]))
 
-                print('Simulations took {} seconds'.format(tend-tnow))
-                print('Completed {} chunk {}'.format(args.model, i))
+            print('Simulations took {} seconds'.format(tend-tnow))
+            print('Completed {} chunk {}'.format(args.model, i))
 
-            # Concatenate all chunks into single arrays
-            all_sols_stressed = np.concatenate(all_sols_stressed, axis=0)
-            all_sols_basal = np.concatenate(all_sols_basal, axis=0)
-            all_sols_stressed_LKB1_KD = np.concatenate(all_sols_stressed_LKB1_KD, axis=0)
-            all_sols_stressed_CaMKK_KD = np.concatenate(all_sols_stressed_CaMKK_KD, axis=0)
+        # Concatenate all chunks into single arrays
+        all_sols_stressed = np.concatenate(all_sols_stressed, axis=0)
+        all_sols_basal = np.concatenate(all_sols_basal, axis=0)
+        all_sols_stressed_LKB1_KD = np.concatenate(all_sols_stressed_LKB1_KD, axis=0)
+        all_sols_stressed_CaMKK_KD = np.concatenate(all_sols_stressed_CaMKK_KD, axis=0)
 
-            # Save the concatenated results
-            np.save(args.savedir + args.model + '_sols_stressed_GSA.npy', all_sols_stressed)
-            np.save(args.savedir + args.model + '_sols_basal_GSA.npy', all_sols_basal)
-            np.save(args.savedir + args.model + '_sols_stressed_LKB1_KD_GSA.npy', all_sols_stressed_LKB1_KD)
-            np.save(args.savedir + args.model + '_sols_stressed_CaMKK_KD_GSA.npy', all_sols_stressed_CaMKK_KD)
-    else: # if cpu or not too big, just run all at once
+        # Save the concatenated results
+        np.save(args.savedir + args.model + '_sols_stressed_GSA.npy', all_sols_stressed)
+        np.save(args.savedir + args.model + '_sols_basal_GSA.npy', all_sols_basal)
+        np.save(args.savedir + args.model + '_sols_stressed_LKB1_KD_GSA.npy', all_sols_stressed_LKB1_KD)
+        np.save(args.savedir + args.model + '_sols_stressed_CaMKK_KD_GSA.npy', all_sols_stressed_CaMKK_KD)
+    else: # if not too big, just run all at once
         tnow = time.time()
         sols = solve(temp)
         sols_LKB1_KD = solve_LKB1_KD(params_LKB1_KD)
