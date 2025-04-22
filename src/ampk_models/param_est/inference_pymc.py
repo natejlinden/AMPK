@@ -23,7 +23,10 @@ from pymc_jax_ode import *
 sys.path.append("../models/")
 from MA_single_diffrax import *
 from MM_single_diffrax import *
-from MM_simple1_diffrax import *
+from MA_nonessential_diffrax import *
+from MM_nonessential_diffrax import *
+from MA_nonessential_all_diffrax import *
+from MM_nonessential_all_diffrax import *
 
 # tell jax to use 64bit floats
 jax.config.update('jax_platform_name', 'cpu')
@@ -46,13 +49,10 @@ def parse_args(raw_args=None):
     parser.add_argument("-metab_params_file", type=str, help="Metabolism model parameters. Should be a JSON")
     parser.add_argument("-savedir", type=str, help="Path to save results. Defaults to current directory.")
     # MCMC sampling
-    parser.add_argument("-prior_family", type=str, default="[['Gamma()',['alpha', 'beta']]]", help="Family of priors to use. Defaults to 'lognormal'.")
-    parser.add_argument("-normalization", type=str, default='ratio', help="Normalization to use for the data. Defaults to 'ratio'.")
     parser.add_argument("-nwarmup", type=int, default=1000, help="Number of MCMC tuning samples. Defaults to 1000.")
     parser.add_argument("-nsamples", type=int, default=1000, help="Number of posterior samples to draw per MCMC chain. Defaults to 1000.")
     parser.add_argument("-nchains", type=int, default=1, help="Number of chains to run. Defaults to 1.")
-    parser.add_argument("-sampler", type=str, default='NUTS', help="Name of the MCMC sampler to use ['NUTS', 'NUTS-ADVI', 'NumpyroNUTS', 'Nutpie']. Defaults to 'NUTS'")
-    parser.add_argument("-chain_method_numpyro", type=str, default='vectorized', help="Method to use for running chains in NumpyroNUTS. Defaults to 'vectorized'.")
+    parser.add_argument("-sampler", type=str, default='NUTS', help="Name of the MCMC sampler to use ['NUTS', 'NUTS-ADVI', 'Nutpie','Pathfinder']. Defaults to 'NUTS'")
     parser.add_argument("-ncores_nutpie", type=int, default=1, help="Number of cores to use for Nutpie. Defaults to 1 in which case sampling is sequential over the chains. If ncores > 1 then sampling is parallel over the chains.")
     # simulation parameters
     parser.add_argument("-tmax_init", type=float, default=1e3, help="Maximum time to run the simulation. Defaults to 1e3.")
@@ -70,8 +70,7 @@ def parse_args(raw_args=None):
     parser.add_argument("--compute_llike", action='store_true', help="Flag to resample the posterior predictive using previous param samples.")
     parser.add_argument("-n_advi_iter", type=int, default=1000, help="Number of iterations for ADVI. Defaults to 1000.")
     parser.add_argument("-n_checkpointss", type=int, default=1000, help="Number of checkpoints for backprop through ODE solution. Defaults to 1000.")
-
-    
+    parser.add_argument("-ca_stress", type=float, default=0.25, help="Calcium stress value. Defaults to 0.25.")
     args=parser.parse_args(raw_args)
     return args
 
@@ -146,30 +145,21 @@ def main(raw_args=None):
     ############################################
     # Simulator func #
     ############################################
-    # normaliztion func
-    if args.normalization == 'ratio':
-        def norm_func(pAMPKAR_stressed, AMPKAR_stressed, pAMPKAR_basal, AMPKAR_basal):
-            return (pAMPKAR_stressed / AMPKAR_stressed)
-    elif args.normalization == 'delta_ratio':
-        def norm_func(pAMPKAR_stressed, AMPKAR_stressed, pAMPKAR_basal, AMPKAR_basal):
-            return (pAMPKAR_stressed / AMPKAR_stressed) - (pAMPKAR_basal / AMPKAR_basal)
     # def simulation function that solves ODE and computes proper qoi
     # the solve_traj function first runs the model to SS in the basal energy state, and then 
     # runs the model in the stressed energy state using the SS from the basal state as the initial condition
-    ca_index = 4
-    ca_stress = jnp.array([0.25,])
-
+    ca_index = list(model_info["init_conds"].keys()).index('Ca')
+    ca_stress = jnp.array([args.ca_stress])
+    total_AMPKAR = jnp.array(model_info['init_conds']['AMPKAR'])
+    
     def simulator(params):
         # solve model
-        sol_stressed, sol_basal = solve_traj_timeDepCaMKK(rhs, rhs_stress, y0, ca_stress, ca_index,
-                params, times, tmax_init=args.tmax_init, rtol=args.rtol, atol=args.atol, pcoeff=args.pcoeff, icoeff=args.icoeff, dcoeff=args.dcoeff, dt0=1e-10)
+        sol_stressed, _ = solve_traj_timeDepCaMKK(rhs, rhs_stress, y0, ca_stress, ca_index,
+            params, times, tmax_init=args.tmax_init, rtol=args.rtol, atol=args.atol, pcoeff=args.pcoeff, icoeff=args.icoeff, dcoeff=args.dcoeff, dt0=1e-10)
 
-        # compute delta pAMPKAR/AMPKAR_tot
-        AMPKAR_basal = sol_basal[jnp.array(ampkar_idxs)].sum(axis=0)
-        pAMPKAR_basal = sol_basal[jnp.array(pampkar_idxs)].sum(axis=0)
-        AMPKAR_stressed = sol_stressed[jnp.array(ampkar_idxs), :].sum(axis=0)
+        # compute pAMPKAR/AMPKAR_tot
         pAMPKAR_stressed = sol_stressed[jnp.array(pampkar_idxs), :].sum(axis=0)
-        result = norm_func(pAMPKAR_stressed, AMPKAR_stressed, pAMPKAR_basal, AMPKAR_basal)
+        result = pAMPKAR_stressed / total_AMPKAR
         
         return jnp.reshape(result, (1, len(result)))
     

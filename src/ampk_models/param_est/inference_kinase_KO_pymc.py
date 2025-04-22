@@ -24,7 +24,12 @@ from utils import *
 from pymc_jax_ode import *
 
 sys.path.append("../models/")
-from MM_simple1_diffrax import * # import the model RHS
+from MA_single_diffrax import *
+from MM_single_diffrax import *
+from MA_nonessential_diffrax import *
+from MM_nonessential_diffrax import *
+from MA_nonessential_all_diffrax import *
+from MM_nonessential_all_diffrax import *
 
 # tell jax to use 64bit floats
 #jax.config.update('jax_platform_name', 'cpu')
@@ -53,12 +58,10 @@ def parse_args(raw_args=None):
     parser.add_argument("-metab_params_file", type=str, help="Metabolism model parameters. Should be a JSON")
     parser.add_argument("-savedir", type=str, help="Path to save results. Defaults to current directory.")
     # MCMC sampling
-    parser.add_argument("-prior_family", type=str, default="[['Gamma()',['alpha', 'beta']]]", help="Family of priors to use. Defaults to 'lognormal'.")
     parser.add_argument("-nwarmup", type=int, default=1000, help="Number of MCMC tuning samples. Defaults to 1000.")
     parser.add_argument("-nsamples", type=int, default=1000, help="Number of posterior samples to draw per MCMC chain. Defaults to 1000.")
     parser.add_argument("-nchains", type=int, default=1, help="Number of chains to run. Defaults to 1.")
-    parser.add_argument("-sampler", type=str, default='NUTS', help="Name of the MCMC sampler to use ['NUTS', 'NUTS-ADVI', 'NumpyroNUTS', 'Nutpie']. Defaults to 'NUTS'")
-    parser.add_argument("-chain_method_numpyro", type=str, default='vectorized', help="Method to use for running chains in NumpyroNUTS. Defaults to 'vectorized'.")
+    parser.add_argument("-sampler", type=str, default='NUTS', help="Name of the MCMC sampler to use ['NUTS', 'NUTS-ADVI', 'Nutpie', 'Pathfinder']. Defaults to 'NUTS'")
     parser.add_argument("-ncores_nutpie", type=int, default=1, help="Number of cores to use for Nutpie. Defaults to 1 in which case sampling is sequential over the chains. If ncores > 1 then sampling is parallel over the chains.")
     # simulation parameters
     parser.add_argument("-tmax_init", type=float, default=1e3, help="Maximum time to run the simulation. Defaults to 1e3.")
@@ -74,11 +77,10 @@ def parse_args(raw_args=None):
     parser.add_argument("--compute_llike", action='store_true', help="Flag to resample the posterior predictive using previous param samples.")
     parser.add_argument("-n_advi_iter", type=int, default=1000, help="Number of iterations for ADVI. Defaults to 1000.")
     parser.add_argument("-data_std_max", type=float, default=1.0, help="Scaling factor to change WT data std.")
+    parser.add_argument("-ca_stress", type=float, default=0.25, help="Calcium stress value. Defaults to 0.25.")
 
-    
     args=parser.parse_args(raw_args)
     return args
-
 
 def main(raw_args=None):
 
@@ -126,12 +128,6 @@ def main(raw_args=None):
     basal_params = list(metab_params["metab_params_basal"].values())
     stress_params = list(metab_params["metab_params_stress"].values())
 
-    # if there are addtional stim params add them here
-    if 'Ca_stim_param' in model_info.keys():
-        for param in model_info['Ca_stim_param'].keys():
-            basal_params.append(model_info['Ca_stim_param'][param]['basal']) # basal value
-            stress_params.append(model_info['Ca_stim_param'][param]['stress']) # stressed value
-        
     ###############################################
     #                   Model RHS                  #
     ################################################
@@ -178,8 +174,8 @@ def main(raw_args=None):
     ############################################
     # Simulator func #
     ############################################
-    ca_index = 4
-    ca_stress = jnp.array([0.25,])
+    ca_index = list(model_info['init_conds'].keys()).index('Ca')
+    ca_stress = jnp.array([args.ca_stress,])
     total_AMPKAR = jnp.array(model_info['init_conds']['AMPKAR'])
 
     # def simulation function that solves ODE and computes proper qoi
@@ -190,8 +186,7 @@ def main(raw_args=None):
         sol_stressed, _ = solve_traj_timeDepCaMKK(rhs, rhs_stress, y0, ca_stress, ca_index,
             params, times, tmax_init=args.tmax_init, rtol=args.rtol, atol=args.atol, pcoeff=args.pcoeff, icoeff=args.icoeff, dcoeff=args.dcoeff, dt0=1e-10)
 
-        # compute delta pAMPKAR/AMPKAR_tot
-        # AMPKAR_stressed = sol_stressed[jnp.array(ampkar_idxs), :].sum(axis=0)
+        # compute pAMPKAR/AMPKAR_tot
         pAMPKAR_stressed = sol_stressed[jnp.array(pampkar_idxs), :].sum(axis=0)
         result = pAMPKAR_stressed / total_AMPKAR
         
@@ -308,12 +303,6 @@ def main(raw_args=None):
                 posterior = pm.sample(args.nsamples, tune=args.nwarmup, chains=args.nchains, 
                                 cores=1, init='advi+adapt_diag', random_seed=args.seed, 
                                 idata_kwargs={'log_likelihood': True})
-        elif args.sampler == 'NumpyroNUTS':
-            with pm_model:
-                posterior = sample_numpyro_nuts(draws=args.nsamples, tune=args.nwarmup, 
-                                jitter=False, chains=args.nchains, 
-                                random_seed=args.seed, chain_method=args.chain_method_numpyro, 
-                                progressbar=True, idata_kwargs={'log_likelihood': True}, )
         elif args.sampler == "ADVI":
             with pm_model:
                 mean_field = pm.fit(n=args.n_advi_iter, method='advi', 
