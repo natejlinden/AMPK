@@ -64,7 +64,7 @@ def main(raw_args=None):
                               r'$\alpha_{\text{PP}}$',r'$\beta_{\text{AMP}}$'],
                      }, 
          "MM_nonessential":  {'free':["kOffAMP","kOffADP","kOffATP","KmCaMKK",
-                                      "LKB1","KmLKB1","kPP","KmPP","alphaLKB1",
+                                      "kLKB1","KmLKB1","kPP","KmPP","alphaLKB1",
                                       "alphaPP","betaAMP"],
                      'names':[r'$k_{\text{OffAMP}}$',r'$k_{\text{OffADP}}$',
                               r'$k_{\text{OffATP}}$',
@@ -86,8 +86,8 @@ def main(raw_args=None):
                              r'$k_{DephosPP1}$', r'$\alpha_{PP}$',r'$\beta_{AMP}$',
                              r'$\beta_{LKB1}$',r'$\beta_{CaMKK}$']}, 
         "MM_nonessential_all":  {'free':["kOffAMP","kOffADP","kOffATP","KmCaMKK",
-                                "LKB1","KmLKB1","kPP","KmPP","alphaPP",
-                                "betaAMP","betaLKB1","betaCaMKK"],
+                                "kLKB1","KmLKB1","kPP","KmPP","alphaPP",
+                                "betaAMPK","betaLKB1","betaCaMKK"],
                     'names':[r'$k_{\text{OffAMP}}$',r'$k_{\text{OffADP}}$',
                                 r'$k_{\text{OffATP}}$',
                                 r'$K_{m,\text{CaMKK}}$',r'$k_{\text{LKB1}}$',
@@ -142,6 +142,8 @@ def main(raw_args=None):
 
             # load the sesnitivity indices
             sobol_df = pd.read_csv(args.results_path  +  m_name + '/'+  m_name + '_' + qoi + '_sobol_GSA.csv')
+
+            print(sobol_df)
 
             # fix param_names in the df
             for j, param in enumerate(sobol_df['param']):
@@ -216,24 +218,23 @@ def main(raw_args=None):
                 'Vmaxppase', 'VmaxppaseATP', 'VmaxppaseADP', 'VmaxppaseAMP', 'alphaPP'],
         'AMPK kinase act.': ['kOffAMPK', 'kPhosAMPK', 'KmAMPK', 'kAMPK', 'Km_pAMPK','k_pAMPK', 
                  'Km_AMP_pAMPK', 'k_AMP_pAMPK', 'Km_ADP_pAMPK', 'k_ADP_pAMPK', 
-                 'Km_ATP_pAMPK', 'k_ATP_pAMPK', 'betaAMP'],
+                 'Km_ATP_pAMPK', 'k_ATP_pAMPK', 'betaAMP', 'betaAMPK'],
         'AMKPAR dephos.': ['kOffPP1', 'kDephosPP1', 'KmPP1', 'kPP1', 'Km_AMPKAR_PP', 'Vmax_AMPKAR_PP']
     }
 
     model_names = {
-        'MA_single': 'Mass action (MA)',
-        'MM_single': 'Michealis Menten (MM)',
-        'MA_nonessential': 'MA - nonessential',
-        'MM_nonessential': 'MM - nonessential',
-        'MA_nonessential_all': 'MA - nonessential all',
-        'MM_nonessential_all': 'MM - nonessential all'
+        'MA_single': 'Model 1',
+        'MM_single': 'Model 2',
+        'MA_nonessential': 'Model 3',
+        'MM_nonessential': 'Model 4',
+        'MA_nonessential_all': 'Model 5',
+        'MM_nonessential_all': 'Model 6'
     }
 
     # Make a heatmap of the ST values
     for qoi in list(qoi_names.keys()):
         tmp = {}
 
-        # data_to_plot = np.zeros((len(ST_dict.keys()), len(param_function_dict.keys())))
         data_to_plot = {}
         for i, model in enumerate(ST_dict.keys()):
             tmp[model] = ST_dict[model][qoi]
@@ -247,9 +248,6 @@ def main(raw_args=None):
 
             data_to_plot[model_names[model]] = tmp_dict
         
-        # # anything that is still 0, set to np.nan
-        # data_to_plot[data_to_plot == 0] = np.nan
-
         idxs_df = pd.DataFrame(data_to_plot)
 
         idxs_df_long = idxs_df.reset_index().melt(id_vars='index', var_name='model', value_name='idx')
@@ -277,31 +275,6 @@ def main(raw_args=None):
         leg.remove()
         # save the figure
         fig.savefig(args.fig_path + 'ST_barplot_' + qoi + '.pdf', bbox_inches='tight', transparent=True)
-
-        # print(np.array(data_to_plot).shape)
-        
-        # # fig, ax = get_sized_fig_ax(5.0, 2.0)
-        # if np.any(data_to_plot > 1.5):
-        #     vmax=1.5
-        # else:
-        #     vmax=np.nanmax(data_to_plot)
-        # norm = mpl.colors.Normalize(vmin=0, vmax=vmax)
-
-        # fig, ax = plt.subplots(figsize=(5.0, 1.5))
-        # print(data_to_plot)
-        # im, cbar = heatmap(data_to_plot, list(ST_dict.keys()), list(param_function_dict.keys()), 
-        #                 ax=ax, cmap="Blues", cbar_kw={'location':'right', 'pad':0.02},
-        #                 cbarlabel=r'$S_T$:  ' + qoi_names[qoi], aspect='auto', norm=norm)
-        # # annotate
-        # texts = annotate_heatmap(im, valfmt="{x:.2f}", fontsize=8.0)
-
-        # # tick labels
-        # ax.xaxis.set_ticks_position('bottom')  # Set ticks at the bottom
-        # ax.xaxis.set_label_position('bottom') 
-        # ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right', fontsize=10.0)
-        # ax.set_yticklabels(['Coccimiglio et al. 2020', 'Mass action (MA)', 'Michealis Menten (MM)',  'MA - nonessential', 'MM - nonessential'], fontsize=10.0)
-
-        # fig.savefig(args.fig_path + 'ST_heatmap_' + qoi + '.pdf', bbox_inches='tight', transparent=True)
     
 if __name__ == "__main__":
     main()
