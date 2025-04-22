@@ -270,8 +270,11 @@ def main(raw_args=None):
             patch.set_edgecolor(face_color)  # Set edge color to match the fill
 
         # legend and remove it
-        leg = ax.legend(loc='upper right', bbox_to_anchor=(1.75, 1.0), fontsize=8.0, ncols=2, title='')
+        leg = ax.legend(loc='upper right', bbox_to_anchor=(1.75, 1.0), fontsize=8.0, ncols=1, title='')
         export_legend(leg, args.fig_path + 'ST_legend.pdf')
+
+        ax.set_ylim(0, 1.1)
+
         leg.remove()
         # save the figure
         fig.savefig(args.fig_path + 'ST_barplot_' + qoi + '.pdf', bbox_inches='tight', transparent=True)
