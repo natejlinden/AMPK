@@ -1,5 +1,6 @@
 import numpy as np
 from SALib.analyze import sobol as sobol_analyze
+from SALib.analyze import enhanced_hdmr as hdmr
 import os, sys, json
 import matplotlib.pyplot as plt
 import matplotlib as mpl
@@ -64,7 +65,7 @@ def main(raw_args=None):
                               r'$\alpha_{\text{PP}}$',r'$\beta_{\text{AMP}}$'],
                      }, 
          "MM_nonessential":  {'free':["kOffAMP","kOffADP","kOffATP","KmCaMKK",
-                                      "LKB1","KmLKB1","kPP","KmPP","alphaLKB1",
+                                      "kLKB1","KmLKB1","kPP","KmPP","alphaLKB1",
                                       "alphaPP","betaAMP"],
                      'names':[r'$k_{\text{OffAMP}}$',r'$k_{\text{OffADP}}$',
                               r'$k_{\text{OffATP}}$',
@@ -86,8 +87,8 @@ def main(raw_args=None):
                              r'$k_{DephosPP1}$', r'$\alpha_{PP}$',r'$\beta_{AMP}$',
                              r'$\beta_{LKB1}$',r'$\beta_{CaMKK}$']}, 
         "MM_nonessential_all":  {'free':["kOffAMP","kOffADP","kOffATP","KmCaMKK",
-                                "LKB1","KmLKB1","kPP","KmPP","alphaPP",
-                                "betaAMP","betaLKB1","betaCaMKK"],
+                                "kLKB1","KmLKB1","kPP","KmPP","alphaPP",
+                                "betaAMPK","betaLKB1","betaCaMKK"],
                     'names':[r'$k_{\text{OffAMP}}$',r'$k_{\text{OffADP}}$',
                                 r'$k_{\text{OffATP}}$',
                                 r'$K_{m,\text{CaMKK}}$',r'$k_{\text{LKB1}}$',
@@ -104,11 +105,9 @@ def main(raw_args=None):
         # we need mech in the model to load GSA sampling results correctly
 
         # load results
-        sol_samples_basal = np.load(args.results_path  + model + '/' + model + '_sols_basal_GSA.npy')
         sol_samples_stressed = np.load(args.results_path + model + '/' + model + '_sols_stressed_GSA.npy')
         all_sols_stressed_LKB1_KD = np.load(args.results_path + model + '/' + model + '_sols_stressed_LKB1_KD_GSA.npy')
         all_sols_stressed_CaMKK_KD = np.load(args.results_path + model + '/' + model + '_sols_stressed_CaMKK_KD_GSA.npy')
-        param_samples = np.load(args.results_path + model + '/' + model + '_param_vals_GSA.npy')
 
         # Load JSON files with param, state, and initial condition info
         # states and initial conditions
@@ -121,7 +120,8 @@ def main(raw_args=None):
         param_names = models_free_params[model]['names']
 
         # define the bounds for the AMPK parameters
-        bounds = [model_info['param_bounds'] for param in free_params]
+
+        bounds = [model_info['param_bounds'][param] for param in free_params]
 
         # dictionary of the problem for SALib
         problem = {'num_vars':len(free_params), 'names':free_params, 'bounds': bounds}
@@ -155,18 +155,16 @@ def main(raw_args=None):
         time_to_half_max_idx_CaMKK_KD = np.apply_along_axis(compute_half_max, 1, pAMPKAR_stressed_CaMKK_KD / AMPKAR_stressed_CaMKK_KD)
         time_to_half_max_idx_LKB1_KD = [times[idx] for idx in time_to_half_max_idx_LKB1_KD]
         time_to_half_max_idx_CaMKK_KD = [times[idx] for idx in time_to_half_max_idx_CaMKK_KD]
+
+        # fig, ax = plt.subplots(1, 1)
+        # for i in range(AMPKAR_stressed.shape[0]):
+        #     ax.plot(times, pAMPKAR_stressed_CaMKK_KD[i,:]/AMPKAR_stressed_CaMKK_KD[i,:], color=colors[0], alpha=0.1)
+            
+        # plt.show()
         
         # define dict of the qoi's -- there are multiple, so we need to run sobol analysis for each
         # the items in the dict are tuples, where the first entry is the vector of qoi's
         # the second entry is the name of the qoi
-        # qois = {
-        #     "ratio":(pAMPKAR_stressed/AMPKAR_stressed).max(axis=1), # raw ratio
-        #     "t_half": np.array(time_to_half_max), # time to half max
-        #     "ratio_LKB1_KD":(pAMPKAR_stressed_LKB1_KD/AMPKAR_stressed_LKB1_KD).max(axis=1), # difference in max ratio # difference in max ratio 
-        #     "ratio_CaMKK_KD": (pAMPKAR_stressed_CaMKK_KD/AMPKAR_stressed_CaMKK_KD).max(axis=1), # difference in max ratio
-        #     "t_half_LKB1_KD": np.array(time_to_half_max_idx_LKB1_KD), # time to half max
-        #     "t_half_CaMKK_KD": np.array(time_to_half_max_idx_CaMKK_KD), # time to half max
-        # }
         qois = {
             "ratio":pAMPKAR_stressed[:,-1]/AMPKAR_stressed[:,-1], # raw ratio
             "t_half": np.array(time_to_half_max), # time to half max
@@ -179,12 +177,20 @@ def main(raw_args=None):
         # save to npz file
         np.savez(args.results_path +  m_name + '/'+ m_name + '_qois.npz', **qois)
 
+        # qoi_names = ['ratio', 't_half', 'ratio_LKB1_KD', 'ratio_CaMKK_KD', 't_half_LKB1_KD', 't_half_CaMKK_KD']
         qoi_names = ['ratio', 't_half', 'ratio_LKB1_KD', 'ratio_CaMKK_KD', 't_half_LKB1_KD', 't_half_CaMKK_KD']
 
         # loop over QoIs and compute Sens idxs
         for qoi in qoi_names:
             # unpack qoi tuple
             qoi_vals = qois[qoi]
+
+
+            print(qoi)
+            print(qoi_vals.shape)
+            print(np.mean(qoi_vals))
+            print(np.std(qoi_vals))
+            print(qoi_vals)
 
             # analyze GSA
             Si_sobol = sobol_analyze.analyze(problem, qoi_vals, calc_second_order=False)
