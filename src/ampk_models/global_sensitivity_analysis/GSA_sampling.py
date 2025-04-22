@@ -44,9 +44,9 @@ def parse_args(raw_args=None):
     parser.add_argument("-tmax", type=float, default=1e3, help="Maximum time to run the simulation. Defaults to 1e3.")
     parser.add_argument("-rtol", type=float,default=1e-6)
     parser.add_argument("-atol", type=float,default=1e-6)
-    parser.add_argument('-pcoeff', type=float, default=0, help='pcoeff for PID time stepper')
+    parser.add_argument('-pcoeff', type=float, default=0.3, help='pcoeff for PID time stepper')
     parser.add_argument('-dcoeff', type=float, default=0, help='dcoeff for PID time stepper')
-    parser.add_argument('-icoeff', type=float, default=1.0, help='icoeff for PID time stepper')
+    parser.add_argument('-icoeff', type=float, default=0.4, help='icoeff for PID time stepper')
     parser.add_argument('-ca_stress', type=float, default=1.0, help='calcium stress level')
     args=parser.parse_args(raw_args)
     return args
@@ -119,6 +119,23 @@ def main(raw_args=None):
                                     calc_second_order=False, seed=seed)
 
     np.save(args.savedir + args.model + '_param_vals_GSA.npy', np.array(param_vals))
+
+    # def sample_lognormal(mu, sigma, nsamples, seed=None):
+    #     """
+    #     Generate samples from a lognormal distribution with mu and sigma.
+
+    #     """
+    #     rng = seed if seed else np.random.default_rng()
+    #     return rng.lognormal(mean=mu, sigma=sigma, size=nsamples)
+    
+    # samples = []
+    # for i in range(len(free_params)):
+    #     samples.append(sample_lognormal(model_info['prior_params'][free_params[i]]['mu'], model_info['prior_params'][free_params[i]]['sigma'], args.nsamples, seed=seed))
+    
+    # param_vals = np.array(samples).T
+
+    # # save the parameter values
+    # np.save(args.savedir + args.model + '_param_vals_GSA.npy', np.array(param_vals))
 
     # Convert from parameter samples to full parameter sets, because we do not sample
     # all parameters in the model

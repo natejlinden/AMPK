@@ -128,9 +128,9 @@ def main(raw_args=None):
     #  the second entry is the name of the qoi
     qoi_names = {
         "ratio":r'$\frac{[\rm pAMPKAR]}{[\rm AMPKAR]}$', # raw ratio
-        "t_half": r'$t_{{\rm 1/2}}$', # time to half max
         "ratio_LKB1_KD": r'$\frac{[\rm pAMPKAR]}{[\rm AMPKAR]} LKB1 KO$',
         "ratio_CaMKK_KD": r'$\frac{[\rm pAMPKAR]}{[\rm AMPKAR]} CaMKK KO$',
+        "t_half": r'$t_{{\rm 1/2}}$', # time to half max
         "t_half_LKB1_KD": r'$t_{{\rm 1/2}}$ LKB1 KO',
         "t_half_CaMKK_KD": r'$t_{{\rm 1/2}}$ CaMKK KO',
         }
@@ -152,7 +152,13 @@ def main(raw_args=None):
             # sobol_df['qoi'] = qoi_names[qoi]
 
             # create a new column that is formatted as Mean ± SD
-            sobol_df[qoi_names[qoi]] = sobol_df.apply(lambda x: f"${x['ST']:.3f} \pm {x['ST_conf']:.3f}$", axis=1)
+            def format_func(x):
+                if x['ST'] > 0.01:
+                    return "$\mathbf{" + f"{x['ST']:.3f}" + "} \pm \mathbf{" + f"{x['ST_conf']:.3f}" + "}$" 
+                else:
+                    return f"${x['ST']:.3f} \pm {x['ST_conf']:.3f}$"
+
+            sobol_df[qoi_names[qoi]] = sobol_df.apply(format_func, axis=1)
 
             # drop unwanted columns
             drop_cols = ['Unnamed: 0', 'S1', 'S1_conf', 'ST', 'ST_conf']
