@@ -11,8 +11,6 @@ import met_brewer as mb
 import seaborn as sns
 import jax
 import sys
-from scipy.stats import kruskal
-
 
 sys.path.append("../")
 from utils import *
@@ -101,12 +99,12 @@ models_free_params = {
 
 directories = {
     'WT_only':{
-        'data_dir':'../../../results/param_est/',
-        'save_dir_base':'../../../results/param_est/figs/marginals/'
+        'data_dir':'../../../results/param_est/WT_only/',
+        'save_dir_base':'../../../results/param_est/WT_only/figs/marginals/'
     },
     'kinase_ko':{
         'data_dir':'../../../results/param_est/kinase_KO/std_dcr/',
-        'save_dir_base':'../../../results/param_est/kinase_KO/std_dcr/figs/'
+        'save_dir_base':'../../../results/param_est/kinase_KO/std_dcr/figs/marginals/'
     }
 }
 
