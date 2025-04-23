@@ -26,6 +26,16 @@ from pymc_jax_ode import *
 from plotting_helper_funcs import *
 from matplotlib.patches import Patch
 
+import sys
+sys.path.append('../models/')
+sys.path.append('./models/')
+from MA_single_diffrax import *
+from MM_single_diffrax import *
+from MA_nonessential_diffrax import *
+from MM_nonessential_diffrax import *
+from MA_nonessential_all_diffrax import *
+from MM_nonessential_all_diffrax import *
+
 ###############################################################################
 #### General Utilities ####
 ###############################################################################
@@ -320,18 +330,20 @@ def solve_SS(rhs, rhs_stress, y0, params, rtol=1e-6, atol=1e-6,
     
     return jnp.squeeze(jnp.array(sol_stressed.ys)), jnp.squeeze(jnp.array(sol.ys))
 
-def run_simulations(param_samples, model_name, model_info_file, metab_params_file, times, rtol=1e-6,atol=1e-6,pcoeff=0,icoeff=1,dcoeff=0,tmax_init=1e3, y0=None):
+def run_simulations(param_samples, model_name, model_info_file, metab_params_file, 
+                    times, rtol=1e-6,atol=1e-6,pcoeff=0,icoeff=1,dcoeff=0,
+                    tmax_init=1e3, y0=None, ca_stress=0.25):
     """ Run simulations for the specified model and return the results.
     """
     ####################################################
     # set up model info and priors #
     ####################################################
-    # import the model
-    try:
-        exec('from ' + model_name + '_diffrax import *')
-    except:
-        print('Warning Model {} not found. Quitting.'.format(model_name))
-        quit()
+    # # import the model
+    # try:
+    #     exec('from ' + model_name + '_diffrax import *')
+    # except:
+    #     print('Warning Model {} not found. Quitting.'.format(model_name))
+    #     quit()
 
     # Load JSON files with param, state, and initial condition info
     # states and initial conditions
@@ -371,9 +383,13 @@ def run_simulations(param_samples, model_name, model_info_file, metab_params_fil
         print('Warning Model {} not found. Quitting.'.format(model_name))
         quit()
 
+    ca_index = list(model_info["init_conds"].keys()).index('Ca')
+    ca_stress = jnp.array([ca_stress,])
+    
     def simulator(params):
         # solve model
-        sol_stressed, _ = solve_traj(rhs, rhs_stress, y0, params, times, tmax_init=tmax_init, rtol=rtol,atol=atol,pcoeff=pcoeff, icoeff=icoeff,dcoeff=dcoeff)
+        sol_stressed, _ = solve_traj_timeDepCaMKK(rhs, rhs_stress, y0, ca_stress, ca_index, params, 
+                times, tmax_init=tmax_init, rtol=rtol,atol=atol,pcoeff=pcoeff,icoeff=icoeff,dcoeff=dcoeff)
 
         # compute delta pAMPKAR/AMPKAR_tot
         AMPKAR_stressed = sol_stressed[jnp.array(ampkar_idxs), :].sum(axis=0)
@@ -536,8 +552,8 @@ def build_pymc_model(param_names, prior_param_dict, data, sol_op, data_sigma=0.1
 #### Plotting Utils ####
 ###############################################################################
 def plot_predictive(inf_data, data, times, plot_prior=True, plot_post=True,
-                    add_t_0=True, n_traces=200, figsize=(6, 4), prior_color='blue',
-                    post_color='black', data_color='red', data_marker_size=10, 
+                    n_traces=200, figsize=(6, 4), prior_color='blue',
+                    post_color='black', data_color='red', data_linestyle='--', 
                     cred_int=95, fig_ax = (None, None), linestyle='-',llike_name='llike'):
     """"plots prior and posterior predictive checks for the given model 
     along with the data supplied for inference"""
@@ -626,8 +642,8 @@ def plot_predictive(inf_data, data, times, plot_prior=True, plot_post=True,
                     label='Posterior predictive', linewidth=2.0, linestyle=linestyle)
     
     # plot data
-    ax.scatter(times, data, color=data_color, s=data_marker_size, 
-               label='Data', marker='x', linewidth=1.0)
+    ax.plot(times, data, color=data_color, linestyle=data_linestyle, 
+               label='Data', linewidth=2.0)
 
     # label formatting
     ax.set_xlabel('')
