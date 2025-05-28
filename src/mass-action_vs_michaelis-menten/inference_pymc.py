@@ -11,19 +11,20 @@ import pymc as pm
 from pymc.sampling.jax import sample_numpyro_nuts, sample_blackjax_nuts, get_jaxified_logp
 from pytensor.link.jax.dispatch import jax_funcify
 
-import numpyro
-import numpyro.distributions as dist
 from jax import random
-from numpyro.infer import MCMC, NUTS, AIES, init_to_sample
 import arviz as az
-from numpyro.infer import Predictive
 import sys, argparse, json, os
 
 sys.path.append("../ampk_models/")
+sys.path.append("../ampk_models/models")
 from utils import *
 
 # sys.path.append("../ampk_models/model_calibration/")
 from pymc_jax_ode import *
+
+from MA_diffrax import *
+from MM_diffrax import *
+from Hill_diffrax import *
 
 # tell jax to use 64bit floats
 jax.config.update("jax_enable_x64", True)
@@ -183,9 +184,17 @@ def main(raw_args=None):
     ####################################################
     # PyMC model #
     ####################################################
+    bounds_dict = {}
+    for param in free_params:
+        if param in model_info["nominal_params"]:
+            bounds_dict[param] = (model_info["nominal_params"][param] * args.lower_mult, 
+                                  model_info["nominal_params"][param] * args.upper_mult)
+        else:
+            raise ValueError(f"Parameter {param} not found in model_info['nominal_params']")
+    # set the prior family
     prior_dict = set_prior_params(list(model_info["nominal_params"].keys()), 
-                                  free_params, model_info["nominal_params"], 
-                                  upper_mult=args.upper_mult, lower_mult=args.lower_mult, prior_family=args.prior_family)
+                                  free_params, model_info["nominal_params"],
+                                  bounds_dict, prior_family=args.prior_family)
     
     pm_model = build_pymc_model(prior_dict, data.reshape(1, len(data)), sol_op, data_sigma=data_std)
 
