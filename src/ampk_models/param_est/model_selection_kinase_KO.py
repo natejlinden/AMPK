@@ -120,8 +120,33 @@ for sampler in samplers:
 
     export_legend(leg, save_dir_base + f'elpd_legend_{sampler}.pdf')
     leg.remove()
+    ylim = ax.get_ylim()
 
     fig.savefig(save_dir_base + f'elpd_{sampler}.pdf', bbox_inches='tight', transparent=True)
+
+    # Create separate plots for each unique value in the 'llike' column
+    unique_llikes = elpd['llike'].unique()
+
+    for i, llike in enumerate(unique_llikes):
+        # Filter the dataframe for the current llike
+        elpd_filtered = elpd[elpd['llike'] == llike]
+
+        # Create a bar plot for the current llike
+        fig, ax = get_sized_fig_ax(width=1., height=2.)
+
+        sns.barplot(data=elpd_filtered, x='model', y='elpd_loo', ax=ax,
+                    color=colors[i], edgecolor='black', alpha=0.8)
+
+        # Customize the plot
+        ax.axhline(0, color='black', linewidth=0.5, linestyle='--')
+        ax.set_ylabel('ELPD\n(Expected Log Predictive Density)', fontsize=10)
+        ax.set_xlabel('Model', fontsize=10)
+        ax.tick_params(axis='both', which='major', labelsize=8)
+        ax.set_ylim(ylim)  # Set the same y-axis limits as the main plot
+
+        # Save the plot
+        fig.savefig(save_dir_base + f'elpd_{sampler}_{llike}.pdf', bbox_inches='tight', transparent=True)
+        plt.close(fig)
 
     # # Save the plot
     # fig.tight_layout()

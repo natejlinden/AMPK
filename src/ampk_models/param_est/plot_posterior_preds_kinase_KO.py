@@ -63,6 +63,8 @@ lyso_data_CaMKK2_KO, _, _ = load_data('../../../Schmitt_et_al_2022_data/sup_fig_
 mito_data_CaMKK2_KO, _, _ = load_data('../../../Schmitt_et_al_2022_data/sup_fig_2g_mito_CaMKK_KD.npz', 
                                      to_seconds=False, constant_std=False)
 
+plot_larger = ['MM_nonessential_all']
+
 for j, model in enumerate(models_free_params.keys()):
     
     print(f"Processing model {j+1}: {model}")
@@ -152,5 +154,30 @@ for j, model in enumerate(models_free_params.keys()):
 
                 plt.savefig(save_dir + f'{comp}_{pred}_posterior_{sampler}.pdf', 
                             transparent=True, bbox_inches='tight')
+                
+                if model in plot_larger:
+                    fig_width, fig_height = 2.25, 1.0
+
+                    fig, ax = get_sized_fig_ax(fig_width, fig_height)
+                    fig, ax, leg = plot_predictive(trajectories, data, dat[comp]['times'], 
+                                    plot_prior=False,  n_traces=0, figsize=None, 
+                                    prior_color='', post_color=colors[j], data_color='k', 
+                                    data_linestyle='--', fig_ax = (fig, ax), llike_name=pred)
+                    
+                    # add n_trajectories to the plot if n_trajectories > 0
+                    if n_trajectories > 0:
+                        for i in range(n_trajectories):
+                            ax.plot(dat[comp]['times'], 
+                                trajectories[i,:], 
+                                color=colors[j], alpha=0.2, linewidth=1.0)
+                    leg.remove()
+                        
+                    ax.set_xlabel("time (min)", fontsize=10)
+                    ax.set_ylabel("fraction act.\nsensor", fontsize=10)
+                    ax.set_ylim(0, 1.0)
+
+                    plt.savefig(save_dir + f'{comp}_{pred}_posterior_{sampler}_LARGER.pdf', 
+                                transparent=True, bbox_inches='tight')
+                 
                 
                 sims[comp][pred]=trajectories
