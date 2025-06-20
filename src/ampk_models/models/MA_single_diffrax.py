@@ -168,7 +168,7 @@ class MA_single(eqx.Module):
 
         # Metabolic fluxes
         # glycolysis
-        Jgly = self.kGly*ADP #2*kGly*ADP*ADP
+        Jgly = self.kGly*ADP #2*kGly*ADP*ADP    
         # ATP hydrolysis
         Jhydro = self.kHydro*ATP
         # Adenylate Kinase
