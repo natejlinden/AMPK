@@ -1,7 +1,5 @@
 import jax.numpy as jnp
 import equinox as eqx
-import numpyro
-import numpyro.distributions as dist
 
 class metabolism(eqx.Module):
 
